@@ -1,0 +1,459 @@
+import { eq, sum } from "drizzle-orm";
+import { db } from "./index";
+import {
+  accounts,
+  savingsDetails,
+  debtDetails,
+  transactions,
+  debtStatements,
+  goals,
+  habitCategories,
+  habitTasks,
+  habitCompletions,
+  rewards,
+  redemptions,
+  cleaningAreas,
+  cleaningTasks,
+  cleaningCompletions,
+} from "./schema";
+import {
+  projectSavingsDate,
+  projectPayoffDate,
+  requiredDailyPayment,
+  isOnTrack,
+  estimateInterestSaved,
+} from "@/lib/projections";
+import { computeStreak } from "@/lib/streak";
+import { computeCleaningStatus } from "@/lib/cleaningStatus";
+import { dateKeyInAppTimezone, dateOnlyInAppTimezone } from "@/lib/timezone";
+import { computeMinimumPaymentStatus, computeExtraPaidOverMinimum } from "@/lib/minimumPayment";
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+async function getBalance(accountId: string, startingBalance: number) {
+  const [row] = await db
+    .select({ total: sum(transactions.amount) })
+    .from(transactions)
+    .where(eq(transactions.accountId, accountId));
+  return startingBalance + Number(row?.total ?? 0);
+}
+
+function streakFromTransactions(txns: { date: Date | string; category: string }[]) {
+  return computeStreak(txns.filter((t) => t.category === "recurring_goal").map((t) => t.date));
+}
+
+export async function listAccountsSummary() {
+  const allAccounts = await db.select().from(accounts).where(eq(accounts.archived, false));
+
+  const savings = allAccounts.filter((a) => a.type === "savings");
+  const debts = allAccounts.filter((a) => a.type === "debt");
+
+  const savingsSummaries = await Promise.all(
+    savings.map(async (account) => {
+      const [details] = await db
+        .select()
+        .from(savingsDetails)
+        .where(eq(savingsDetails.accountId, account.id));
+      const [goal] = await db
+        .select()
+        .from(goals)
+        .where(eq(goals.accountId, account.id))
+        .orderBy(goals.createdAt);
+      const balance = await getBalance(account.id, Number(account.startingBalance));
+      const txns = await db
+        .select({ date: transactions.date, amount: transactions.amount, category: transactions.category })
+        .from(transactions)
+        .where(eq(transactions.accountId, account.id));
+
+      const projectedDate = goal
+        ? projectSavingsDate(
+            balance,
+            Number(goal.targetAmount),
+            txns.map((t) => ({ date: new Date(t.date), amount: Number(t.amount) })),
+            new Date(account.createdAt),
+          )
+        : null;
+
+      return {
+        account,
+        dailyGoal: Number(details?.dailyGoal ?? 0),
+        balance,
+        goal,
+        projectedDate,
+        pace: isOnTrack(projectedDate, goal?.targetDate),
+        streak: streakFromTransactions(txns),
+      };
+    }),
+  );
+
+  const debtSummaries = await Promise.all(
+    debts.map(async (account) => {
+      const [details] = await db
+        .select()
+        .from(debtDetails)
+        .where(eq(debtDetails.accountId, account.id));
+      const [goal] = await db
+        .select()
+        .from(goals)
+        .where(eq(goals.accountId, account.id))
+        .orderBy(goals.createdAt);
+      const balance = await getBalance(account.id, Number(account.startingBalance));
+      const statements = await db
+        .select()
+        .from(debtStatements)
+        .where(eq(debtStatements.accountId, account.id))
+        .orderBy(debtStatements.statementDate);
+      const latestStatement = statements[statements.length - 1];
+      const txns = await db
+        .select({
+          date: transactions.date,
+          amount: transactions.amount,
+          category: transactions.category,
+        })
+        .from(transactions)
+        .where(eq(transactions.accountId, account.id));
+
+      const minimumPaymentDue = Number(latestStatement?.minimumPaymentDue ?? 0);
+      const projectedDate = details
+        ? projectPayoffDate(
+            balance,
+            Number(details.apr),
+            Number(details.dailyMicropaymentGoal),
+            minimumPaymentDue,
+            details.statementDay,
+          )
+        : null;
+
+      const requiredDaily =
+        details && goal?.targetDate
+          ? requiredDailyPayment(
+              balance,
+              Number(details.apr),
+              minimumPaymentDue,
+              details.statementDay,
+              new Date(goal.targetDate),
+            )
+          : null;
+
+      return {
+        account,
+        apr: Number(details?.apr ?? 0),
+        dailyMicropaymentGoal: Number(details?.dailyMicropaymentGoal ?? 0),
+        statementDay: details?.statementDay ?? 1,
+        balance,
+        latestStatement,
+        projectedDate,
+        goal,
+        requiredDaily,
+        pace: isOnTrack(projectedDate, goal?.targetDate),
+        streak: streakFromTransactions(txns),
+        minimumPaymentStatus: computeMinimumPaymentStatus(txns, latestStatement),
+        interestSaved: details
+          ? estimateInterestSaved(
+              balance,
+              Number(details.apr),
+              Number(details.dailyMicropaymentGoal),
+              minimumPaymentDue,
+              details.statementDay,
+            )
+          : 0,
+        extraPaidOverMinimum: computeExtraPaidOverMinimum(txns, statements),
+      };
+    }),
+  );
+
+  return { savingsSummaries, debtSummaries };
+}
+
+export async function getSavingsAccountDetail(accountId: string) {
+  const [account] = await db.select().from(accounts).where(eq(accounts.id, accountId));
+  if (!account) return null;
+  const [details] = await db
+    .select()
+    .from(savingsDetails)
+    .where(eq(savingsDetails.accountId, accountId));
+  const [goal] = await db
+    .select()
+    .from(goals)
+    .where(eq(goals.accountId, accountId))
+    .orderBy(goals.createdAt);
+  const txns = await db
+    .select()
+    .from(transactions)
+    .where(eq(transactions.accountId, accountId))
+    .orderBy(transactions.date);
+  const balance = await getBalance(accountId, Number(account.startingBalance));
+
+  const projectedDate = goal
+    ? projectSavingsDate(
+        balance,
+        Number(goal.targetAmount),
+        txns.map((t) => ({ date: new Date(t.date), amount: Number(t.amount) })),
+        new Date(account.createdAt),
+      )
+    : null;
+
+  return {
+    account,
+    details,
+    goal,
+    transactions: txns,
+    balance,
+    projectedDate,
+    pace: isOnTrack(projectedDate, goal?.targetDate),
+    streak: streakFromTransactions(txns),
+  };
+}
+
+export async function getDebtAccountDetail(accountId: string) {
+  const [account] = await db.select().from(accounts).where(eq(accounts.id, accountId));
+  if (!account) return null;
+  const [details] = await db
+    .select()
+    .from(debtDetails)
+    .where(eq(debtDetails.accountId, accountId));
+  const [goal] = await db
+    .select()
+    .from(goals)
+    .where(eq(goals.accountId, accountId))
+    .orderBy(goals.createdAt);
+  const statements = await db
+    .select()
+    .from(debtStatements)
+    .where(eq(debtStatements.accountId, accountId))
+    .orderBy(debtStatements.statementDate);
+  const txns = await db
+    .select()
+    .from(transactions)
+    .where(eq(transactions.accountId, accountId))
+    .orderBy(transactions.date);
+  const balance = await getBalance(accountId, Number(account.startingBalance));
+
+  const latestStatement = statements[statements.length - 1];
+  const minimumPaymentDue = Number(latestStatement?.minimumPaymentDue ?? 0);
+  const projectedDate = details
+    ? projectPayoffDate(
+        balance,
+        Number(details.apr),
+        Number(details.dailyMicropaymentGoal),
+        minimumPaymentDue,
+        details.statementDay,
+      )
+    : null;
+
+  const requiredDaily =
+    details && goal?.targetDate
+      ? requiredDailyPayment(
+          balance,
+          Number(details.apr),
+          minimumPaymentDue,
+          details.statementDay,
+          new Date(goal.targetDate),
+        )
+      : null;
+
+  return {
+    account,
+    details,
+    goal,
+    statements,
+    transactions: txns,
+    balance,
+    projectedDate,
+    requiredDaily,
+    pace: isOnTrack(projectedDate, goal?.targetDate),
+    streak: streakFromTransactions(txns),
+    minimumPaymentStatus: computeMinimumPaymentStatus(txns, latestStatement),
+    interestSaved: details
+      ? estimateInterestSaved(
+          balance,
+          Number(details.apr),
+          Number(details.dailyMicropaymentGoal),
+          minimumPaymentDue,
+          details.statementDay,
+        )
+      : 0,
+    extraPaidOverMinimum: computeExtraPaidOverMinimum(txns, statements),
+  };
+}
+
+export async function getGamificationStats() {
+  const rows = await db
+    .select({
+      amount: transactions.amount,
+      category: transactions.category,
+      date: transactions.date,
+      accountType: accounts.type,
+    })
+    .from(transactions)
+    .innerJoin(accounts, eq(transactions.accountId, accounts.id));
+
+  const todayKey = dateKeyInAppTimezone();
+  const monthPrefix = todayKey.slice(0, 7); // "YYYY-MM"
+  const monthStart = new Date(`${monthPrefix}-01T00:00:00Z`);
+  const today = dateOnlyInAppTimezone();
+  const daysInMonthSoFar = Math.round((today.getTime() - monthStart.getTime()) / MS_PER_DAY) + 1;
+
+  let lifetimeSaved = 0;
+  let lifetimePaidDebt = 0;
+  let monthSaved = 0;
+  let monthPaidDebt = 0;
+  const monthGoalDays = new Set<string>();
+
+  for (const row of rows) {
+    const amount = Number(row.amount);
+    const dateKey = row.date;
+    const inThisMonth = dateKey.startsWith(monthPrefix);
+
+    if (row.accountType === "savings" && amount > 0) {
+      lifetimeSaved += amount;
+      if (inThisMonth) monthSaved += amount;
+    }
+    if (row.accountType === "debt" && amount < 0) {
+      lifetimePaidDebt += -amount;
+      if (inThisMonth) monthPaidDebt += -amount;
+    }
+    if (row.category === "recurring_goal" && inThisMonth) {
+      monthGoalDays.add(dateKey);
+    }
+  }
+
+  const monthLabel = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(monthStart);
+
+  return {
+    lifetimeSaved,
+    lifetimePaidDebt,
+    monthLabel,
+    monthSaved,
+    monthPaidDebt,
+    daysHitGoal: monthGoalDays.size,
+    daysInMonthSoFar,
+  };
+}
+
+// --- Points / habit tracker ---
+
+export async function getPointsBalance(): Promise<number> {
+  const [[{ habitEarned }], [{ cleaningEarned }], [{ spent }]] = await Promise.all([
+    db.select({ habitEarned: sum(habitCompletions.pointsAwarded) }).from(habitCompletions),
+    db.select({ cleaningEarned: sum(cleaningCompletions.pointsAwarded) }).from(cleaningCompletions),
+    db.select({ spent: sum(redemptions.pointsCost) }).from(redemptions),
+  ]);
+  return Number(habitEarned ?? 0) + Number(cleaningEarned ?? 0) - Number(spent ?? 0);
+}
+
+function buildDailyPointsChart(completions: { date: string; pointsAwarded: number }[]) {
+  const sums = new Map<string, number>();
+  for (const c of completions) {
+    sums.set(c.date, (sums.get(c.date) ?? 0) + c.pointsAwarded);
+  }
+  const todayOnly = dateOnlyInAppTimezone();
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(todayOnly.getTime() - i * MS_PER_DAY);
+    const key = d.toISOString().slice(0, 10);
+    const label = d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+    days.push({ date: label, points: sums.get(key) ?? 0 });
+  }
+  return days;
+}
+
+export async function getHabitDashboardData() {
+  const categories = await db
+    .select()
+    .from(habitCategories)
+    .orderBy(habitCategories.createdAt);
+  const tasks = await db
+    .select()
+    .from(habitTasks)
+    .where(eq(habitTasks.archived, false))
+    .orderBy(habitTasks.createdAt);
+  const completions = await db.select().from(habitCompletions);
+  const activeRewards = await db
+    .select()
+    .from(rewards)
+    .where(eq(rewards.archived, false))
+    .orderBy(rewards.cost);
+  const recentRedemptions = await db
+    .select()
+    .from(redemptions)
+    .orderBy(redemptions.date);
+
+  const todayKey = dateKeyInAppTimezone();
+  const todayCompletionCounts = new Map<string, number>();
+  for (const c of completions) {
+    if (c.date === todayKey) {
+      todayCompletionCounts.set(c.taskId, (todayCompletionCounts.get(c.taskId) ?? 0) + 1);
+    }
+  }
+
+  const distinctDays = Array.from(new Set(completions.map((c) => c.date)));
+  const streak = computeStreak(distinctDays);
+
+  const categoriesWithTasks = categories.map((category) => ({
+    category,
+    tasks: tasks.filter((t) => t.categoryId === category.id),
+  }));
+  const unassignedTasks = tasks.filter((t) => !t.categoryId);
+
+  const balance = await getPointsBalance();
+  const chartData = buildDailyPointsChart(completions);
+
+  return {
+    categories,
+    categoriesWithTasks,
+    unassignedTasks,
+    todayCompletionCounts,
+    balance,
+    streak,
+    chartData,
+    activeRewards,
+    recentRedemptions: recentRedemptions.slice(-10).reverse(),
+  };
+}
+
+// --- Cleaning tracker ---
+
+export async function getCleaningDashboardData() {
+  const areas = await db.select().from(cleaningAreas).orderBy(cleaningAreas.createdAt);
+  const tasks = await db
+    .select()
+    .from(cleaningTasks)
+    .where(eq(cleaningTasks.archived, false))
+    .orderBy(cleaningTasks.createdAt);
+  const allCompletions = await db.select().from(cleaningCompletions);
+
+  const todayKey = dateKeyInAppTimezone();
+
+  const tasksWithStatus = tasks.map((task) => {
+    const taskCompletions = allCompletions.filter((c) => c.taskId === task.id);
+    const lastCompletedDate = taskCompletions.reduce<string | null>(
+      (latest, c) => (!latest || c.date > latest ? c.date : latest),
+      null,
+    );
+    const { status, dueDate } = computeCleaningStatus(
+      lastCompletedDate,
+      task.frequencyDays,
+      task.createdAt,
+    );
+    return {
+      ...task,
+      lastCompletedDate,
+      status,
+      dueDate,
+      doneToday: taskCompletions.some((c) => c.date === todayKey),
+    };
+  });
+
+  const areasWithTasks = areas.map((area) => ({
+    area,
+    tasks: tasksWithStatus.filter((t) => t.areaId === area.id),
+  }));
+  const unassignedTasks = tasksWithStatus.filter((t) => !t.areaId);
+
+  return { areas, areasWithTasks, unassignedTasks };
+}

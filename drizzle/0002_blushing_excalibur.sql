@@ -1,0 +1,1 @@
+ALTER TABLE "habit_tasks" ADD COLUMN "repeatable" boolean DEFAULT false NOT NULL;
