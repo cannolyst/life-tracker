@@ -24,6 +24,8 @@ export default async function PointsPage() {
     unassignedTasks,
     todayCompletionCounts,
     balance,
+    pointsToday,
+    pointsYesterday,
     streak,
     chartData,
     activeRewards,
@@ -35,13 +37,31 @@ export default async function PointsPage() {
     <div className="flex min-h-full flex-col">
       <Nav />
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-8 px-4 py-8">
-        <div>
-          <p className="text-sm text-neutral-500">Points balance</p>
-          <p className="text-3xl font-bold">{balance}</p>
-          <div className="mt-1">
-            <StreakBadge streak={streak} />
+        <Card>
+          <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+            <div>
+              <p className="text-neutral-500">Total points</p>
+              <p className="text-2xl font-semibold">{balance}</p>
+            </div>
+            <div>
+              <p className="text-neutral-500">Yesterday</p>
+              <p className="text-2xl font-semibold">{pointsYesterday}</p>
+            </div>
+            <div>
+              <p className="text-neutral-500">Today</p>
+              <p className="text-2xl font-semibold">{pointsToday}</p>
+            </div>
+            <div>
+              <p className="text-neutral-500">Streak</p>
+              <p className="text-2xl font-semibold">{streak > 0 ? `Day ${streak}` : "—"}</p>
+              {streak > 0 && (
+                <div className="mt-0.5">
+                  <StreakBadge streak={streak} />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </Card>
 
         <Card>
           <PointsChart data={chartData} />

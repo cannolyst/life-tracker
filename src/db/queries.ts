@@ -346,6 +346,21 @@ export async function getPointsBalance(): Promise<number> {
   return Number(habitEarned ?? 0) + Number(cleaningEarned ?? 0) - Number(spent ?? 0);
 }
 
+export async function getPointsEarnedToday(): Promise<number> {
+  const todayKey = dateKeyInAppTimezone();
+  const [[{ habitToday }], [{ cleaningToday }]] = await Promise.all([
+    db
+      .select({ habitToday: sum(habitCompletions.pointsAwarded) })
+      .from(habitCompletions)
+      .where(eq(habitCompletions.date, todayKey)),
+    db
+      .select({ cleaningToday: sum(cleaningCompletions.pointsAwarded) })
+      .from(cleaningCompletions)
+      .where(eq(cleaningCompletions.date, todayKey)),
+  ]);
+  return Number(habitToday ?? 0) + Number(cleaningToday ?? 0);
+}
+
 function buildDailyPointsChart(completions: { date: string; pointsAwarded: number }[]) {
   const sums = new Map<string, number>();
   for (const c of completions) {
@@ -362,6 +377,15 @@ function buildDailyPointsChart(completions: { date: string; pointsAwarded: numbe
   return days;
 }
 
+// dateKey is a "YYYY-MM-DD" string (already UTC-midnight-anchored), so the
+// offset is applied via UTC components directly rather than re-parsing
+// through a timezone formatter — see the same pattern in streak.ts.
+function addDaysToDateKey(dateKey: string, days: number): string {
+  const d = new Date(`${dateKey}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 export async function getHabitDashboardData() {
   const categories = await db
     .select()
@@ -373,6 +397,9 @@ export async function getHabitDashboardData() {
     .where(eq(habitTasks.archived, false))
     .orderBy(habitTasks.createdAt);
   const completions = await db.select().from(habitCompletions);
+  const cleaningCompletionsAll = await db
+    .select({ date: cleaningCompletions.date, pointsAwarded: cleaningCompletions.pointsAwarded })
+    .from(cleaningCompletions);
   const activeRewards = await db
     .select()
     .from(rewards)
@@ -384,12 +411,23 @@ export async function getHabitDashboardData() {
     .orderBy(redemptions.date);
 
   const todayKey = dateKeyInAppTimezone();
+  const yesterdayKey = addDaysToDateKey(todayKey, -1);
   const todayCompletionCounts = new Map<string, number>();
   for (const c of completions) {
     if (c.date === todayKey) {
       todayCompletionCounts.set(c.taskId, (todayCompletionCounts.get(c.taskId) ?? 0) + 1);
     }
   }
+
+  // Points logged today/yesterday reflect the whole shared economy
+  // (habit + cleaning completions), matching how the balance is derived.
+  const sumForDate = (dateKey: string) =>
+    completions.filter((c) => c.date === dateKey).reduce((s, c) => s + c.pointsAwarded, 0) +
+    cleaningCompletionsAll
+      .filter((c) => c.date === dateKey)
+      .reduce((s, c) => s + c.pointsAwarded, 0);
+  const pointsToday = sumForDate(todayKey);
+  const pointsYesterday = sumForDate(yesterdayKey);
 
   const distinctDays = Array.from(new Set(completions.map((c) => c.date)));
   const streak = computeStreak(distinctDays);
@@ -409,6 +447,8 @@ export async function getHabitDashboardData() {
     unassignedTasks,
     todayCompletionCounts,
     balance,
+    pointsToday,
+    pointsYesterday,
     streak,
     chartData,
     activeRewards,
