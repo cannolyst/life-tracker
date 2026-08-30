@@ -4,19 +4,13 @@ import { Card, buttonClass, formatCurrency, formatDate } from "@/components/ui";
 import { StreakBadge } from "@/components/StreakBadge";
 import { PointsChart } from "@/components/PointsChart";
 import { AddCategoryForm, AddTaskForm, AddRewardForm } from "./PointsForms";
-import { jewelFor, NEUTRAL_JEWEL, jewelChipStyle } from "@/lib/jewels";
-import {
-  toggleTaskCompletion,
-  logRepeatableCompletion,
-  undoRepeatableCompletion,
-  archiveTask,
-  archiveReward,
-  redeemReward,
-} from "./actions";
+import { TaskRow } from "./TaskRow";
+import { jewelFor, NEUTRAL_JEWEL } from "@/lib/jewels";
+import { archiveReward, redeemReward } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-type Task = { id: string; name: string; points: number; repeatable: boolean };
+type Task = { id: string; name: string; points: number; repeatable: boolean; categoryId: string | null };
 
 export default async function PointsPage() {
   const {
@@ -80,7 +74,12 @@ export default async function PointsPage() {
                     />
                     {category.name}
                   </h3>
-                  <TaskList tasks={tasks} counts={todayCompletionCounts} jewel={jewelFor(i)} />
+                  <TaskList
+                    tasks={tasks}
+                    counts={todayCompletionCounts}
+                    jewel={jewelFor(i)}
+                    categories={categories}
+                  />
                 </Card>
               ),
           )}
@@ -93,7 +92,12 @@ export default async function PointsPage() {
                 />
                 Other
               </h3>
-              <TaskList tasks={unassignedTasks} counts={todayCompletionCounts} jewel={NEUTRAL_JEWEL} />
+              <TaskList
+                tasks={unassignedTasks}
+                counts={todayCompletionCounts}
+                jewel={NEUTRAL_JEWEL}
+                categories={categories}
+              />
             </Card>
           )}
           {categoriesWithTasks.every(({ tasks }) => tasks.length === 0) &&
@@ -202,74 +206,24 @@ function TaskList({
   tasks,
   counts,
   jewel,
+  categories,
 }: {
   tasks: Task[];
   counts: Map<string, number>;
   jewel: { color: string; soft: string };
+  categories: { id: string; name: string }[];
 }) {
   return (
     <ul className="space-y-2">
-      {tasks.map((task) => {
-        const count = counts.get(task.id) ?? 0;
-        return (
-          <li key={task.id} className="flex items-center justify-between gap-3">
-            {task.repeatable ? (
-              <div
-                className="flex flex-1 items-center justify-between rounded-md border px-3 py-2 text-sm text-neutral-300"
-                style={count > 0 ? jewelChipStyle(jewel) : undefined}
-              >
-                <span>{task.name}</span>
-                <div className="flex items-center gap-3">
-                  <span className={count > 0 ? "" : "text-neutral-500"}>
-                    {count > 0 ? `${count}× today · ` : ""}
-                    {task.points} pts
-                  </span>
-                  <form action={undoRepeatableCompletion.bind(null, task.id)}>
-                    <button
-                      type="submit"
-                      disabled={count === 0}
-                      className="rounded border border-neutral-700 px-2 text-neutral-400 disabled:opacity-40"
-                    >
-                      −
-                    </button>
-                  </form>
-                  <form action={logRepeatableCompletion.bind(null, task.id)}>
-                    <button
-                      type="submit"
-                      className="rounded border border-neutral-700 px-2 text-neutral-400 hover:text-neutral-100"
-                    >
-                      +
-                    </button>
-                  </form>
-                </div>
-              </div>
-            ) : (
-              <form action={toggleTaskCompletion.bind(null, task.id)} className="flex-1">
-                <button
-                  type="submit"
-                  className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm border-neutral-800 text-neutral-300 hover:border-neutral-600"
-                  style={count > 0 ? jewelChipStyle(jewel) : undefined}
-                >
-                  <span>
-                    {count > 0 ? "✓ " : ""}
-                    {task.name}
-                  </span>
-                  <span className={count > 0 ? "" : "text-neutral-500"}>{task.points} pts</span>
-                </button>
-              </form>
-            )}
-            <form action={archiveTask.bind(null, task.id)}>
-              <button
-                type="submit"
-                aria-label="Archive task"
-                className="text-neutral-600 hover:text-red-400"
-              >
-                ✕
-              </button>
-            </form>
-          </li>
-        );
-      })}
+      {tasks.map((task) => (
+        <TaskRow
+          key={task.id}
+          task={task}
+          count={counts.get(task.id) ?? 0}
+          jewel={jewel}
+          categories={categories}
+        />
+      ))}
     </ul>
   );
 }

@@ -18,12 +18,6 @@ export function Nav() {
           <Link href="/finance" className="text-neutral-400 hover:text-neutral-100">
             Finance
           </Link>
-          <Link
-            href="/accounts/new"
-            className="text-neutral-400 hover:text-neutral-100"
-          >
-            New account
-          </Link>
           <form action={logout}>
             <button
               type="submit"

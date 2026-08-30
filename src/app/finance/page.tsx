@@ -3,7 +3,7 @@ import { listAccountsSummary, getGamificationStats } from "@/db/queries";
 
 export const dynamic = "force-dynamic";
 import { Nav } from "@/components/Nav";
-import { Card, ProgressBar, formatCurrency, formatDate } from "@/components/ui";
+import { Card, ProgressBar, buttonClass, formatCurrency, formatDate } from "@/components/ui";
 import { StreakBadge } from "@/components/StreakBadge";
 import { PaceBadge } from "@/components/PaceBadge";
 import { MinimumPaymentBadge } from "@/components/MinimumPaymentBadge";
@@ -27,6 +27,13 @@ export default async function DashboardPage() {
     <div className="flex min-h-full flex-col">
       <Nav />
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-10 px-4 py-8">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold">Finance</h1>
+          <Link href="/accounts/new" className={buttonClass}>
+            New account
+          </Link>
+        </div>
+
         <Card>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-medium">{stats.monthLabel}</h2>

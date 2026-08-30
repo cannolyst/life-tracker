@@ -3,13 +3,16 @@
 import { useActionState, useState } from "react";
 import { createAccount } from "./actions";
 import { Card, inputClass, labelClass, buttonClass } from "@/components/ui";
+import { Nav } from "@/components/Nav";
 
 export default function NewAccountPage() {
   const [type, setType] = useState<"savings" | "debt">("savings");
   const [state, formAction, pending] = useActionState(createAccount, {});
 
   return (
-    <div className="mx-auto w-full max-w-lg px-4 py-8">
+    <div className="flex min-h-full flex-col">
+      <Nav />
+      <main className="mx-auto w-full max-w-lg flex-1 px-4 py-8">
       <h1 className="mb-6 text-xl font-semibold">New account</h1>
       <Card>
         <div className="mb-5 flex gap-2 rounded-md bg-neutral-800 p-1">
@@ -163,6 +166,7 @@ export default function NewAccountPage() {
           </button>
         </form>
       </Card>
+      </main>
     </div>
   );
 }

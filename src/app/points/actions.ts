@@ -58,6 +58,36 @@ export async function archiveTask(taskId: string) {
   revalidateAll();
 }
 
+export async function updateTask(
+  taskId: string,
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const name = formData.get("name");
+  const pointsRaw = formData.get("points");
+  const categoryId = formData.get("categoryId");
+
+  if (typeof name !== "string" || !name.trim()) {
+    return { error: "Name is required" };
+  }
+  const points = Number(pointsRaw);
+  if (!Number.isInteger(points) || points <= 0) {
+    return { error: "Points must be a positive whole number" };
+  }
+
+  await db
+    .update(habitTasks)
+    .set({
+      name: name.trim(),
+      points,
+      categoryId: typeof categoryId === "string" && categoryId ? categoryId : null,
+      repeatable: formData.get("repeatable") === "on",
+    })
+    .where(eq(habitTasks.id, taskId));
+  revalidateAll();
+  return {};
+}
+
 // Non-repeatable tasks are a once-a-day checkbox: toggles the single
 // completion for today on/off.
 export async function toggleTaskCompletion(taskId: string) {
