@@ -6,6 +6,14 @@ import { inputClass, labelClass, buttonClass } from "@/components/ui";
 
 const initialState: ActionState = {};
 
+const FREQUENCY_OPTIONS = [
+  { label: "Daily", days: 1 },
+  { label: "Weekly", days: 7 },
+  { label: "Bi-weekly", days: 14 },
+  { label: "Monthly", days: 30 },
+  { label: "Bi-monthly", days: 60 },
+];
+
 export function AddAreaForm() {
   const [state, formAction, pending] = useActionState(addArea, initialState);
 
@@ -49,8 +57,14 @@ export function AddTaskForm({
           </select>
         </div>
         <div className="space-y-1">
-          <label className={labelClass}>Every N days</label>
-          <input name="frequencyDays" type="number" step="1" min="1" required defaultValue="7" className={inputClass} />
+          <label className={labelClass}>Frequency</label>
+          <select name="frequencyDays" defaultValue="7" className={inputClass}>
+            {FREQUENCY_OPTIONS.map((f) => (
+              <option key={f.label} value={f.days}>
+                {f.label}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="space-y-1">
           <label className={labelClass}>Points</label>
