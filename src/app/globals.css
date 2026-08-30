@@ -5,6 +5,41 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/*
+ * This app is themed after tracker-app's "paper" light theme: a cream
+ * page background, white cards, warm-ink text, and the five jewel accent
+ * tones. Rather than rewrite every `bg-neutral-950`/`text-neutral-100`/etc.
+ * class across the app, the Tailwind palette stops those classes already
+ * use are redefined here — every existing dark-theme class flips to its
+ * light-theme counterpart automatically, everywhere it's used.
+ */
+@theme {
+  /* neutral scale: 950/900 were the old page/card backgrounds (darkest),
+     100 was the old primary text (lightest) — inverted so those same
+     relationships now describe a light theme. */
+  --color-neutral-950: #eeebee; /* page background ("paper") */
+  --color-neutral-900: #ffffff; /* card background */
+  --color-neutral-800: rgba(42, 36, 48, 0.08); /* subtle line / input fill */
+  --color-neutral-700: rgba(42, 36, 48, 0.16); /* medium border */
+  --color-neutral-600: #b7b0be; /* ink-faint: hover borders, faint text */
+  --color-neutral-500: #8b8394; /* ink-soft: captions, muted text */
+  --color-neutral-400: #8b8394; /* ink-soft */
+  --color-neutral-300: #2a2430; /* ink: readable secondary text */
+  --color-neutral-200: #2a2430; /* ink */
+  --color-neutral-100: #2a2430; /* ink: primary text; pairs with 900 (white) for solid buttons */
+
+  /* semantic colors remapped onto the jewel palette */
+  --color-emerald-950: #e7f2ec; /* jewel emerald, soft */
+  --color-emerald-500: #2e7d5c; /* jewel emerald */
+  --color-emerald-400: #2e7d5c; /* jewel emerald */
+  --color-red-950: #f6e9ec; /* jewel ruby, soft */
+  --color-red-900: #a2314f; /* jewel ruby */
+  --color-red-400: #a2314f; /* jewel ruby */
+  --color-amber-950: #f5efdd; /* jewel gold, soft */
+  --color-amber-400: #a9822e; /* jewel gold */
+  --color-orange-400: #a9822e; /* jewel gold (streak flame) */
+}
+
 body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }

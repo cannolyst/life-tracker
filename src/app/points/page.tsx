@@ -4,6 +4,7 @@ import { Card, buttonClass, formatCurrency, formatDate } from "@/components/ui";
 import { StreakBadge } from "@/components/StreakBadge";
 import { PointsChart } from "@/components/PointsChart";
 import { AddCategoryForm, AddTaskForm, AddRewardForm } from "./PointsForms";
+import { jewelFor, NEUTRAL_JEWEL, jewelChipStyle } from "@/lib/jewels";
 import {
   toggleTaskCompletion,
   logRepeatableCompletion,
@@ -49,18 +50,30 @@ export default async function PointsPage() {
         <section className="space-y-4">
           <h2 className="text-lg font-semibold">Today&apos;s tasks</h2>
           {categoriesWithTasks.map(
-            ({ category, tasks }) =>
+            ({ category, tasks }, i) =>
               tasks.length > 0 && (
                 <Card key={category.id}>
-                  <h3 className="mb-2 font-medium">{category.name}</h3>
-                  <TaskList tasks={tasks} counts={todayCompletionCounts} />
+                  <h3 className="mb-2 flex items-center gap-2 font-medium">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: jewelFor(i).color }}
+                    />
+                    {category.name}
+                  </h3>
+                  <TaskList tasks={tasks} counts={todayCompletionCounts} jewel={jewelFor(i)} />
                 </Card>
               ),
           )}
           {unassignedTasks.length > 0 && (
             <Card>
-              <h3 className="mb-2 font-medium">Other</h3>
-              <TaskList tasks={unassignedTasks} counts={todayCompletionCounts} />
+              <h3 className="mb-2 flex items-center gap-2 font-medium">
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: NEUTRAL_JEWEL.color }}
+                />
+                Other
+              </h3>
+              <TaskList tasks={unassignedTasks} counts={todayCompletionCounts} jewel={NEUTRAL_JEWEL} />
             </Card>
           )}
           {categoriesWithTasks.every(({ tasks }) => tasks.length === 0) &&
@@ -86,48 +99,55 @@ export default async function PointsPage() {
             <p className="text-sm text-neutral-500">No rewards yet — add one below.</p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
-              {activeRewards.map((reward) => (
-                <Card key={reward.id}>
-                  <div className="mb-2 flex items-baseline justify-between">
-                    <h3 className="font-medium">{reward.name}</h3>
-                    <span className="text-sm text-neutral-400">{reward.cost} pts</span>
-                  </div>
-                  {reward.priceUsd && (
-                    <p className="mb-2 text-sm text-neutral-500">
-                      ~{formatCurrency(Number(reward.priceUsd))}
-                    </p>
-                  )}
-                  {reward.link && (
-                    <a
-                      href={reward.link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mb-2 block text-sm text-neutral-400 underline"
-                    >
-                      Link
-                    </a>
-                  )}
-                  <div className="flex gap-2">
-                    <form action={redeemReward.bind(null, reward.id)}>
-                      <button
-                        type="submit"
-                        disabled={balance < reward.cost}
-                        className={buttonClass}
+              {activeRewards.map((reward, i) => {
+                const jewel = jewelFor(i);
+                const affordable = balance >= reward.cost;
+                return (
+                  <Card key={reward.id}>
+                    <div className="mb-2 flex items-baseline justify-between">
+                      <h3 className="font-medium">{reward.name}</h3>
+                      <span className="text-sm" style={{ color: jewel.color }}>
+                        {reward.cost} pts
+                      </span>
+                    </div>
+                    {reward.priceUsd && (
+                      <p className="mb-2 text-sm text-neutral-500">
+                        ~{formatCurrency(Number(reward.priceUsd))}
+                      </p>
+                    )}
+                    {reward.link && (
+                      <a
+                        href={reward.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mb-2 block text-sm text-neutral-400 underline"
                       >
-                        Redeem
-                      </button>
-                    </form>
-                    <form action={archiveReward.bind(null, reward.id)}>
-                      <button
-                        type="submit"
-                        className="rounded-md border border-neutral-700 px-3 py-2 text-sm text-neutral-400 hover:text-neutral-100"
-                      >
-                        Archive
-                      </button>
-                    </form>
-                  </div>
-                </Card>
-              ))}
+                        Link
+                      </a>
+                    )}
+                    <div className="flex gap-2">
+                      <form action={redeemReward.bind(null, reward.id)}>
+                        <button
+                          type="submit"
+                          disabled={!affordable}
+                          className={`${buttonClass} disabled:bg-neutral-800 disabled:text-neutral-500`}
+                          style={affordable ? { backgroundColor: jewel.color, color: "#fff" } : undefined}
+                        >
+                          Redeem
+                        </button>
+                      </form>
+                      <form action={archiveReward.bind(null, reward.id)}>
+                        <button
+                          type="submit"
+                          className="rounded-md border border-neutral-700 px-3 py-2 text-sm text-neutral-400 hover:text-neutral-100"
+                        >
+                          Archive
+                        </button>
+                      </form>
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
           )}
           <Card>
@@ -161,9 +181,11 @@ export default async function PointsPage() {
 function TaskList({
   tasks,
   counts,
+  jewel,
 }: {
   tasks: Task[];
   counts: Map<string, number>;
+  jewel: { color: string; soft: string };
 }) {
   return (
     <ul className="space-y-2">
@@ -172,10 +194,13 @@ function TaskList({
         return (
           <li key={task.id} className="flex items-center justify-between gap-3">
             {task.repeatable ? (
-              <div className="flex flex-1 items-center justify-between rounded-md border border-neutral-800 px-3 py-2 text-sm text-neutral-300">
+              <div
+                className="flex flex-1 items-center justify-between rounded-md border px-3 py-2 text-sm text-neutral-300"
+                style={count > 0 ? jewelChipStyle(jewel) : undefined}
+              >
                 <span>{task.name}</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-neutral-500">
+                  <span className={count > 0 ? "" : "text-neutral-500"}>
                     {count > 0 ? `${count}× today · ` : ""}
                     {task.points} pts
                   </span>
@@ -202,17 +227,14 @@ function TaskList({
               <form action={toggleTaskCompletion.bind(null, task.id)} className="flex-1">
                 <button
                   type="submit"
-                  className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm ${
-                    count > 0
-                      ? "border-emerald-800 bg-emerald-950 text-emerald-300"
-                      : "border-neutral-800 text-neutral-300 hover:border-neutral-600"
-                  }`}
+                  className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm border-neutral-800 text-neutral-300 hover:border-neutral-600"
+                  style={count > 0 ? jewelChipStyle(jewel) : undefined}
                 >
                   <span>
                     {count > 0 ? "✓ " : ""}
                     {task.name}
                   </span>
-                  <span className="text-neutral-500">{task.points} pts</span>
+                  <span className={count > 0 ? "" : "text-neutral-500"}>{task.points} pts</span>
                 </button>
               </form>
             )}

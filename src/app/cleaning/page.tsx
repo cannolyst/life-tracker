@@ -3,7 +3,11 @@ import { Nav } from "@/components/Nav";
 import { Card, formatDate } from "@/components/ui";
 import { AddAreaForm, AddTaskForm } from "./CleaningForms";
 import { markDone, archiveTask } from "./actions";
+import { JEWELS, jewelFor, NEUTRAL_JEWEL, jewelChipStyle } from "@/lib/jewels";
 import type { CleaningStatus } from "@/lib/cleaningStatus";
+
+const RUBY = JEWELS[3];
+const GOLD = JEWELS[4];
 
 export const dynamic = "force-dynamic";
 
@@ -27,18 +31,30 @@ export default async function CleaningPage() {
 
         <section className="space-y-4">
           {areasWithTasks.map(
-            ({ area, tasks }) =>
+            ({ area, tasks }, i) =>
               tasks.length > 0 && (
                 <Card key={area.id}>
-                  <h3 className="mb-2 font-medium">{area.name}</h3>
-                  <TaskList tasks={tasks} />
+                  <h3 className="mb-2 flex items-center gap-2 font-medium">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: jewelFor(i).color }}
+                    />
+                    {area.name}
+                  </h3>
+                  <TaskList tasks={tasks} jewel={jewelFor(i)} />
                 </Card>
               ),
           )}
           {unassignedTasks.length > 0 && (
             <Card>
-              <h3 className="mb-2 font-medium">Other</h3>
-              <TaskList tasks={unassignedTasks} />
+              <h3 className="mb-2 flex items-center gap-2 font-medium">
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: NEUTRAL_JEWEL.color }}
+                />
+                Other
+              </h3>
+              <TaskList tasks={unassignedTasks} jewel={NEUTRAL_JEWEL} />
             </Card>
           )}
           {areasWithTasks.every(({ tasks }) => tasks.length === 0) &&
@@ -62,10 +78,9 @@ export default async function CleaningPage() {
   );
 }
 
-const STATUS_STYLE: Record<CleaningStatus, string> = {
-  overdue: "border-red-900 bg-red-950 text-red-300",
-  "due-today": "border-amber-800 bg-amber-950 text-amber-300",
-  upcoming: "border-neutral-800 text-neutral-300",
+const STATUS_JEWEL: Partial<Record<CleaningStatus, { color: string; soft: string }>> = {
+  overdue: RUBY,
+  "due-today": GOLD,
 };
 
 const STATUS_LABEL: Record<CleaningStatus, string> = {
@@ -74,42 +89,48 @@ const STATUS_LABEL: Record<CleaningStatus, string> = {
   upcoming: "Due",
 };
 
-function TaskList({ tasks }: { tasks: Task[] }) {
+function TaskList({ tasks, jewel }: { tasks: Task[]; jewel: { color: string; soft: string } }) {
   return (
     <ul className="space-y-2">
-      {tasks.map((task) => (
-        <li key={task.id} className="flex items-center justify-between gap-3">
-          <form action={markDone.bind(null, task.id)} className="flex-1">
-            <button
-              type="submit"
-              className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm ${
-                task.doneToday
-                  ? "border-emerald-800 bg-emerald-950 text-emerald-300"
-                  : STATUS_STYLE[task.status]
-              }`}
-            >
-              <span>
-                {task.doneToday ? "✓ " : ""}
-                {task.name}
-              </span>
-              <span className="text-xs text-neutral-500">
-                {task.doneToday ? "Done today" : `${STATUS_LABEL[task.status]} ${formatDate(task.dueDate)}`}
-                {" · "}
-                {task.points} pts
-              </span>
-            </button>
-          </form>
-          <form action={archiveTask.bind(null, task.id)}>
-            <button
-              type="submit"
-              aria-label="Archive task"
-              className="text-neutral-600 hover:text-red-400"
-            >
-              ✕
-            </button>
-          </form>
-        </li>
-      ))}
+      {tasks.map((task) => {
+        const statusJewel = STATUS_JEWEL[task.status];
+        return (
+          <li key={task.id} className="flex items-center justify-between gap-3">
+            <form action={markDone.bind(null, task.id)} className="flex-1">
+              <button
+                type="submit"
+                className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm border-neutral-800 text-neutral-300"
+                style={
+                  task.doneToday
+                    ? jewelChipStyle(jewel)
+                    : statusJewel
+                      ? jewelChipStyle(statusJewel)
+                      : undefined
+                }
+              >
+                <span>
+                  {task.doneToday ? "✓ " : ""}
+                  {task.name}
+                </span>
+                <span className={task.doneToday || statusJewel ? "text-xs" : "text-xs text-neutral-500"}>
+                  {task.doneToday ? "Done today" : `${STATUS_LABEL[task.status]} ${formatDate(task.dueDate)}`}
+                  {" · "}
+                  {task.points} pts
+                </span>
+              </button>
+            </form>
+            <form action={archiveTask.bind(null, task.id)}>
+              <button
+                type="submit"
+                aria-label="Archive task"
+                className="text-neutral-600 hover:text-red-400"
+              >
+                ✕
+              </button>
+            </form>
+          </li>
+        );
+      })}
     </ul>
   );
 }

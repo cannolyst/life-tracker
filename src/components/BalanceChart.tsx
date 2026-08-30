@@ -27,23 +27,23 @@ export function BalanceChart({
   return (
     <ResponsiveContainer width="100%" height={220}>
       <LineChart data={points} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-        <CartesianGrid stroke="#262626" strokeDasharray="3 3" />
-        <XAxis dataKey="date" stroke="#737373" fontSize={12} />
+        <CartesianGrid stroke="rgba(42,36,48,0.10)" strokeDasharray="3 3" />
+        <XAxis dataKey="date" stroke="#8B8394" fontSize={12} />
         <YAxis
-          stroke="#737373"
+          stroke="#8B8394"
           fontSize={12}
           tickFormatter={(v) => formatCurrency(v)}
           width={80}
         />
         <Tooltip
-          contentStyle={{ background: "#171717", border: "1px solid #404040" }}
-          labelStyle={{ color: "#d4d4d4" }}
+          contentStyle={{ background: "#FFFFFF", border: "1px solid rgba(42,36,48,0.15)" }}
+          labelStyle={{ color: "#2A2430" }}
           formatter={(value) => formatCurrency(Number(value))}
         />
         <Line
           type="monotone"
           dataKey="balance"
-          stroke="#10b981"
+          stroke="#2E7D5C"
           strokeWidth={2}
           dot={false}
         />
