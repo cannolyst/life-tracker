@@ -213,3 +213,58 @@ export const cleaningCompletions = pgTable("cleaning_completions", {
     .notNull()
     .defaultNow(),
 });
+
+// --- Lists (books to read, movies to watch, etc. — no points) ---
+
+export const listCategories = pgTable("list_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const listItems = pgTable("list_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  categoryId: uuid("category_id")
+    .notNull()
+    .references(() => listCategories.id, { onDelete: "cascade" }),
+  text: text("text").notNull(),
+  done: boolean("done").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// --- To-do (flat list — no points) ---
+
+export const todos = pgTable("todos", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  text: text("text").notNull(),
+  done: boolean("done").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// --- Year in review (books read, concerts, trips, etc. — no points) ---
+
+export const yearReviewCategories = pgTable("year_review_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const yearReviewItems = pgTable("year_review_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  categoryId: uuid("category_id")
+    .notNull()
+    .references(() => yearReviewCategories.id, { onDelete: "cascade" }),
+  text: text("text").notNull(),
+  date: date("date").notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

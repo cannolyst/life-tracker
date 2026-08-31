@@ -8,7 +8,7 @@ export function Nav() {
         <Link href="/" className="font-semibold text-neutral-100">
           Life Tracker
         </Link>
-        <nav className="flex items-center gap-4 text-sm">
+        <nav className="flex flex-wrap items-center gap-4 text-sm">
           <Link href="/points" className="text-neutral-400 hover:text-neutral-100">
             Points
           </Link>
@@ -17,6 +17,15 @@ export function Nav() {
           </Link>
           <Link href="/finance" className="text-neutral-400 hover:text-neutral-100">
             Finance
+          </Link>
+          <Link href="/lists" className="text-neutral-400 hover:text-neutral-100">
+            Lists
+          </Link>
+          <Link href="/todo" className="text-neutral-400 hover:text-neutral-100">
+            To-do
+          </Link>
+          <Link href="/year-review" className="text-neutral-400 hover:text-neutral-100">
+            Year in review
           </Link>
           <form action={logout}>
             <button

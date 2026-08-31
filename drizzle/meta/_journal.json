@@ -22,6 +22,13 @@
       "when": 1788123446255,
       "tag": "0002_blushing_excalibur",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788210110405,
+      "tag": "0003_clean_puppet_master",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { eq, sum } from "drizzle-orm";
+import { eq, sum, desc } from "drizzle-orm";
 import { db } from "./index";
 import {
   accounts,
@@ -15,6 +15,11 @@ import {
   cleaningAreas,
   cleaningTasks,
   cleaningCompletions,
+  listCategories,
+  listItems,
+  todos,
+  yearReviewCategories,
+  yearReviewItems,
 } from "./schema";
 import {
   projectSavingsDate,
@@ -496,4 +501,52 @@ export async function getCleaningDashboardData() {
   const unassignedTasks = tasksWithStatus.filter((t) => !t.areaId);
 
   return { areas, areasWithTasks, unassignedTasks };
+}
+
+// --- Lists (books to read, movies to watch, etc.) ---
+
+export async function getListsData() {
+  const categories = await db.select().from(listCategories).orderBy(listCategories.createdAt);
+  const items = await db.select().from(listItems).orderBy(listItems.createdAt);
+
+  const categoriesWithItems = categories.map((category) => ({
+    category,
+    items: items.filter((i) => i.categoryId === category.id),
+  }));
+
+  return { categoriesWithItems };
+}
+
+// --- To-do ---
+
+export async function getTodos() {
+  return db.select().from(todos).orderBy(desc(todos.createdAt));
+}
+
+// --- Year in review ---
+
+function yearOfDateKey(dateKey: string): number {
+  return Number(dateKey.slice(0, 4));
+}
+
+export async function getYearReviewData(selectedYear?: number) {
+  const categories = await db
+    .select()
+    .from(yearReviewCategories)
+    .orderBy(yearReviewCategories.createdAt);
+  const allItems = await db.select().from(yearReviewItems).orderBy(desc(yearReviewItems.date));
+
+  const currentYear = yearOfDateKey(dateKeyInAppTimezone());
+  const yearsWithData = allItems.map((i) => yearOfDateKey(i.date));
+  const years = Array.from(new Set([currentYear, ...yearsWithData])).sort((a, b) => b - a);
+
+  const year = selectedYear ?? currentYear;
+  const itemsForYear = allItems.filter((i) => yearOfDateKey(i.date) === year);
+
+  const categoriesWithItems = categories.map((category) => ({
+    category,
+    items: itemsForYear.filter((i) => i.categoryId === category.id),
+  }));
+
+  return { years, year, categoriesWithItems };
 }
