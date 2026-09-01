@@ -282,6 +282,56 @@ export async function getDebtAccountDetail(accountId: string) {
   };
 }
 
+export type FinanceChartGranularity = "week" | "month";
+export type FinanceChartPoint = { dateKey: string; label: string; saved: number; paidDebt: number };
+
+function buildFinanceChart(
+  rows: { date: string; amount: number; accountType: string }[],
+  granularity: FinanceChartGranularity,
+): FinanceChartPoint[] {
+  const savedSums = new Map<string, number>();
+  const paidDebtSums = new Map<string, number>();
+  for (const row of rows) {
+    const d = new Date(`${row.date}T00:00:00Z`);
+    const key = chartBucketKey(granularity, d);
+    if (row.accountType === "savings" && row.amount > 0) {
+      savedSums.set(key, (savedSums.get(key) ?? 0) + row.amount);
+    }
+    if (row.accountType === "debt" && row.amount < 0) {
+      paidDebtSums.set(key, (paidDebtSums.get(key) ?? 0) + -row.amount);
+    }
+  }
+
+  const todayOnly = dateOnlyInAppTimezone();
+  const count = CHART_BUCKET_COUNT[granularity];
+  const points: FinanceChartPoint[] = [];
+
+  for (let i = count - 1; i >= 0; i--) {
+    const d =
+      granularity === "week"
+        ? new Date(mondayOfUtc(todayOnly).getTime() - i * 7 * MS_PER_DAY)
+        : new Date(Date.UTC(todayOnly.getUTCFullYear(), todayOnly.getUTCMonth() - i, 1));
+    const dateKey = chartBucketKey(granularity, d);
+    points.push({
+      dateKey,
+      label: chartBucketLabel(granularity, d),
+      saved: Math.round((savedSums.get(dateKey) ?? 0) * 100) / 100,
+      paidDebt: Math.round((paidDebtSums.get(dateKey) ?? 0) * 100) / 100,
+    });
+  }
+
+  return points;
+}
+
+function buildAllFinanceCharts(
+  rows: { date: string; amount: number; accountType: string }[],
+): Record<FinanceChartGranularity, FinanceChartPoint[]> {
+  return {
+    week: buildFinanceChart(rows, "week"),
+    month: buildFinanceChart(rows, "month"),
+  };
+}
+
 export async function getGamificationStats() {
   const rows = await db
     .select({
@@ -329,6 +379,10 @@ export async function getGamificationStats() {
     timeZone: "UTC",
   }).format(monthStart);
 
+  const chartData = buildAllFinanceCharts(
+    rows.map((r) => ({ date: r.date, amount: Number(r.amount), accountType: r.accountType })),
+  );
+
   return {
     lifetimeSaved,
     lifetimePaidDebt,
@@ -337,6 +391,7 @@ export async function getGamificationStats() {
     monthPaidDebt,
     daysHitGoal: monthGoalDays.size,
     daysInMonthSoFar,
+    chartData,
   };
 }
 

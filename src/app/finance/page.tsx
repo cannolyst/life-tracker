@@ -7,6 +7,7 @@ import { Card, ProgressBar, buttonClass, formatCurrency, formatDate } from "@/co
 import { StreakBadge } from "@/components/StreakBadge";
 import { PaceBadge } from "@/components/PaceBadge";
 import { MinimumPaymentBadge } from "@/components/MinimumPaymentBadge";
+import { FinanceChart } from "@/components/FinanceChart";
 
 export default async function DashboardPage() {
   const [{ savingsSummaries, debtSummaries }, stats] = await Promise.all([
@@ -71,6 +72,10 @@ export default async function DashboardPage() {
               </p>
             </div>
           </div>
+        </Card>
+
+        <Card>
+          <FinanceChart data={stats.chartData} />
         </Card>
 
         <section>
