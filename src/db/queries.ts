@@ -22,6 +22,8 @@ import {
   yearReviewItems,
   people,
   yearReviewItemPeople,
+  places,
+  yearReviewItemPlaces,
 } from "./schema";
 import {
   projectSavingsDate,
@@ -681,6 +683,8 @@ export async function getYearReviewData(selectedYear?: number) {
   const allItems = await db.select().from(yearReviewItems).orderBy(desc(yearReviewItems.date));
   const allPeople = await db.select().from(people).orderBy(people.name);
   const itemPeopleLinks = await db.select().from(yearReviewItemPeople);
+  const allPlaces = await db.select().from(places).orderBy(places.name);
+  const itemPlaceLinks = await db.select().from(yearReviewItemPlaces);
 
   const peopleById = new Map(allPeople.map((p) => [p.id, p]));
   const peopleByItemId = new Map<string, { id: string; name: string }[]>();
@@ -692,6 +696,16 @@ export async function getYearReviewData(selectedYear?: number) {
     peopleByItemId.set(link.itemId, list);
   }
 
+  const placesById = new Map(allPlaces.map((p) => [p.id, p]));
+  const placesByItemId = new Map<string, { id: string; name: string }[]>();
+  for (const link of itemPlaceLinks) {
+    const place = placesById.get(link.placeId);
+    if (!place) continue;
+    const list = placesByItemId.get(link.itemId) ?? [];
+    list.push(place);
+    placesByItemId.set(link.itemId, list);
+  }
+
   const currentYear = yearOfDateKey(dateKeyInAppTimezone());
   const yearsWithData = allItems.map((i) => yearOfDateKey(i.date));
   const years = Array.from(new Set([currentYear, ...yearsWithData])).sort((a, b) => b - a);
@@ -699,12 +713,16 @@ export async function getYearReviewData(selectedYear?: number) {
   const year = selectedYear ?? currentYear;
   const itemsForYear = allItems
     .filter((i) => yearOfDateKey(i.date) === year)
-    .map((i) => ({ ...i, people: peopleByItemId.get(i.id) ?? [] }));
+    .map((i) => ({
+      ...i,
+      people: peopleByItemId.get(i.id) ?? [],
+      places: placesByItemId.get(i.id) ?? [],
+    }));
 
   const categoriesWithItems = categories.map((category) => ({
     category,
     items: itemsForYear.filter((i) => i.categoryId === category.id),
   }));
 
-  return { years, year, categoriesWithItems, allPeople };
+  return { years, year, categoriesWithItems, allPeople, allPlaces };
 }

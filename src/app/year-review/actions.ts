@@ -3,7 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { yearReviewCategories, yearReviewItems, people, yearReviewItemPeople } from "@/db/schema";
+import {
+  yearReviewCategories,
+  yearReviewItems,
+  people,
+  yearReviewItemPeople,
+  places,
+  yearReviewItemPlaces,
+} from "@/db/schema";
 
 export type ActionState = { error?: string };
 
@@ -37,6 +44,7 @@ export async function addYearReviewItem(
   const text = formData.get("text");
   const date = formData.get("date");
   const peopleRaw = formData.get("people");
+  const placesRaw = formData.get("places");
   if (typeof text !== "string" || !text.trim()) {
     return { error: "Text is required" };
   }
@@ -72,6 +80,31 @@ export async function addYearReviewItem(
     await db
       .insert(yearReviewItemPeople)
       .values(personIds.map((personId) => ({ itemId: item.id, personId })));
+  }
+
+  const placeNames =
+    typeof placesRaw === "string"
+      ? Array.from(new Set(placesRaw.split(",").map((n) => n.trim()).filter(Boolean)))
+      : [];
+
+  if (placeNames.length > 0) {
+    const existing = await db.select().from(places);
+    const existingByLowerName = new Map(existing.map((p) => [p.name.toLowerCase(), p]));
+
+    const placeIds: string[] = [];
+    for (const name of placeNames) {
+      const match = existingByLowerName.get(name.toLowerCase());
+      if (match) {
+        placeIds.push(match.id);
+      } else {
+        const [created] = await db.insert(places).values({ name }).returning();
+        placeIds.push(created.id);
+      }
+    }
+
+    await db
+      .insert(yearReviewItemPlaces)
+      .values(placeIds.map((placeId) => ({ itemId: item.id, placeId })));
   }
 
   revalidateAll();

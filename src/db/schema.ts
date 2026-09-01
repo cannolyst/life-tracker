@@ -292,3 +292,26 @@ export const yearReviewItemPeople = pgTable(
   },
   (table) => [primaryKey({ columns: [table.itemId, table.personId] })],
 );
+
+// Places you can tag on a year-in-review item (e.g. what city).
+// Reused across items so the same place doesn't get re-created each time.
+export const places = pgTable("places", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const yearReviewItemPlaces = pgTable(
+  "year_review_item_places",
+  {
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => yearReviewItems.id, { onDelete: "cascade" }),
+    placeId: uuid("place_id")
+      .notNull()
+      .references(() => places.id, { onDelete: "cascade" }),
+  },
+  (table) => [primaryKey({ columns: [table.itemId, table.placeId] })],
+);

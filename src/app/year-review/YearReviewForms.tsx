@@ -27,13 +27,16 @@ export function AddYearReviewCategoryForm() {
 export function AddYearReviewItemForm({
   categoryId,
   people,
+  places,
 }: {
   categoryId: string;
   people: { id: string; name: string }[];
+  places: { id: string; name: string }[];
 }) {
   const action = addYearReviewItem.bind(null, categoryId);
   const [state, formAction, pending] = useActionState(action, initialState);
-  const datalistId = `people-${categoryId}`;
+  const peopleDatalistId = `people-${categoryId}`;
+  const placesDatalistId = `places-${categoryId}`;
 
   return (
     <form action={formAction} className="flex flex-wrap items-end gap-2">
@@ -44,11 +47,24 @@ export function AddYearReviewItemForm({
         <input
           name="people"
           placeholder="With... (comma-separated)"
-          list={datalistId}
+          list={peopleDatalistId}
           className={inputClass}
         />
-        <datalist id={datalistId}>
+        <datalist id={peopleDatalistId}>
           {people.map((p) => (
+            <option key={p.id} value={p.name} />
+          ))}
+        </datalist>
+      </div>
+      <div className="min-w-[140px] flex-1">
+        <input
+          name="places"
+          placeholder="Where... (comma-separated)"
+          list={placesDatalistId}
+          className={inputClass}
+        />
+        <datalist id={placesDatalistId}>
+          {places.map((p) => (
             <option key={p.id} value={p.name} />
           ))}
         </datalist>
