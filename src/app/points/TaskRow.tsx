@@ -109,7 +109,7 @@ export function TaskRow({
     <li className="flex items-center justify-between gap-3">
       {task.repeatable ? (
         <div
-          className="flex flex-1 items-center justify-between rounded-md border px-3 py-2 text-sm text-neutral-300"
+          className="flex flex-1 flex-col gap-2 rounded-md border px-3 py-2 text-sm text-neutral-300 sm:flex-row sm:items-center sm:justify-between"
           style={count > 0 ? jewelChipStyle(jewel) : undefined}
         >
           <span>{task.name}</span>
@@ -141,7 +141,7 @@ export function TaskRow({
         <form action={toggleTaskCompletion.bind(null, task.id)} className="flex-1">
           <button
             type="submit"
-            className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm border-neutral-800 text-neutral-300 hover:border-neutral-600"
+            className="flex w-full flex-col items-start gap-1 rounded-md border px-3 py-2 text-left text-sm border-neutral-800 text-neutral-300 hover:border-neutral-600 sm:flex-row sm:items-center sm:justify-between"
             style={count > 0 ? jewelChipStyle(jewel) : undefined}
           >
             <span>

@@ -128,9 +128,9 @@ export default async function PointsPage() {
                 const affordable = balance >= reward.cost;
                 return (
                   <Card key={reward.id}>
-                    <div className="mb-2 flex items-baseline justify-between">
+                    <div className="mb-2 flex items-baseline justify-between gap-2">
                       <h3 className="font-medium">{reward.name}</h3>
-                      <span className="text-sm" style={{ color: jewel.color }}>
+                      <span className="whitespace-nowrap text-sm" style={{ color: jewel.color }}>
                         {reward.cost} pts
                       </span>
                     </div>

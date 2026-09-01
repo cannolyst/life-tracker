@@ -82,9 +82,9 @@ export default async function DashboardPage() {
               {savingsSummaries.map((s) => (
                 <Link key={s.account.id} href={`/savings/${s.account.id}`}>
                   <Card className="transition hover:border-neutral-600">
-                    <div className="mb-2 flex items-baseline justify-between">
+                    <div className="mb-2 flex items-baseline justify-between gap-2">
                       <h3 className="font-medium">{s.account.name}</h3>
-                      <span className="text-sm text-neutral-400">
+                      <span className="whitespace-nowrap text-sm text-neutral-400">
                         {formatCurrency(s.dailyGoal)}/day
                       </span>
                     </div>
@@ -124,9 +124,9 @@ export default async function DashboardPage() {
               {debtSummaries.map((d) => (
                 <Link key={d.account.id} href={`/debt/${d.account.id}`}>
                   <Card className="transition hover:border-neutral-600">
-                    <div className="mb-2 flex items-baseline justify-between">
+                    <div className="mb-2 flex items-baseline justify-between gap-2">
                       <h3 className="font-medium">{d.account.name}</h3>
-                      <span className="text-sm text-neutral-400">
+                      <span className="whitespace-nowrap text-sm text-neutral-400">
                         {(d.apr * 100).toFixed(2)}% APR
                       </span>
                     </div>
