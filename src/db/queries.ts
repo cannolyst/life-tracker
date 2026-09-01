@@ -671,8 +671,13 @@ export async function getTodos() {
 
 // --- Year in review ---
 
-function yearOfDateKey(dateKey: string): number {
-  return Number(dateKey.slice(0, 4));
+// Entries can be as precise as a full date, or as loose as just a year, so
+// they're sorted by the most specific value each one actually has (falling
+// back to the 1st of the month, or Jan 1st, for anything looser).
+function yearReviewItemSortKey(item: { year: number; month: number | null; date: string | null }) {
+  if (item.date) return item.date;
+  if (item.month) return `${item.year}-${String(item.month).padStart(2, "0")}-01`;
+  return `${item.year}-01-01`;
 }
 
 export async function getYearReviewData(selectedYear?: number) {
@@ -680,7 +685,7 @@ export async function getYearReviewData(selectedYear?: number) {
     .select()
     .from(yearReviewCategories)
     .orderBy(yearReviewCategories.createdAt);
-  const allItems = await db.select().from(yearReviewItems).orderBy(desc(yearReviewItems.date));
+  const allItems = await db.select().from(yearReviewItems).orderBy(desc(yearReviewItems.createdAt));
   const allPeople = await db.select().from(people).orderBy(people.name);
   const itemPeopleLinks = await db.select().from(yearReviewItemPeople);
   const allPlaces = await db.select().from(places).orderBy(places.name);
@@ -706,13 +711,15 @@ export async function getYearReviewData(selectedYear?: number) {
     placesByItemId.set(link.itemId, list);
   }
 
-  const currentYear = yearOfDateKey(dateKeyInAppTimezone());
-  const yearsWithData = allItems.map((i) => yearOfDateKey(i.date));
-  const years = Array.from(new Set([currentYear, ...yearsWithData])).sort((a, b) => b - a);
+  const currentYear = Number(dateKeyInAppTimezone().slice(0, 4));
+  const years = Array.from(new Set([currentYear, ...allItems.map((i) => i.year)])).sort(
+    (a, b) => b - a,
+  );
 
   const year = selectedYear ?? currentYear;
   const itemsForYear = allItems
-    .filter((i) => yearOfDateKey(i.date) === year)
+    .filter((i) => i.year === year)
+    .sort((a, b) => (yearReviewItemSortKey(a) < yearReviewItemSortKey(b) ? 1 : -1))
     .map((i) => ({
       ...i,
       people: peopleByItemId.get(i.id) ?? [],

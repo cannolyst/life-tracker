@@ -264,7 +264,12 @@ export const yearReviewItems = pgTable("year_review_items", {
     .notNull()
     .references(() => yearReviewCategories.id, { onDelete: "cascade" }),
   text: text("text").notNull(),
-  date: date("date").notNull().defaultNow(),
+  // Precision varies per entry: year is always known; month and the exact
+  // day are filled in only as far as the entry's real precision goes
+  // (year-only, month+year, or a full date).
+  year: integer("year").notNull(),
+  month: integer("month"),
+  date: date("date"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

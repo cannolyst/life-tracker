@@ -64,23 +64,68 @@ async function resolveTagIds(
   return ids;
 }
 
+// Reads year (required), plus month and day as far as they were actually
+// filled in — supports year-only, month+year, or a full date.
+function parseYearMonthDay(
+  formData: FormData,
+): { year: number; month: number | null; date: string | null } | { error: string } {
+  const yearRaw = formData.get("year");
+  if (typeof yearRaw !== "string" || !/^\d{4}$/.test(yearRaw.trim())) {
+    return { error: "Year is required (4 digits)" };
+  }
+  const year = Number(yearRaw.trim());
+
+  const monthRaw = formData.get("month");
+  const monthStr = typeof monthRaw === "string" ? monthRaw.trim() : "";
+  if (!monthStr) {
+    return { year, month: null, date: null };
+  }
+  const month = Number(monthStr);
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    return { error: "Month must be between 1 and 12" };
+  }
+
+  const dayRaw = formData.get("day");
+  const dayStr = typeof dayRaw === "string" ? dayRaw.trim() : "";
+  if (!dayStr) {
+    return { year, month, date: null };
+  }
+  const day = Number(dayStr);
+  if (!Number.isInteger(day) || day < 1 || day > 31) {
+    return { error: "Day must be between 1 and 31" };
+  }
+
+  const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const parsed = new Date(`${dateStr}T00:00:00Z`);
+  const isValidCalendarDate =
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day;
+  if (!isValidCalendarDate) {
+    return { error: "That's not a valid date" };
+  }
+
+  return { year, month, date: dateStr };
+}
+
 export async function addYearReviewItem(
   categoryId: string,
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   const text = formData.get("text");
-  const date = formData.get("date");
   if (typeof text !== "string" || !text.trim()) {
     return { error: "Text is required" };
   }
-  if (typeof date !== "string" || !date) {
-    return { error: "Date is required" };
+
+  const parsedDate = parseYearMonthDay(formData);
+  if ("error" in parsedDate) {
+    return { error: parsedDate.error };
   }
 
   const [item] = await db
     .insert(yearReviewItems)
-    .values({ categoryId, text: text.trim(), date })
+    .values({ categoryId, text: text.trim(), ...parsedDate })
     .returning();
 
   const personIds = await resolveTagIds(people, formData.get("people"));
@@ -107,17 +152,18 @@ export async function updateYearReviewItem(
   formData: FormData,
 ): Promise<ActionState> {
   const text = formData.get("text");
-  const date = formData.get("date");
   if (typeof text !== "string" || !text.trim()) {
     return { error: "Text is required" };
   }
-  if (typeof date !== "string" || !date) {
-    return { error: "Date is required" };
+
+  const parsedDate = parseYearMonthDay(formData);
+  if ("error" in parsedDate) {
+    return { error: parsedDate.error };
   }
 
   await db
     .update(yearReviewItems)
-    .set({ text: text.trim(), date })
+    .set({ text: text.trim(), ...parsedDate })
     .where(eq(yearReviewItems.id, itemId));
 
   const personIds = await resolveTagIds(people, formData.get("people"));

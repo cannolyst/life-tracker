@@ -2,13 +2,17 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { updateYearReviewItem, deleteYearReviewItem, type ActionState } from "./actions";
-import { inputClass, labelClass, buttonClass, formatDate } from "@/components/ui";
+import { inputClass, labelClass, buttonClass } from "@/components/ui";
+import { YearMonthDayFields } from "./YearMonthDayFields";
+import { formatYearReviewDate } from "./dateDisplay";
 
 type Tag = { id: string; name: string };
 type Item = {
   id: string;
   text: string;
-  date: string;
+  year: number;
+  month: number | null;
+  date: string | null;
   people: Tag[];
   places: Tag[];
 };
@@ -80,10 +84,11 @@ export function YearReviewItemRow({
               </datalist>
             </div>
           </div>
-          <div className="space-y-1">
-            <label className={labelClass}>Date</label>
-            <input name="date" type="date" defaultValue={item.date} required className={inputClass} />
-          </div>
+          <YearMonthDayFields
+            defaultYear={String(item.year)}
+            defaultMonth={item.month ? String(item.month) : ""}
+            defaultDay={item.date ? String(Number(item.date.slice(8, 10))) : ""}
+          />
           {state?.error && <p className="text-sm text-red-400">{state.error}</p>}
           <div className="flex gap-2">
             <button type="submit" disabled={pending} className={buttonClass}>
@@ -106,7 +111,7 @@ export function YearReviewItemRow({
     <li className="flex items-start justify-between gap-2 text-sm">
       <div>
         <span>
-          {item.text} <span className="text-neutral-500">· {formatDate(item.date)}</span>
+          {item.text} <span className="text-neutral-500">· {formatYearReviewDate(item)}</span>
         </span>
         {(item.people.length > 0 || item.places.length > 0) && (
           <div className="mt-1 flex flex-wrap gap-1">

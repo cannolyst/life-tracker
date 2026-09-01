@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { addYearReviewCategory, addYearReviewItem, type ActionState } from "./actions";
 import { inputClass, labelClass, buttonClass } from "@/components/ui";
 import { dateKeyInAppTimezone } from "@/lib/timezone";
+import { YearMonthDayFields } from "./YearMonthDayFields";
 
 const initialState: ActionState = {};
 
@@ -69,13 +70,11 @@ export function AddYearReviewItemForm({
           ))}
         </datalist>
       </div>
-      <div>
-        <input
-          name="date"
-          type="date"
-          required
-          defaultValue={dateKeyInAppTimezone()}
-          className={inputClass}
+      <div className="w-full sm:w-auto">
+        <YearMonthDayFields
+          defaultYear={dateKeyInAppTimezone().slice(0, 4)}
+          defaultMonth=""
+          defaultDay=""
         />
       </div>
       <button type="submit" disabled={pending} className={buttonClass}>
