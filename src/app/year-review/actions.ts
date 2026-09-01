@@ -36,6 +36,34 @@ export async function deleteYearReviewCategory(categoryId: string) {
   revalidateAll();
 }
 
+// Parses a comma-separated tag field, and finds-or-creates a row per name
+// (case-insensitive match) in the given reusable-tag table (people/places).
+async function resolveTagIds(
+  table: typeof people | typeof places,
+  rawValue: FormDataEntryValue | null,
+): Promise<string[]> {
+  const names =
+    typeof rawValue === "string"
+      ? Array.from(new Set(rawValue.split(",").map((n) => n.trim()).filter(Boolean)))
+      : [];
+  if (names.length === 0) return [];
+
+  const existing = await db.select().from(table);
+  const existingByLowerName = new Map(existing.map((row) => [row.name.toLowerCase(), row]));
+
+  const ids: string[] = [];
+  for (const name of names) {
+    const match = existingByLowerName.get(name.toLowerCase());
+    if (match) {
+      ids.push(match.id);
+    } else {
+      const [created] = await db.insert(table).values({ name }).returning();
+      ids.push(created.id);
+    }
+  }
+  return ids;
+}
+
 export async function addYearReviewItem(
   categoryId: string,
   _prevState: ActionState,
@@ -43,8 +71,6 @@ export async function addYearReviewItem(
 ): Promise<ActionState> {
   const text = formData.get("text");
   const date = formData.get("date");
-  const peopleRaw = formData.get("people");
-  const placesRaw = formData.get("places");
   if (typeof text !== "string" || !text.trim()) {
     return { error: "Text is required" };
   }
@@ -57,54 +83,55 @@ export async function addYearReviewItem(
     .values({ categoryId, text: text.trim(), date })
     .returning();
 
-  const names =
-    typeof peopleRaw === "string"
-      ? Array.from(new Set(peopleRaw.split(",").map((n) => n.trim()).filter(Boolean)))
-      : [];
-
-  if (names.length > 0) {
-    const existing = await db.select().from(people);
-    const existingByLowerName = new Map(existing.map((p) => [p.name.toLowerCase(), p]));
-
-    const personIds: string[] = [];
-    for (const name of names) {
-      const match = existingByLowerName.get(name.toLowerCase());
-      if (match) {
-        personIds.push(match.id);
-      } else {
-        const [created] = await db.insert(people).values({ name }).returning();
-        personIds.push(created.id);
-      }
-    }
-
+  const personIds = await resolveTagIds(people, formData.get("people"));
+  if (personIds.length > 0) {
     await db
       .insert(yearReviewItemPeople)
       .values(personIds.map((personId) => ({ itemId: item.id, personId })));
   }
 
-  const placeNames =
-    typeof placesRaw === "string"
-      ? Array.from(new Set(placesRaw.split(",").map((n) => n.trim()).filter(Boolean)))
-      : [];
-
-  if (placeNames.length > 0) {
-    const existing = await db.select().from(places);
-    const existingByLowerName = new Map(existing.map((p) => [p.name.toLowerCase(), p]));
-
-    const placeIds: string[] = [];
-    for (const name of placeNames) {
-      const match = existingByLowerName.get(name.toLowerCase());
-      if (match) {
-        placeIds.push(match.id);
-      } else {
-        const [created] = await db.insert(places).values({ name }).returning();
-        placeIds.push(created.id);
-      }
-    }
-
+  const placeIds = await resolveTagIds(places, formData.get("places"));
+  if (placeIds.length > 0) {
     await db
       .insert(yearReviewItemPlaces)
       .values(placeIds.map((placeId) => ({ itemId: item.id, placeId })));
+  }
+
+  revalidateAll();
+  return {};
+}
+
+export async function updateYearReviewItem(
+  itemId: string,
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const text = formData.get("text");
+  const date = formData.get("date");
+  if (typeof text !== "string" || !text.trim()) {
+    return { error: "Text is required" };
+  }
+  if (typeof date !== "string" || !date) {
+    return { error: "Date is required" };
+  }
+
+  await db
+    .update(yearReviewItems)
+    .set({ text: text.trim(), date })
+    .where(eq(yearReviewItems.id, itemId));
+
+  const personIds = await resolveTagIds(people, formData.get("people"));
+  await db.delete(yearReviewItemPeople).where(eq(yearReviewItemPeople.itemId, itemId));
+  if (personIds.length > 0) {
+    await db
+      .insert(yearReviewItemPeople)
+      .values(personIds.map((personId) => ({ itemId, personId })));
+  }
+
+  const placeIds = await resolveTagIds(places, formData.get("places"));
+  await db.delete(yearReviewItemPlaces).where(eq(yearReviewItemPlaces.itemId, itemId));
+  if (placeIds.length > 0) {
+    await db.insert(yearReviewItemPlaces).values(placeIds.map((placeId) => ({ itemId, placeId })));
   }
 
   revalidateAll();

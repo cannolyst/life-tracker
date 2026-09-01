@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { getYearReviewData } from "@/db/queries";
 import { Nav } from "@/components/Nav";
-import { Card, formatDate } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { AddYearReviewCategoryForm, AddYearReviewItemForm } from "./YearReviewForms";
-import { deleteYearReviewCategory, deleteYearReviewItem } from "./actions";
+import { YearReviewItemRow } from "./YearReviewItemRow";
+import { deleteYearReviewCategory } from "./actions";
 import { jewelFor } from "@/lib/jewels";
 import { Sparkle } from "@/components/Sparkle";
 
@@ -79,45 +80,13 @@ export default async function YearReviewPage({
                   ) : (
                     <ul className="mt-3 space-y-2">
                       {items.map((item) => (
-                        <li key={item.id} className="flex items-start justify-between gap-2 text-sm">
-                          <div>
-                            <span>
-                              {item.text}{" "}
-                              <span className="text-neutral-500">· {formatDate(item.date)}</span>
-                            </span>
-                            {(item.people.length > 0 || item.places.length > 0) && (
-                              <div className="mt-1 flex flex-wrap gap-1">
-                                {item.people.map((p) => (
-                                  <span
-                                    key={p.id}
-                                    className="rounded-full px-2 py-0.5 text-xs"
-                                    style={{ backgroundColor: jewel.soft, color: jewel.color }}
-                                  >
-                                    {p.name}
-                                  </span>
-                                ))}
-                                {item.places.map((p) => (
-                                  <span
-                                    key={p.id}
-                                    className="rounded-full border px-2 py-0.5 text-xs text-neutral-500"
-                                    style={{ borderColor: jewel.color }}
-                                  >
-                                    {p.name}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          <form action={deleteYearReviewItem.bind(null, item.id)}>
-                            <button
-                              type="submit"
-                              aria-label="Delete item"
-                              className="text-neutral-600 hover:text-red-400"
-                            >
-                              ✕
-                            </button>
-                          </form>
-                        </li>
+                        <YearReviewItemRow
+                          key={item.id}
+                          item={item}
+                          jewel={jewel}
+                          allPeople={allPeople}
+                          allPlaces={allPlaces}
+                        />
                       ))}
                     </ul>
                   )}
