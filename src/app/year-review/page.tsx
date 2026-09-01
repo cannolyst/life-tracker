@@ -43,6 +43,25 @@ export default async function YearReviewPage({
           </div>
         </div>
 
+        {categoriesWithItems.length > 0 && (
+          <Card>
+            <h2 className="mb-3 font-medium">Totals for {year}</h2>
+            <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+              {categoriesWithItems.map(({ category, items }, i) => (
+                <div key={category.id}>
+                  <p className="flex items-center gap-1.5 text-neutral-500">
+                    <Sparkle className="h-3 w-3" color={jewelFor(i).color} />
+                    {category.name}
+                  </p>
+                  <p className="text-2xl font-semibold" style={{ color: jewelFor(i).color }}>
+                    {items.length}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
         {categoriesWithItems.length === 0 ? (
           <p className="text-sm text-neutral-500">No categories yet — add one below.</p>
         ) : (
