@@ -59,7 +59,7 @@ export function Nav() {
       </div>
 
       {open && (
-        <nav className="flex flex-col border-t border-neutral-800 px-4 text-sm sm:hidden">
+        <nav className="font-display flex flex-col border-t border-neutral-800 px-4 text-sm sm:hidden">
           {LINKS.map((link) => (
             <Link
               key={link.href}
@@ -71,7 +71,10 @@ export function Nav() {
             </Link>
           ))}
           <form action={logout}>
-            <button type="submit" className="w-full py-3 text-left text-neutral-300">
+            <button
+              type="submit"
+              className="font-display w-full py-3 text-left text-neutral-300"
+            >
               Sign out
             </button>
           </form>
