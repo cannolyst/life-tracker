@@ -5,6 +5,7 @@ import { Card, formatDate } from "@/components/ui";
 import { AddYearReviewCategoryForm, AddYearReviewItemForm } from "./YearReviewForms";
 import { deleteYearReviewCategory, deleteYearReviewItem } from "./actions";
 import { jewelFor } from "@/lib/jewels";
+import { Sparkle } from "@/components/Sparkle";
 
 export const dynamic = "force-dynamic";
 
@@ -50,10 +51,7 @@ export default async function YearReviewPage({
                 <Card key={category.id}>
                   <div className="mb-2 flex items-center justify-between">
                     <h3 className="flex items-center gap-2 font-medium">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: jewel.color }}
-                      />
+                      <Sparkle className="h-3.5 w-3.5" color={jewel.color} />
                       {category.name}
                     </h3>
                     <form action={deleteYearReviewCategory.bind(null, category.id)}>

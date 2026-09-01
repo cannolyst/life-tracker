@@ -5,6 +5,7 @@ import { AddAreaForm, AddTaskForm } from "./CleaningForms";
 import { markDone, archiveTask } from "./actions";
 import { JEWELS, jewelFor, NEUTRAL_JEWEL, jewelChipStyle } from "@/lib/jewels";
 import type { CleaningStatus } from "@/lib/cleaningStatus";
+import { Sparkle } from "@/components/Sparkle";
 
 const RUBY = JEWELS[3];
 const GOLD = JEWELS[4];
@@ -35,10 +36,7 @@ export default async function CleaningPage() {
               tasks.length > 0 && (
                 <Card key={area.id}>
                   <h3 className="mb-2 flex items-center gap-2 font-medium">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: jewelFor(i).color }}
-                    />
+                    <Sparkle className="h-3.5 w-3.5" color={jewelFor(i).color} />
                     {area.name}
                   </h3>
                   <TaskList tasks={tasks} jewel={jewelFor(i)} />
@@ -48,10 +46,7 @@ export default async function CleaningPage() {
           {unassignedTasks.length > 0 && (
             <Card>
               <h3 className="mb-2 flex items-center gap-2 font-medium">
-                <span
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: NEUTRAL_JEWEL.color }}
-                />
+                <Sparkle className="h-3.5 w-3.5" color={NEUTRAL_JEWEL.color} />
                 Other
               </h3>
               <TaskList tasks={unassignedTasks} jewel={NEUTRAL_JEWEL} />

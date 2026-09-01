@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 import { login } from "./actions";
+import { Sparkle } from "@/components/Sparkle";
+import { JEWELS } from "@/lib/jewels";
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState<{ error?: string }, FormData>(
@@ -15,7 +17,8 @@ export default function LoginPage() {
         action={formAction}
         className="w-full max-w-sm space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-6"
       >
-        <h1 className="text-lg font-semibold text-neutral-100">
+        <h1 className="flex items-center gap-1.5 text-lg font-semibold text-neutral-100">
+          <Sparkle className="h-4 w-4" color={JEWELS[0].color} />
           Life Tracker
         </h1>
         <div className="space-y-1">

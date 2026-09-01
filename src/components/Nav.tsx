@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { logout } from "@/app/logout-actions";
+import { Sparkle } from "@/components/Sparkle";
+import { JEWELS } from "@/lib/jewels";
 
 const LINKS = [
   { href: "/points", label: "Points" },
@@ -21,9 +23,10 @@ export function Nav() {
       <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
         <Link
           href="/"
-          className="font-display text-lg font-semibold text-neutral-100"
+          className="font-display flex items-center gap-1.5 text-lg font-semibold text-neutral-100"
           onClick={() => setOpen(false)}
         >
+          <Sparkle className="h-4 w-4" color={JEWELS[0].color} />
           Life Tracker
         </Link>
 

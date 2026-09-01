@@ -6,6 +6,7 @@ import { PointsChart } from "@/components/PointsChart";
 import { AddCategoryForm, AddTaskForm, AddRewardForm } from "./PointsForms";
 import { TaskRow } from "./TaskRow";
 import { jewelFor, NEUTRAL_JEWEL } from "@/lib/jewels";
+import { Sparkle } from "@/components/Sparkle";
 import { archiveReward, redeemReward } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -68,10 +69,7 @@ export default async function PointsPage() {
               tasks.length > 0 && (
                 <Card key={category.id}>
                   <h3 className="mb-2 flex items-center gap-2 font-medium">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: jewelFor(i).color }}
-                    />
+                    <Sparkle className="h-3.5 w-3.5" color={jewelFor(i).color} />
                     {category.name}
                   </h3>
                   <TaskList
@@ -86,10 +84,7 @@ export default async function PointsPage() {
           {unassignedTasks.length > 0 && (
             <Card>
               <h3 className="mb-2 flex items-center gap-2 font-medium">
-                <span
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: NEUTRAL_JEWEL.color }}
-                />
+                <Sparkle className="h-3.5 w-3.5" color={NEUTRAL_JEWEL.color} />
                 Other
               </h3>
               <TaskList
