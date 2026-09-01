@@ -178,7 +178,10 @@ export async function archiveReward(rewardId: string) {
 }
 
 export async function redeemReward(rewardId: string) {
-  const [reward] = await db.select().from(rewards).where(eq(rewards.id, rewardId));
+  const [reward] = await db
+    .select()
+    .from(rewards)
+    .where(and(eq(rewards.id, rewardId), eq(rewards.archived, false)));
   if (!reward) return;
 
   const balance = await getPointsBalance();
@@ -190,5 +193,8 @@ export async function redeemReward(rewardId: string) {
     pointsCost: reward.cost,
     date: dateKeyInAppTimezone(),
   });
+  // Redeeming is one-time: archive it so it drops off the active list and
+  // can't be redeemed again.
+  await db.update(rewards).set({ archived: true }).where(eq(rewards.id, rewardId));
   revalidateAll();
 }

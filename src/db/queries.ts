@@ -392,20 +392,93 @@ export async function getPointsSummary() {
   };
 }
 
-function buildDailyPointsChart(completions: { date: string; pointsAwarded: number }[]) {
+export type ChartGranularity = "day" | "week" | "month" | "year";
+export type ChartPoint = { dateKey: string; label: string; points: number };
+
+const CHART_BUCKET_COUNT: Record<ChartGranularity, number> = {
+  day: 14,
+  week: 8,
+  month: 6,
+  year: 5,
+};
+
+function mondayOfUtc(d: Date): Date {
+  const day = d.getUTCDay();
+  const diff = (day === 0 ? -6 : 1) - day;
+  const monday = new Date(d);
+  monday.setUTCDate(monday.getUTCDate() + diff);
+  return monday;
+}
+
+function chartBucketKey(granularity: ChartGranularity, d: Date): string {
+  if (granularity === "day") return d.toISOString().slice(0, 10);
+  if (granularity === "week") return mondayOfUtc(d).toISOString().slice(0, 10);
+  if (granularity === "month") return d.toISOString().slice(0, 7);
+  return String(d.getUTCFullYear());
+}
+
+function chartBucketLabel(granularity: ChartGranularity, d: Date): string {
+  if (granularity === "day") {
+    return d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+  }
+  if (granularity === "week" || granularity === "month") {
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: granularity === "week" ? "numeric" : undefined,
+      timeZone: "UTC",
+    });
+  }
+  return String(d.getUTCFullYear());
+}
+
+// Bar-chart data for every granularity at once (cheap for a personal app's
+// data volume), so the client can switch views with no extra round trip.
+// Each bucket gets a genuinely unique `dateKey` — using only the display
+// `label` (e.g. "Mon") as the chart's data key let two same-weekday bars
+// collide in Recharts' category matching, which is what made hovering an
+// older bar report a different bar's point total.
+function buildPointsChart(
+  rows: { date: string; pointsAwarded: number }[],
+  granularity: ChartGranularity,
+): ChartPoint[] {
   const sums = new Map<string, number>();
-  for (const c of completions) {
-    sums.set(c.date, (sums.get(c.date) ?? 0) + c.pointsAwarded);
+  for (const row of rows) {
+    const d = new Date(`${row.date}T00:00:00Z`);
+    const key = chartBucketKey(granularity, d);
+    sums.set(key, (sums.get(key) ?? 0) + row.pointsAwarded);
   }
+
   const todayOnly = dateOnlyInAppTimezone();
-  const days = [];
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(todayOnly.getTime() - i * MS_PER_DAY);
-    const key = d.toISOString().slice(0, 10);
-    const label = d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
-    days.push({ date: label, points: sums.get(key) ?? 0 });
+  const count = CHART_BUCKET_COUNT[granularity];
+  const points: ChartPoint[] = [];
+
+  for (let i = count - 1; i >= 0; i--) {
+    let d: Date;
+    if (granularity === "day") {
+      d = new Date(todayOnly.getTime() - i * MS_PER_DAY);
+    } else if (granularity === "week") {
+      d = new Date(mondayOfUtc(todayOnly).getTime() - i * 7 * MS_PER_DAY);
+    } else if (granularity === "month") {
+      d = new Date(Date.UTC(todayOnly.getUTCFullYear(), todayOnly.getUTCMonth() - i, 1));
+    } else {
+      d = new Date(Date.UTC(todayOnly.getUTCFullYear() - i, 0, 1));
+    }
+    const dateKey = chartBucketKey(granularity, d);
+    points.push({ dateKey, label: chartBucketLabel(granularity, d), points: sums.get(dateKey) ?? 0 });
   }
-  return days;
+
+  return points;
+}
+
+function buildAllPointsCharts(
+  rows: { date: string; pointsAwarded: number }[],
+): Record<ChartGranularity, ChartPoint[]> {
+  return {
+    day: buildPointsChart(rows, "day"),
+    week: buildPointsChart(rows, "week"),
+    month: buildPointsChart(rows, "month"),
+    year: buildPointsChart(rows, "year"),
+  };
 }
 
 export async function getHabitDashboardData() {
@@ -445,7 +518,10 @@ export async function getHabitDashboardData() {
   }));
   const unassignedTasks = tasks.filter((t) => !t.categoryId);
 
-  const chartData = buildDailyPointsChart(completions);
+  const cleaningCompletionsAll = await db
+    .select({ date: cleaningCompletions.date, pointsAwarded: cleaningCompletions.pointsAwarded })
+    .from(cleaningCompletions);
+  const chartData = buildAllPointsCharts([...completions, ...cleaningCompletionsAll]);
 
   return {
     categories,
