@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  getPointsEarnedToday,
+  getPointsSummary,
   getCleaningDashboardData,
   listAccountsSummary,
   getTodos,
@@ -8,6 +8,7 @@ import {
 import { Nav } from "@/components/Nav";
 import { Card, formatCurrency, formatDate } from "@/components/ui";
 import { MinimumPaymentBadge } from "@/components/MinimumPaymentBadge";
+import { StreakBadge } from "@/components/StreakBadge";
 import { dateOnlyInAppTimezone } from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
@@ -17,12 +18,13 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
 type CleaningTask = { id: string; name: string; dueDate: Date; status: string; areaName: string | null };
 
 export default async function OverviewPage() {
-  const [pointsToday, cleaning, { debtSummaries }, allTodos] = await Promise.all([
-    getPointsEarnedToday(),
+  const [pointsSummary, cleaning, { debtSummaries }, allTodos] = await Promise.all([
+    getPointsSummary(),
     getCleaningDashboardData(),
     listAccountsSummary(),
     getTodos(),
   ]);
+  const { balance, pointsToday, pointsYesterday, streak } = pointsSummary;
   const activeTodos = allTodos.filter((t) => !t.done);
 
   const allCleaningTasks: CleaningTask[] = [
@@ -58,8 +60,29 @@ export default async function OverviewPage() {
 
         <Link href="/points" className="block">
           <Card className="transition hover:border-neutral-600">
-            <p className="text-sm text-neutral-500">Points earned today</p>
-            <p className="text-3xl font-bold">{pointsToday}</p>
+            <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+              <div>
+                <p className="text-neutral-500">Total points</p>
+                <p className="text-2xl font-semibold">{balance}</p>
+              </div>
+              <div>
+                <p className="text-neutral-500">Yesterday</p>
+                <p className="text-2xl font-semibold">{pointsYesterday}</p>
+              </div>
+              <div>
+                <p className="text-neutral-500">Today</p>
+                <p className="text-2xl font-semibold">{pointsToday}</p>
+              </div>
+              <div>
+                <p className="text-neutral-500">Streak</p>
+                <p className="text-2xl font-semibold">{streak > 0 ? `Day ${streak}` : "—"}</p>
+                {streak > 0 && (
+                  <div className="mt-0.5">
+                    <StreakBadge streak={streak} />
+                  </div>
+                )}
+              </div>
+            </div>
           </Card>
         </Link>
 
