@@ -3,6 +3,7 @@ import {
   getPointsEarnedToday,
   getCleaningDashboardData,
   listAccountsSummary,
+  getTodos,
 } from "@/db/queries";
 import { Nav } from "@/components/Nav";
 import { Card, formatCurrency, formatDate } from "@/components/ui";
@@ -16,11 +17,13 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
 type CleaningTask = { id: string; name: string; dueDate: Date; status: string; areaName: string | null };
 
 export default async function OverviewPage() {
-  const [pointsToday, cleaning, { debtSummaries }] = await Promise.all([
+  const [pointsToday, cleaning, { debtSummaries }, allTodos] = await Promise.all([
     getPointsEarnedToday(),
     getCleaningDashboardData(),
     listAccountsSummary(),
+    getTodos(),
   ]);
+  const activeTodos = allTodos.filter((t) => !t.done);
 
   const allCleaningTasks: CleaningTask[] = [
     ...cleaning.areasWithTasks.flatMap(({ area, tasks }) =>
@@ -59,6 +62,30 @@ export default async function OverviewPage() {
             <p className="text-3xl font-bold">{pointsToday}</p>
           </Card>
         </Link>
+
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold">To-do</h2>
+            <Link href="/todo" className="text-sm text-neutral-500 hover:text-neutral-100">
+              View all
+            </Link>
+          </div>
+          {activeTodos.length === 0 ? (
+            <Card>
+              <p className="text-sm text-neutral-500">Nothing to do — nice.</p>
+            </Card>
+          ) : (
+            <Card>
+              <ul className="divide-y divide-neutral-800">
+                {activeTodos.map((todo) => (
+                  <li key={todo.id} className="py-2 text-sm">
+                    {todo.text}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+        </section>
 
         <section className="space-y-3">
           <div className="flex items-baseline justify-between">
