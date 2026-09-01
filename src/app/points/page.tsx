@@ -8,6 +8,7 @@ import { TaskRow } from "./TaskRow";
 import { jewelFor, NEUTRAL_JEWEL } from "@/lib/jewels";
 import { Sparkle } from "@/components/Sparkle";
 import { archiveReward, redeemReward } from "./actions";
+import { TaskList as CleaningTaskList } from "@/app/cleaning/TaskList";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ export default async function PointsPage() {
     activeRewards,
     recentRedemptions,
     categories,
+    cleaningTasks,
   } = await getHabitDashboardData();
 
   return (
@@ -95,8 +97,25 @@ export default async function PointsPage() {
               />
             </Card>
           )}
+          {cleaningTasks.length > 0 && (
+            <Card>
+              <h3 className="mb-2 flex items-center gap-2 font-medium">
+                <Sparkle
+                  className="h-3.5 w-3.5"
+                  color={jewelFor(categoriesWithTasks.length).color}
+                />
+                Cleaning
+              </h3>
+              <CleaningTaskList
+                tasks={cleaningTasks}
+                jewel={jewelFor(categoriesWithTasks.length)}
+                showArea
+              />
+            </Card>
+          )}
           {categoriesWithTasks.every(({ tasks }) => tasks.length === 0) &&
-            unassignedTasks.length === 0 && (
+            unassignedTasks.length === 0 &&
+            cleaningTasks.length === 0 && (
               <p className="text-sm text-neutral-500">No tasks yet — add one below.</p>
             )}
         </section>

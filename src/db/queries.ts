@@ -523,10 +523,13 @@ export async function getHabitDashboardData() {
     .from(cleaningCompletions);
   const chartData = buildAllPointsCharts([...completions, ...cleaningCompletionsAll]);
 
+  const cleaningTasksWithStatus = await getCleaningTasksWithStatus();
+
   return {
     categories,
     categoriesWithTasks,
     unassignedTasks,
+    cleaningTasks: cleaningTasksWithStatus,
     todayCompletionCounts,
     balance,
     pointsToday,
@@ -540,8 +543,9 @@ export async function getHabitDashboardData() {
 
 // --- Cleaning tracker ---
 
-export async function getCleaningDashboardData() {
-  const areas = await db.select().from(cleaningAreas).orderBy(cleaningAreas.createdAt);
+async function getCleaningTasksWithStatus() {
+  const areas = await db.select().from(cleaningAreas);
+  const areaNameById = new Map(areas.map((a) => [a.id, a.name]));
   const tasks = await db
     .select()
     .from(cleaningTasks)
@@ -551,7 +555,7 @@ export async function getCleaningDashboardData() {
 
   const todayKey = dateKeyInAppTimezone();
 
-  const tasksWithStatus = tasks.map((task) => {
+  return tasks.map((task) => {
     const taskCompletions = allCompletions.filter((c) => c.taskId === task.id);
     const lastCompletedDate = taskCompletions.reduce<string | null>(
       (latest, c) => (!latest || c.date > latest ? c.date : latest),
@@ -564,12 +568,18 @@ export async function getCleaningDashboardData() {
     );
     return {
       ...task,
+      areaName: task.areaId ? (areaNameById.get(task.areaId) ?? null) : null,
       lastCompletedDate,
       status,
       dueDate,
       doneToday: taskCompletions.some((c) => c.date === todayKey),
     };
   });
+}
+
+export async function getCleaningDashboardData() {
+  const areas = await db.select().from(cleaningAreas).orderBy(cleaningAreas.createdAt);
+  const tasksWithStatus = await getCleaningTasksWithStatus();
 
   const areasWithTasks = areas.map((area) => ({
     area,

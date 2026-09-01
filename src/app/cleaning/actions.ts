@@ -10,6 +10,7 @@ export type ActionState = { error?: string };
 
 function revalidateAll() {
   revalidatePath("/cleaning");
+  revalidatePath("/points");
   revalidatePath("/");
 }
 
@@ -81,5 +82,4 @@ export async function markDone(taskId: string) {
     });
   }
   revalidateAll();
-  revalidatePath("/points");
 }
