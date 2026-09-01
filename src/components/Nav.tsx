@@ -30,7 +30,7 @@ export function Nav() {
           Life Tracker
         </Link>
 
-        <nav className="hidden items-center gap-4 text-sm sm:flex">
+        <nav className="font-display hidden items-center gap-4 text-sm sm:flex">
           {LINKS.map((link) => (
             <Link
               key={link.href}
@@ -41,7 +41,10 @@ export function Nav() {
             </Link>
           ))}
           <form action={logout}>
-            <button type="submit" className="text-neutral-400 hover:text-neutral-100">
+            <button
+              type="submit"
+              className="font-display text-neutral-400 hover:text-neutral-100"
+            >
               Sign out
             </button>
           </form>
