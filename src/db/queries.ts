@@ -20,6 +20,8 @@ import {
   todos,
   yearReviewCategories,
   yearReviewItems,
+  people,
+  yearReviewItemPeople,
 } from "./schema";
 import {
   projectSavingsDate,
@@ -677,18 +679,32 @@ export async function getYearReviewData(selectedYear?: number) {
     .from(yearReviewCategories)
     .orderBy(yearReviewCategories.createdAt);
   const allItems = await db.select().from(yearReviewItems).orderBy(desc(yearReviewItems.date));
+  const allPeople = await db.select().from(people).orderBy(people.name);
+  const itemPeopleLinks = await db.select().from(yearReviewItemPeople);
+
+  const peopleById = new Map(allPeople.map((p) => [p.id, p]));
+  const peopleByItemId = new Map<string, { id: string; name: string }[]>();
+  for (const link of itemPeopleLinks) {
+    const person = peopleById.get(link.personId);
+    if (!person) continue;
+    const list = peopleByItemId.get(link.itemId) ?? [];
+    list.push(person);
+    peopleByItemId.set(link.itemId, list);
+  }
 
   const currentYear = yearOfDateKey(dateKeyInAppTimezone());
   const yearsWithData = allItems.map((i) => yearOfDateKey(i.date));
   const years = Array.from(new Set([currentYear, ...yearsWithData])).sort((a, b) => b - a);
 
   const year = selectedYear ?? currentYear;
-  const itemsForYear = allItems.filter((i) => yearOfDateKey(i.date) === year);
+  const itemsForYear = allItems
+    .filter((i) => yearOfDateKey(i.date) === year)
+    .map((i) => ({ ...i, people: peopleByItemId.get(i.id) ?? [] }));
 
   const categoriesWithItems = categories.map((category) => ({
     category,
     items: itemsForYear.filter((i) => i.categoryId === category.id),
   }));
 
-  return { years, year, categoriesWithItems };
+  return { years, year, categoriesWithItems, allPeople };
 }

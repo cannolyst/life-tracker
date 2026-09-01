@@ -8,6 +8,7 @@ import {
   date,
   integer,
   check,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -268,3 +269,26 @@ export const yearReviewItems = pgTable("year_review_items", {
     .notNull()
     .defaultNow(),
 });
+
+// People you can tag on a year-in-review item (e.g. who you ate with).
+// Reused across items so the same person doesn't get re-created each time.
+export const people = pgTable("people", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const yearReviewItemPeople = pgTable(
+  "year_review_item_people",
+  {
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => yearReviewItems.id, { onDelete: "cascade" }),
+    personId: uuid("person_id")
+      .notNull()
+      .references(() => people.id, { onDelete: "cascade" }),
+  },
+  (table) => [primaryKey({ columns: [table.itemId, table.personId] })],
+);

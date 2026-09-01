@@ -24,20 +24,44 @@ export function AddYearReviewCategoryForm() {
   );
 }
 
-export function AddYearReviewItemForm({ categoryId }: { categoryId: string }) {
+export function AddYearReviewItemForm({
+  categoryId,
+  people,
+}: {
+  categoryId: string;
+  people: { id: string; name: string }[];
+}) {
   const action = addYearReviewItem.bind(null, categoryId);
   const [state, formAction, pending] = useActionState(action, initialState);
+  const datalistId = `people-${categoryId}`;
 
   return (
-    <form action={formAction} className="flex items-end gap-2">
-      <input name="text" placeholder="Add an item..." required className={`${inputClass} flex-1`} />
-      <input
-        name="date"
-        type="date"
-        required
-        defaultValue={dateKeyInAppTimezone()}
-        className={inputClass}
-      />
+    <form action={formAction} className="flex flex-wrap items-end gap-2">
+      <div className="min-w-[140px] flex-1">
+        <input name="text" placeholder="Add an item..." required className={inputClass} />
+      </div>
+      <div className="min-w-[140px] flex-1">
+        <input
+          name="people"
+          placeholder="With... (comma-separated)"
+          list={datalistId}
+          className={inputClass}
+        />
+        <datalist id={datalistId}>
+          {people.map((p) => (
+            <option key={p.id} value={p.name} />
+          ))}
+        </datalist>
+      </div>
+      <div>
+        <input
+          name="date"
+          type="date"
+          required
+          defaultValue={dateKeyInAppTimezone()}
+          className={inputClass}
+        />
+      </div>
       <button type="submit" disabled={pending} className={buttonClass}>
         {pending ? "..." : "Add"}
       </button>

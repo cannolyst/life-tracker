@@ -16,7 +16,7 @@ export default async function YearReviewPage({
 }) {
   const { year: yearParam } = await searchParams;
   const selectedYear = yearParam ? Number(yearParam) : undefined;
-  const { years, year, categoriesWithItems } = await getYearReviewData(selectedYear);
+  const { years, year, categoriesWithItems, allPeople } = await getYearReviewData(selectedYear);
 
   return (
     <div className="flex min-h-full flex-col">
@@ -70,16 +70,28 @@ export default async function YearReviewPage({
                       Nothing logged for {year} yet.
                     </p>
                   ) : (
-                    <ul className="mb-3 space-y-1">
+                    <ul className="mb-3 space-y-2">
                       {items.map((item) => (
-                        <li
-                          key={item.id}
-                          className="flex items-center justify-between gap-2 text-sm"
-                        >
-                          <span>
-                            {item.text}{" "}
-                            <span className="text-neutral-500">· {formatDate(item.date)}</span>
-                          </span>
+                        <li key={item.id} className="flex items-start justify-between gap-2 text-sm">
+                          <div>
+                            <span>
+                              {item.text}{" "}
+                              <span className="text-neutral-500">· {formatDate(item.date)}</span>
+                            </span>
+                            {item.people.length > 0 && (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {item.people.map((p) => (
+                                  <span
+                                    key={p.id}
+                                    className="rounded-full px-2 py-0.5 text-xs"
+                                    style={{ backgroundColor: jewel.soft, color: jewel.color }}
+                                  >
+                                    {p.name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                           <form action={deleteYearReviewItem.bind(null, item.id)}>
                             <button
                               type="submit"
@@ -94,7 +106,7 @@ export default async function YearReviewPage({
                     </ul>
                   )}
 
-                  <AddYearReviewItemForm categoryId={category.id} />
+                  <AddYearReviewItemForm categoryId={category.id} people={allPeople} />
                 </Card>
               );
             })}

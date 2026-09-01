@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { yearReviewCategories, yearReviewItems } from "@/db/schema";
+import { yearReviewCategories, yearReviewItems, people, yearReviewItemPeople } from "@/db/schema";
 
 export type ActionState = { error?: string };
 
@@ -36,13 +36,44 @@ export async function addYearReviewItem(
 ): Promise<ActionState> {
   const text = formData.get("text");
   const date = formData.get("date");
+  const peopleRaw = formData.get("people");
   if (typeof text !== "string" || !text.trim()) {
     return { error: "Text is required" };
   }
   if (typeof date !== "string" || !date) {
     return { error: "Date is required" };
   }
-  await db.insert(yearReviewItems).values({ categoryId, text: text.trim(), date });
+
+  const [item] = await db
+    .insert(yearReviewItems)
+    .values({ categoryId, text: text.trim(), date })
+    .returning();
+
+  const names =
+    typeof peopleRaw === "string"
+      ? Array.from(new Set(peopleRaw.split(",").map((n) => n.trim()).filter(Boolean)))
+      : [];
+
+  if (names.length > 0) {
+    const existing = await db.select().from(people);
+    const existingByLowerName = new Map(existing.map((p) => [p.name.toLowerCase(), p]));
+
+    const personIds: string[] = [];
+    for (const name of names) {
+      const match = existingByLowerName.get(name.toLowerCase());
+      if (match) {
+        personIds.push(match.id);
+      } else {
+        const [created] = await db.insert(people).values({ name }).returning();
+        personIds.push(created.id);
+      }
+    }
+
+    await db
+      .insert(yearReviewItemPeople)
+      .values(personIds.map((personId) => ({ itemId: item.id, personId })));
+  }
+
   revalidateAll();
   return {};
 }
