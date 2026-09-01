@@ -56,7 +56,7 @@ export default async function OverviewPage() {
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-8 px-4 py-8">
         <h1 className="text-xl font-semibold">Overview</h1>
 
-        <Link href="/points">
+        <Link href="/points" className="block">
           <Card className="transition hover:border-neutral-600">
             <p className="text-sm text-neutral-500">Points earned today</p>
             <p className="text-3xl font-bold">{pointsToday}</p>

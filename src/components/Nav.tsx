@@ -19,7 +19,11 @@ export function Nav() {
   return (
     <header className="relative border-b border-neutral-800">
       <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
-        <Link href="/" className="font-semibold text-neutral-100" onClick={() => setOpen(false)}>
+        <Link
+          href="/"
+          className="font-display text-lg font-semibold text-neutral-100"
+          onClick={() => setOpen(false)}
+        >
           Life Tracker
         </Link>
 

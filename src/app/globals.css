@@ -3,21 +3,24 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-league-spartan);
 }
 
 /*
- * This app is themed after tracker-app's "paper" light theme: a cream
- * page background, white cards, warm-ink text, and the five jewel accent
- * tones. Rather than rewrite every `bg-neutral-950`/`text-neutral-100`/etc.
- * class across the app, the Tailwind palette stops those classes already
- * use are redefined here — every existing dark-theme class flips to its
- * light-theme counterpart automatically, everywhere it's used.
+ * Personal "flair" pass: this app's look is drawn from Cody's own annual
+ * Instagram Story recap template — a warm dusty-rose pink and a bold,
+ * rounded display face for headings. The pink here (#f5dee7) is a light
+ * pastel tint of the template's actual background (#e4a4be, sampled
+ * directly from it), kept light enough for dense dashboard content and
+ * white cards; jewel-tone category accents and card/ink colors are
+ * unchanged from the earlier "paper" theme, so the palette below only
+ * covers what's new.
  */
 @theme {
   /* neutral scale: 950/900 were the old page/card backgrounds (darkest),
      100 was the old primary text (lightest) — inverted so those same
      relationships now describe a light theme. */
-  --color-neutral-950: #eeebee; /* page background ("paper") */
+  --color-neutral-950: #f5dee7; /* page background — pastel tint of the template's pink */
   --color-neutral-900: #ffffff; /* card background */
   --color-neutral-800: rgba(42, 36, 48, 0.08); /* subtle line / input fill */
   --color-neutral-700: rgba(42, 36, 48, 0.16); /* medium border */
@@ -42,4 +45,17 @@
 
 body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Bold, rounded display face for headings — the app's one signature
+   typographic flourish, borrowed from the recap template. Body text and
+   card-level labels stay on the clean sans for density/legibility. All-caps
+   with a touch of tracking matches the template's own all-caps headers. */
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
