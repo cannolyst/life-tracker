@@ -33,7 +33,7 @@ import {
   estimateInterestSaved,
 } from "@/lib/projections";
 import { computeStreak } from "@/lib/streak";
-import { computeCleaningStatus } from "@/lib/cleaningStatus";
+import { computeCleaningStatus, classifyByTimeframe } from "@/lib/cleaningStatus";
 import { dateKeyInAppTimezone, dateOnlyInAppTimezone } from "@/lib/timezone";
 import { computeMinimumPaymentStatus, computeExtraPaidOverMinimum } from "@/lib/minimumPayment";
 
@@ -631,6 +631,7 @@ async function getCleaningTasksWithStatus() {
       lastCompletedDate,
       status,
       dueDate,
+      timeframe: classifyByTimeframe(status, dueDate),
       doneToday: taskCompletions.some((c) => c.date === todayKey),
     };
   });

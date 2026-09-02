@@ -1,5 +1,5 @@
 import { getCleaningDashboardData } from "@/db/queries";
-import { classifyByTimeframe, getTimeframeBoundaries, type CleaningTimeframeBucket } from "@/lib/cleaningStatus";
+import { getTimeframeBoundaries, type CleaningTimeframeBucket } from "@/lib/cleaningStatus";
 import { Nav } from "@/components/Nav";
 import { Card, formatDateRange, formatMonthName } from "@/components/ui";
 import { AddAreaForm, AddTaskForm } from "./CleaningForms";
@@ -41,7 +41,7 @@ export default async function CleaningPage() {
     later: [],
   };
   for (const task of allTasks) {
-    buckets[classifyByTimeframe(task.status, task.dueDate)].push(task);
+    buckets[task.timeframe].push(task);
   }
   for (const tasks of Object.values(buckets)) tasks.sort(byDueDate);
 

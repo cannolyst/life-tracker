@@ -9,12 +9,7 @@ import { Nav } from "@/components/Nav";
 import { Card, formatCurrency, formatDate, formatDateRange, formatMonthName } from "@/components/ui";
 import { MinimumPaymentBadge } from "@/components/MinimumPaymentBadge";
 import { StreakBadge } from "@/components/StreakBadge";
-import {
-  classifyByTimeframe,
-  getTimeframeBoundaries,
-  type CleaningStatus,
-  type CleaningTimeframeBucket,
-} from "@/lib/cleaningStatus";
+import { getTimeframeBoundaries, type CleaningTimeframeBucket } from "@/lib/cleaningStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -22,8 +17,8 @@ type CleaningTask = {
   id: string;
   name: string;
   dueDate: Date;
-  status: CleaningStatus;
   areaName: string | null;
+  timeframe: CleaningTimeframeBucket;
 };
 
 export default async function OverviewPage() {
@@ -52,7 +47,7 @@ export default async function OverviewPage() {
     later: [],
   };
   for (const task of allCleaningTasks) {
-    buckets[classifyByTimeframe(task.status, task.dueDate)].push(task);
+    buckets[task.timeframe].push(task);
   }
   for (const tasks of Object.values(buckets)) tasks.sort(byDueDate);
 

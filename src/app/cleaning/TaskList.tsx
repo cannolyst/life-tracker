@@ -2,7 +2,7 @@ import { formatDate } from "@/components/ui";
 import { jewelChipStyle } from "@/lib/jewels";
 import { JEWELS } from "@/lib/jewels";
 import { markDone, archiveTask } from "./actions";
-import type { CleaningStatus } from "@/lib/cleaningStatus";
+import type { CleaningStatus, CleaningTimeframeBucket } from "@/lib/cleaningStatus";
 
 export type Task = {
   id: string;
@@ -12,6 +12,7 @@ export type Task = {
   dueDate: Date;
   doneToday: boolean;
   areaName?: string | null;
+  timeframe: CleaningTimeframeBucket;
 };
 
 const RUBY = JEWELS[3];
@@ -28,19 +29,30 @@ const STATUS_LABEL: Record<CleaningStatus, string> = {
   upcoming: "Due",
 };
 
+const TIMEFRAME_LABEL: Partial<Record<CleaningTimeframeBucket, string>> = {
+  week: "This week",
+  "next-week": "Next week",
+  month: "This month",
+  later: "Later",
+};
+
 export function TaskList({
   tasks,
   jewel,
   showArea,
+  showTimeframe,
 }: {
   tasks: Task[];
   jewel: { color: string; soft: string };
   showArea?: boolean;
+  showTimeframe?: boolean;
 }) {
   return (
     <ul className="space-y-2">
       {tasks.map((task) => {
         const statusJewel = STATUS_JEWEL[task.status];
+        const timeframeSuffix =
+          showTimeframe && task.status === "upcoming" ? ` · ${TIMEFRAME_LABEL[task.timeframe]}` : "";
         return (
           <li key={task.id} className="flex items-center justify-between gap-3">
             <form action={markDone.bind(null, task.id)} className="flex-1">
@@ -61,7 +73,9 @@ export function TaskList({
                   {showArea && task.areaName ? ` · ${task.areaName}` : ""}
                 </span>
                 <span className={task.doneToday || statusJewel ? "text-xs" : "text-xs text-neutral-500"}>
-                  {task.doneToday ? "Done today" : `${STATUS_LABEL[task.status]} ${formatDate(task.dueDate)}`}
+                  {task.doneToday
+                    ? "Done today"
+                    : `${STATUS_LABEL[task.status]} ${formatDate(task.dueDate)}${timeframeSuffix}`}
                   {" · "}
                   {task.points} pts
                 </span>

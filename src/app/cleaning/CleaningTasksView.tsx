@@ -24,6 +24,7 @@ export function CleaningTasksView({
   const [view, setView] = useState<"category" | "timeframe">("category");
   const groups = view === "category" ? categoryGroups : timeframeGroups;
   const showArea = view === "timeframe";
+  const showTimeframe = view === "category";
   const isEmpty = groups.every((g) => g.tasks.length === 0);
 
   return (
@@ -61,7 +62,12 @@ export function CleaningTasksView({
                 {group.jewel && <Sparkle className="h-3.5 w-3.5" color={group.jewel.color} />}
                 {group.name}
               </h3>
-              <TaskList tasks={group.tasks} jewel={group.jewel ?? DONE_JEWEL} showArea={showArea} />
+              <TaskList
+                tasks={group.tasks}
+                jewel={group.jewel ?? DONE_JEWEL}
+                showArea={showArea}
+                showTimeframe={showTimeframe}
+              />
             </Card>
           ),
       )}
