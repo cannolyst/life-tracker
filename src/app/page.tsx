@@ -9,13 +9,17 @@ import { Nav } from "@/components/Nav";
 import { Card, formatCurrency, formatDate } from "@/components/ui";
 import { MinimumPaymentBadge } from "@/components/MinimumPaymentBadge";
 import { StreakBadge } from "@/components/StreakBadge";
-import { dateOnlyInAppTimezone } from "@/lib/timezone";
+import { classifyByTimeframe, type CleaningStatus, type CleaningTimeframeBucket } from "@/lib/cleaningStatus";
 
 export const dynamic = "force-dynamic";
 
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
-
-type CleaningTask = { id: string; name: string; dueDate: Date; status: string; areaName: string | null };
+type CleaningTask = {
+  id: string;
+  name: string;
+  dueDate: Date;
+  status: CleaningStatus;
+  areaName: string | null;
+};
 
 export default async function OverviewPage() {
   const [pointsSummary, cleaning, { debtSummaries }, allTodos] = await Promise.all([
@@ -34,19 +38,26 @@ export default async function OverviewPage() {
     ...cleaning.unassignedTasks.map((t) => ({ ...t, areaName: null })),
   ];
 
-  const todayOnly = dateOnlyInAppTimezone();
-  const daysUntil = (dueDate: Date) =>
-    Math.round((dueDate.getTime() - todayOnly.getTime()) / MS_PER_DAY);
+  const byDueDate = (a: CleaningTask, b: CleaningTask) => a.dueDate.getTime() - b.dueDate.getTime();
+  const buckets: Record<CleaningTimeframeBucket, CleaningTask[]> = {
+    overdue: [],
+    week: [],
+    "next-week": [],
+    month: [],
+    later: [],
+  };
+  for (const task of allCleaningTasks) {
+    buckets[classifyByTimeframe(task.status, task.dueDate)].push(task);
+  }
+  for (const tasks of Object.values(buckets)) tasks.sort(byDueDate);
 
-  const dueToday = allCleaningTasks
-    .filter((t) => t.status === "overdue" || t.status === "due-today")
-    .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
-  const dueThisWeek = allCleaningTasks
-    .filter((t) => t.status === "upcoming" && daysUntil(t.dueDate) <= 7)
-    .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
-  const dueThisMonth = allCleaningTasks
-    .filter((t) => t.status === "upcoming" && daysUntil(t.dueDate) > 7 && daysUntil(t.dueDate) <= 30)
-    .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+  const dueOverdue = buckets.overdue;
+  const dueThisWeek = buckets.week;
+  const dueNextWeek = buckets["next-week"];
+  // Later-than-this-month tasks aren't urgent enough to earn their own
+  // column in this compact teaser — they're still visible in full on
+  // /cleaning — so they're folded in alongside the rest of the month here.
+  const dueThisMonth = [...buckets.month, ...buckets.later].sort(byDueDate);
 
   const paymentsDue = debtSummaries.filter(
     (d) => d.latestStatement && Number(d.latestStatement.minimumPaymentDue) > 0,
@@ -117,9 +128,10 @@ export default async function OverviewPage() {
               View all
             </Link>
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <CleaningColumn title="Today" tasks={dueToday} emptyLabel="Nothing due today" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <CleaningColumn title="Overdue" tasks={dueOverdue} emptyLabel="Nothing overdue" />
             <CleaningColumn title="This week" tasks={dueThisWeek} emptyLabel="Nothing due this week" />
+            <CleaningColumn title="Next week" tasks={dueNextWeek} emptyLabel="Nothing due next week" />
             <CleaningColumn title="This month" tasks={dueThisMonth} emptyLabel="Nothing else due this month" />
           </div>
         </section>
@@ -181,7 +193,7 @@ function CleaningColumn({
               <p>{task.name}</p>
               <p className="text-xs text-neutral-500">
                 {task.areaName ? `${task.areaName} · ` : ""}
-                {task.status === "overdue" ? "Overdue" : formatDate(task.dueDate)}
+                {formatDate(task.dueDate)}
               </p>
             </li>
           ))}

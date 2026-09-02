@@ -1,5 +1,5 @@
 import { getCleaningDashboardData } from "@/db/queries";
-import { dateOnlyInAppTimezone } from "@/lib/timezone";
+import { classifyByTimeframe, type CleaningTimeframeBucket } from "@/lib/cleaningStatus";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
 import { AddAreaForm, AddTaskForm } from "./CleaningForms";
@@ -8,8 +8,6 @@ import { jewelFor, NEUTRAL_JEWEL } from "@/lib/jewels";
 import type { Task } from "./TaskList";
 
 export const dynamic = "force-dynamic";
-
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 export default async function CleaningPage() {
   const { areasWithTasks, unassignedTasks, areas } = await getCleaningDashboardData();
@@ -33,28 +31,26 @@ export default async function CleaningPage() {
     ...unassignedTasks.map((t) => ({ ...t, areaName: null })),
   ];
 
-  const todayOnly = dateOnlyInAppTimezone();
-  const daysUntil = (dueDate: Date) => Math.round((dueDate.getTime() - todayOnly.getTime()) / MS_PER_DAY);
   const byDueDate = (a: Task, b: Task) => a.dueDate.getTime() - b.dueDate.getTime();
 
-  const dueToday = allTasks
-    .filter((t) => t.status === "overdue" || t.status === "due-today")
-    .sort(byDueDate);
-  const dueThisWeek = allTasks
-    .filter((t) => t.status === "upcoming" && daysUntil(t.dueDate) <= 7)
-    .sort(byDueDate);
-  const dueThisMonth = allTasks
-    .filter((t) => t.status === "upcoming" && daysUntil(t.dueDate) > 7 && daysUntil(t.dueDate) <= 30)
-    .sort(byDueDate);
-  const dueLater = allTasks
-    .filter((t) => t.status === "upcoming" && daysUntil(t.dueDate) > 30)
-    .sort(byDueDate);
+  const buckets: Record<CleaningTimeframeBucket, Task[]> = {
+    overdue: [],
+    week: [],
+    "next-week": [],
+    month: [],
+    later: [],
+  };
+  for (const task of allTasks) {
+    buckets[classifyByTimeframe(task.status, task.dueDate)].push(task);
+  }
+  for (const tasks of Object.values(buckets)) tasks.sort(byDueDate);
 
   const timeframeGroups: TaskGroup[] = [
-    { key: "today", name: "Today", tasks: dueToday },
-    { key: "week", name: "This week", tasks: dueThisWeek },
-    { key: "month", name: "This month", tasks: dueThisMonth },
-    { key: "later", name: "Later", tasks: dueLater },
+    { key: "overdue", name: "Overdue", tasks: buckets.overdue },
+    { key: "week", name: "This week", tasks: buckets.week },
+    { key: "next-week", name: "Next week", tasks: buckets["next-week"] },
+    { key: "month", name: "This month", tasks: buckets.month },
+    { key: "later", name: "Later", tasks: buckets.later },
   ];
 
   return (

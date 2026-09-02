@@ -35,3 +35,42 @@ export function computeCleaningStatus(
 
   return { status, dueDate };
 }
+
+export type CleaningTimeframeBucket = "overdue" | "week" | "next-week" | "month" | "later";
+
+function startOfWeekUtc(d: Date): Date {
+  const sunday = new Date(d);
+  sunday.setUTCDate(sunday.getUTCDate() - d.getUTCDay());
+  return sunday;
+}
+
+function endOfMonthUtc(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0));
+}
+
+/**
+ * Buckets a task by calendar week/month rather than a rolling day-count
+ * window, so a weekly task completed today (pushing its due date ~7 days
+ * out) lands in "next week" instead of still reading as "this week" —
+ * a rolling window would keep re-including it since the window itself
+ * shifts along with `today`. Weeks run Sunday–Saturday.
+ */
+export function classifyByTimeframe(
+  status: CleaningStatus,
+  dueDate: Date,
+  today: Date = new Date(),
+): CleaningTimeframeBucket {
+  if (status === "overdue") return "overdue";
+
+  const todayOnly = dateOnlyInAppTimezone(today);
+  const thisWeekStart = startOfWeekUtc(todayOnly);
+  const thisWeekEnd = new Date(thisWeekStart.getTime() + 6 * MS_PER_DAY);
+  const nextWeekEnd = new Date(thisWeekEnd.getTime() + 7 * MS_PER_DAY);
+  const monthEnd = endOfMonthUtc(todayOnly);
+
+  const due = dueDate.getTime();
+  if (due <= thisWeekEnd.getTime()) return "week";
+  if (due <= nextWeekEnd.getTime()) return "next-week";
+  if (due <= monthEnd.getTime()) return "month";
+  return "later";
+}
