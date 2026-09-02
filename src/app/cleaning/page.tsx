@@ -1,7 +1,7 @@
 import { getCleaningDashboardData } from "@/db/queries";
-import { classifyByTimeframe, type CleaningTimeframeBucket } from "@/lib/cleaningStatus";
+import { classifyByTimeframe, getTimeframeBoundaries, type CleaningTimeframeBucket } from "@/lib/cleaningStatus";
 import { Nav } from "@/components/Nav";
-import { Card } from "@/components/ui";
+import { Card, formatDateRange, formatMonthName } from "@/components/ui";
 import { AddAreaForm, AddTaskForm } from "./CleaningForms";
 import { CleaningTasksView, type TaskGroup } from "./CleaningTasksView";
 import { jewelFor, NEUTRAL_JEWEL } from "@/lib/jewels";
@@ -45,11 +45,24 @@ export default async function CleaningPage() {
   }
   for (const tasks of Object.values(buckets)) tasks.sort(byDueDate);
 
+  const boundaries = getTimeframeBoundaries();
   const timeframeGroups: TaskGroup[] = [
     { key: "overdue", name: "Overdue", tasks: buckets.overdue },
-    { key: "week", name: "This week", tasks: buckets.week },
-    { key: "next-week", name: "Next week", tasks: buckets["next-week"] },
-    { key: "month", name: "This month", tasks: buckets.month },
+    {
+      key: "week",
+      name: `This week (${formatDateRange(boundaries.thisWeekStart, boundaries.thisWeekEnd)})`,
+      tasks: buckets.week,
+    },
+    {
+      key: "next-week",
+      name: `Next week (${formatDateRange(boundaries.nextWeekStart, boundaries.nextWeekEnd)})`,
+      tasks: buckets["next-week"],
+    },
+    {
+      key: "month",
+      name: `This month (${formatMonthName(boundaries.monthStart)})`,
+      tasks: buckets.month,
+    },
     { key: "later", name: "Later", tasks: buckets.later },
   ];
 

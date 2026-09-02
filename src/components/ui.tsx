@@ -44,6 +44,22 @@ export function formatDate(date: Date | string | null) {
   });
 }
 
+// Compact "Sep 6-12" (or "Aug 30 - Sep 5" when the range crosses a month
+// boundary) for labeling a date range like a calendar week.
+export function formatDateRange(start: Date, end: Date) {
+  const startMonth = start.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+  const endMonth = end.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+  const startDay = start.getUTCDate();
+  const endDay = end.getUTCDate();
+  return startMonth === endMonth
+    ? `${startMonth} ${startDay}-${endDay}`
+    : `${startMonth} ${startDay} - ${endMonth} ${endDay}`;
+}
+
+export function formatMonthName(date: Date) {
+  return date.toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
+}
+
 export const inputClass =
   "w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-neutral-100 outline-none focus:border-neutral-500";
 

@@ -6,10 +6,15 @@ import {
   getTodos,
 } from "@/db/queries";
 import { Nav } from "@/components/Nav";
-import { Card, formatCurrency, formatDate } from "@/components/ui";
+import { Card, formatCurrency, formatDate, formatDateRange, formatMonthName } from "@/components/ui";
 import { MinimumPaymentBadge } from "@/components/MinimumPaymentBadge";
 import { StreakBadge } from "@/components/StreakBadge";
-import { classifyByTimeframe, type CleaningStatus, type CleaningTimeframeBucket } from "@/lib/cleaningStatus";
+import {
+  classifyByTimeframe,
+  getTimeframeBoundaries,
+  type CleaningStatus,
+  type CleaningTimeframeBucket,
+} from "@/lib/cleaningStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +63,8 @@ export default async function OverviewPage() {
   // column in this compact teaser — they're still visible in full on
   // /cleaning — so they're folded in alongside the rest of the month here.
   const dueThisMonth = [...buckets.month, ...buckets.later].sort(byDueDate);
+
+  const boundaries = getTimeframeBoundaries();
 
   const paymentsDue = debtSummaries.filter(
     (d) => d.latestStatement && Number(d.latestStatement.minimumPaymentDue) > 0,
@@ -130,9 +137,24 @@ export default async function OverviewPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <CleaningColumn title="Overdue" tasks={dueOverdue} emptyLabel="Nothing overdue" />
-            <CleaningColumn title="This week" tasks={dueThisWeek} emptyLabel="Nothing due this week" />
-            <CleaningColumn title="Next week" tasks={dueNextWeek} emptyLabel="Nothing due next week" />
-            <CleaningColumn title="This month" tasks={dueThisMonth} emptyLabel="Nothing else due this month" />
+            <CleaningColumn
+              title="This week"
+              subtitle={formatDateRange(boundaries.thisWeekStart, boundaries.thisWeekEnd)}
+              tasks={dueThisWeek}
+              emptyLabel="Nothing due this week"
+            />
+            <CleaningColumn
+              title="Next week"
+              subtitle={formatDateRange(boundaries.nextWeekStart, boundaries.nextWeekEnd)}
+              tasks={dueNextWeek}
+              emptyLabel="Nothing due next week"
+            />
+            <CleaningColumn
+              title="This month"
+              subtitle={formatMonthName(boundaries.monthStart)}
+              tasks={dueThisMonth}
+              emptyLabel="Nothing else due this month"
+            />
           </div>
         </section>
 
@@ -174,16 +196,19 @@ export default async function OverviewPage() {
 
 function CleaningColumn({
   title,
+  subtitle,
   tasks,
   emptyLabel,
 }: {
   title: string;
+  subtitle?: string;
   tasks: CleaningTask[];
   emptyLabel: string;
 }) {
   return (
     <Card>
-      <h3 className="mb-2 text-sm font-medium text-neutral-500">{title}</h3>
+      <h3 className={`text-sm font-medium text-neutral-500 ${subtitle ? "" : "mb-2"}`}>{title}</h3>
+      {subtitle && <p className="mb-2 text-xs text-neutral-600">{subtitle}</p>}
       {tasks.length === 0 ? (
         <p className="text-sm text-neutral-500">{emptyLabel}</p>
       ) : (

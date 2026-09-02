@@ -48,12 +48,36 @@ function endOfMonthUtc(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0));
 }
 
+export type CleaningTimeframeBoundaries = {
+  thisWeekStart: Date;
+  thisWeekEnd: Date;
+  nextWeekStart: Date;
+  nextWeekEnd: Date;
+  monthStart: Date;
+  monthEnd: Date;
+};
+
+// The date ranges behind each timeframe bucket, exposed so the UI can
+// label a bucket with its actual dates (e.g. "This week (Sep 6-12)")
+// instead of just the bucket name. Weeks run Sunday-Saturday.
+export function getTimeframeBoundaries(today: Date = new Date()): CleaningTimeframeBoundaries {
+  const todayOnly = dateOnlyInAppTimezone(today);
+  const thisWeekStart = startOfWeekUtc(todayOnly);
+  const thisWeekEnd = new Date(thisWeekStart.getTime() + 6 * MS_PER_DAY);
+  const nextWeekStart = new Date(thisWeekEnd.getTime() + MS_PER_DAY);
+  const nextWeekEnd = new Date(nextWeekStart.getTime() + 6 * MS_PER_DAY);
+  const monthStart = new Date(Date.UTC(todayOnly.getUTCFullYear(), todayOnly.getUTCMonth(), 1));
+  const monthEnd = endOfMonthUtc(todayOnly);
+
+  return { thisWeekStart, thisWeekEnd, nextWeekStart, nextWeekEnd, monthStart, monthEnd };
+}
+
 /**
  * Buckets a task by calendar week/month rather than a rolling day-count
  * window, so a weekly task completed today (pushing its due date ~7 days
  * out) lands in "next week" instead of still reading as "this week" —
  * a rolling window would keep re-including it since the window itself
- * shifts along with `today`. Weeks run Sunday–Saturday.
+ * shifts along with `today`.
  */
 export function classifyByTimeframe(
   status: CleaningStatus,
@@ -62,11 +86,7 @@ export function classifyByTimeframe(
 ): CleaningTimeframeBucket {
   if (status === "overdue") return "overdue";
 
-  const todayOnly = dateOnlyInAppTimezone(today);
-  const thisWeekStart = startOfWeekUtc(todayOnly);
-  const thisWeekEnd = new Date(thisWeekStart.getTime() + 6 * MS_PER_DAY);
-  const nextWeekEnd = new Date(thisWeekEnd.getTime() + 7 * MS_PER_DAY);
-  const monthEnd = endOfMonthUtc(todayOnly);
+  const { thisWeekEnd, nextWeekEnd, monthEnd } = getTimeframeBoundaries(today);
 
   const due = dueDate.getTime();
   if (due <= thisWeekEnd.getTime()) return "week";
