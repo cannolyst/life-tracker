@@ -4,7 +4,7 @@ import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
 import { AddYearReviewCategoryForm, AddYearReviewItemForm } from "./YearReviewForms";
 import { YearReviewItemRow } from "./YearReviewItemRow";
-import { deleteYearReviewCategory } from "./actions";
+import { DeleteCategoryButton } from "./DeleteCategoryButton";
 import { jewelFor } from "@/lib/jewels";
 import { Sparkle } from "@/components/Sparkle";
 
@@ -74,50 +74,42 @@ export default async function YearReviewPage({
             {categoriesWithItems.map(({ category, items }, i) => {
               const jewel = jewelFor(i);
               return (
-                <div key={category.id} className="relative">
-                  <details open className="rounded-lg border border-neutral-800 bg-neutral-900 p-5">
-                    <summary className="mb-2 flex cursor-pointer items-center gap-2 pr-6 font-medium">
-                      <Sparkle className="h-3.5 w-3.5" color={jewel.color} />
-                      {category.name}
-                    </summary>
+                <details
+                  key={category.id}
+                  open
+                  className="rounded-lg border border-neutral-800 bg-neutral-900 p-5"
+                >
+                  <summary className="mb-2 flex cursor-pointer items-center gap-2 font-medium">
+                    <Sparkle className="h-3.5 w-3.5" color={jewel.color} />
+                    {category.name}
+                  </summary>
 
-                    <AddYearReviewItemForm
-                      categoryId={category.id}
-                      people={allPeople}
-                      places={allPlaces}
-                    />
+                  <AddYearReviewItemForm
+                    categoryId={category.id}
+                    people={allPeople}
+                    places={allPlaces}
+                  />
 
-                    {items.length === 0 ? (
-                      <p className="mt-3 text-sm text-neutral-500">
-                        Nothing logged for {year} yet.
-                      </p>
-                    ) : (
-                      <ul className="mt-3 space-y-2">
-                        {items.map((item) => (
-                          <YearReviewItemRow
-                            key={item.id}
-                            item={item}
-                            jewel={jewel}
-                            allPeople={allPeople}
-                            allPlaces={allPlaces}
-                          />
-                        ))}
-                      </ul>
-                    )}
-                  </details>
-                  <form
-                    action={deleteYearReviewCategory.bind(null, category.id)}
-                    className="absolute right-5 top-5"
-                  >
-                    <button
-                      type="submit"
-                      aria-label="Delete category"
-                      className="text-neutral-600 hover:text-red-400"
-                    >
-                      ✕
-                    </button>
-                  </form>
-                </div>
+                  {items.length === 0 ? (
+                    <p className="mt-3 text-sm text-neutral-500">
+                      Nothing logged for {year} yet.
+                    </p>
+                  ) : (
+                    <ul className="mt-3 space-y-2">
+                      {items.map((item) => (
+                        <YearReviewItemRow
+                          key={item.id}
+                          item={item}
+                          jewel={jewel}
+                          allPeople={allPeople}
+                          allPlaces={allPlaces}
+                        />
+                      ))}
+                    </ul>
+                  )}
+
+                  <DeleteCategoryButton categoryId={category.id} categoryName={category.name} />
+                </details>
               );
             })}
           </div>
