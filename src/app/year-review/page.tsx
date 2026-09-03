@@ -43,11 +43,6 @@ export default async function YearReviewPage({
           </div>
         </div>
 
-        <Card>
-          <h2 className="mb-3 font-medium">Add category</h2>
-          <AddYearReviewCategoryForm />
-        </Card>
-
         {categoriesWithItems.length > 0 && (
           <Card>
             <h2 className="mb-3 font-medium">Totals for {year}</h2>
@@ -66,6 +61,11 @@ export default async function YearReviewPage({
             </div>
           </Card>
         )}
+
+        <Card>
+          <h2 className="mb-3 font-medium">Add category</h2>
+          <AddYearReviewCategoryForm />
+        </Card>
 
         {categoriesWithItems.length === 0 ? (
           <p className="text-sm text-neutral-500">No categories yet — add one above.</p>
