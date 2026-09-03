@@ -43,6 +43,11 @@ export default async function YearReviewPage({
           </div>
         </div>
 
+        <Card>
+          <h2 className="mb-3 font-medium">Add category</h2>
+          <AddYearReviewCategoryForm />
+        </Card>
+
         {categoriesWithItems.length > 0 && (
           <Card>
             <h2 className="mb-3 font-medium">Totals for {year}</h2>
@@ -63,62 +68,60 @@ export default async function YearReviewPage({
         )}
 
         {categoriesWithItems.length === 0 ? (
-          <p className="text-sm text-neutral-500">No categories yet — add one below.</p>
+          <p className="text-sm text-neutral-500">No categories yet — add one above.</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {categoriesWithItems.map(({ category, items }, i) => {
               const jewel = jewelFor(i);
               return (
-                <Card key={category.id}>
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3 className="flex items-center gap-2 font-medium">
+                <div key={category.id} className="relative">
+                  <details open className="rounded-lg border border-neutral-800 bg-neutral-900 p-5">
+                    <summary className="mb-2 flex cursor-pointer items-center gap-2 pr-6 font-medium">
                       <Sparkle className="h-3.5 w-3.5" color={jewel.color} />
                       {category.name}
-                    </h3>
-                    <form action={deleteYearReviewCategory.bind(null, category.id)}>
-                      <button
-                        type="submit"
-                        aria-label="Delete category"
-                        className="text-neutral-600 hover:text-red-400"
-                      >
-                        ✕
-                      </button>
-                    </form>
-                  </div>
+                    </summary>
 
-                  <AddYearReviewItemForm
-                    categoryId={category.id}
-                    people={allPeople}
-                    places={allPlaces}
-                  />
+                    <AddYearReviewItemForm
+                      categoryId={category.id}
+                      people={allPeople}
+                      places={allPlaces}
+                    />
 
-                  {items.length === 0 ? (
-                    <p className="mt-3 text-sm text-neutral-500">
-                      Nothing logged for {year} yet.
-                    </p>
-                  ) : (
-                    <ul className="mt-3 space-y-2">
-                      {items.map((item) => (
-                        <YearReviewItemRow
-                          key={item.id}
-                          item={item}
-                          jewel={jewel}
-                          allPeople={allPeople}
-                          allPlaces={allPlaces}
-                        />
-                      ))}
-                    </ul>
-                  )}
-                </Card>
+                    {items.length === 0 ? (
+                      <p className="mt-3 text-sm text-neutral-500">
+                        Nothing logged for {year} yet.
+                      </p>
+                    ) : (
+                      <ul className="mt-3 space-y-2">
+                        {items.map((item) => (
+                          <YearReviewItemRow
+                            key={item.id}
+                            item={item}
+                            jewel={jewel}
+                            allPeople={allPeople}
+                            allPlaces={allPlaces}
+                          />
+                        ))}
+                      </ul>
+                    )}
+                  </details>
+                  <form
+                    action={deleteYearReviewCategory.bind(null, category.id)}
+                    className="absolute right-5 top-5"
+                  >
+                    <button
+                      type="submit"
+                      aria-label="Delete category"
+                      className="text-neutral-600 hover:text-red-400"
+                    >
+                      ✕
+                    </button>
+                  </form>
+                </div>
               );
             })}
           </div>
         )}
-
-        <Card>
-          <h2 className="mb-3 font-medium">Add category</h2>
-          <AddYearReviewCategoryForm />
-        </Card>
       </main>
     </div>
   );
