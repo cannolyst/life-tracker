@@ -33,3 +33,8 @@ export async function deleteTodo(todoId: string) {
   await db.delete(todos).where(eq(todos.id, todoId));
   revalidateAll();
 }
+
+export async function clearCompletedTodos() {
+  await db.delete(todos).where(eq(todos.done, true));
+  revalidateAll();
+}

@@ -2,7 +2,7 @@ import { getTodos } from "@/db/queries";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
 import { AddTodoForm } from "./TodoForm";
-import { setTodoDone, deleteTodo } from "./actions";
+import { setTodoDone, deleteTodo, clearCompletedTodos } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +53,17 @@ export default async function TodoPage() {
 
         {done.length > 0 && (
           <Card>
-            <h2 className="mb-2 text-sm font-medium text-neutral-500">Done</h2>
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-sm font-medium text-neutral-500">Done</h2>
+              <form action={clearCompletedTodos}>
+                <button
+                  type="submit"
+                  className="text-xs text-neutral-500 hover:text-red-400"
+                >
+                  Clear all
+                </button>
+              </form>
+            </div>
             <ul className="space-y-2">
               {done.map((todo) => (
                 <li key={todo.id} className="flex items-center justify-between gap-3">
