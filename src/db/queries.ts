@@ -1,4 +1,4 @@
-import { eq, and, inArray, sum, desc } from "drizzle-orm";
+import { eq, and, inArray, gte, lte, sum, desc } from "drizzle-orm";
 import { db } from "./index";
 import {
   accounts,
@@ -756,6 +756,39 @@ export async function getWorkoutDays() {
     .from(workoutDays)
     .where(eq(workoutDays.archived, false))
     .orderBy(workoutDays.orderIndex);
+}
+
+// Which of the split's days have already been logged this calendar week,
+// so the page can show progress at a glance (e.g. "Leg day done").
+export async function getWorkoutWeekProgress() {
+  const days = await db
+    .select()
+    .from(workoutDays)
+    .where(eq(workoutDays.archived, false))
+    .orderBy(workoutDays.orderIndex);
+
+  const todayOnly = dateOnlyInAppTimezone();
+  const weekStart = startOfWeekUtc(todayOnly);
+  const weekEnd = new Date(weekStart.getTime() + 6 * MS_PER_DAY);
+  const weekStartKey = weekStart.toISOString().slice(0, 10);
+  const weekEndKey = weekEnd.toISOString().slice(0, 10);
+
+  const sessions = await db
+    .select()
+    .from(workoutSessions)
+    .where(and(gte(workoutSessions.date, weekStartKey), lte(workoutSessions.date, weekEndKey)));
+  const sessionByDayId = new Map(sessions.map((s) => [s.dayId, s]));
+
+  return {
+    weekStart,
+    weekEnd,
+    days: days.map((d) => ({
+      id: d.id,
+      name: d.name,
+      completed: sessionByDayId.has(d.id),
+      date: sessionByDayId.get(d.id)?.date ?? null,
+    })),
+  };
 }
 
 export async function getWorkoutDayData(dayId: string) {

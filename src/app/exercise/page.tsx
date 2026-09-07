@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { getWorkoutDays, getWorkoutDayData } from "@/db/queries";
+import { getWorkoutDays, getWorkoutDayData, getWorkoutWeekProgress } from "@/db/queries";
 import { Nav } from "@/components/Nav";
-import { Card } from "@/components/ui";
+import { Card, formatDateRange } from "@/components/ui";
 import { ExerciseCard } from "./ExerciseCard";
 import { AddExerciseForm } from "./ExerciseForms";
-import { jewelFor } from "@/lib/jewels";
+import { jewelFor, jewelChipStyle, JEWELS } from "@/lib/jewels";
 
 export const dynamic = "force-dynamic";
 
@@ -29,13 +29,38 @@ export default async function ExercisePage({
   }
 
   const selectedDayId = dayParam && days.some((d) => d.id === dayParam) ? dayParam : days[0].id;
-  const { day, exercises } = await getWorkoutDayData(selectedDayId);
+  const [{ day, exercises }, weekProgress] = await Promise.all([
+    getWorkoutDayData(selectedDayId),
+    getWorkoutWeekProgress(),
+  ]);
 
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-xl font-semibold">Exercise</h1>
+
+        <Card>
+          <h2 className="mb-3 font-medium">
+            This week&apos;s workouts ({formatDateRange(weekProgress.weekStart, weekProgress.weekEnd)})
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {weekProgress.days.map((d) => (
+              <span
+                key={d.id}
+                className={
+                  d.completed
+                    ? "rounded-full px-3 py-1.5 text-sm"
+                    : "rounded-full border border-neutral-800 px-3 py-1.5 text-sm text-neutral-500"
+                }
+                style={d.completed ? jewelChipStyle(JEWELS[2]) : undefined}
+              >
+                {d.completed ? "✓ " : ""}
+                {d.name}
+              </span>
+            ))}
+          </div>
+        </Card>
 
         <div className="flex flex-wrap gap-2">
           {days.map((d) => (
