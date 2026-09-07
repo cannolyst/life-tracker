@@ -760,11 +760,11 @@ type WorkoutSetRow = { sessionId: string; weight: string | null; reps: number | 
 // Groups an exercise's sets by the session date they were logged on, so
 // overload evaluation can compare "session N-1" against "session N" rather
 // than individual sets.
-function groupSetsBySessionDate(
-  exerciseSets: WorkoutSetRow[],
+function groupSetsBySessionDate<T extends { sessionId: string }>(
+  exerciseSets: T[],
   sessionById: Map<string, { date: string }>,
-): Map<string, WorkoutSetRow[]> {
-  const bySessionDate = new Map<string, WorkoutSetRow[]>();
+): Map<string, T[]> {
+  const bySessionDate = new Map<string, T[]>();
   for (const set of exerciseSets) {
     const session = sessionById.get(set.sessionId);
     if (!session) continue;
@@ -963,12 +963,27 @@ export async function getWorkoutDayData(dayId: string) {
             .find((s) => s.weight != null)?.weight ?? null)
         : null;
 
+    // The most recent session strictly before today, so "last time" always
+    // reflects your previous workout even after you've already logged
+    // today's first set.
+    const priorDates = sortedDates.filter((d) => d !== todayKey);
+    const lastSessionDate = priorDates[priorDates.length - 1] ?? null;
+    const lastSessionSets =
+      lastSessionDate !== null
+        ? setsBySessionDate
+            .get(lastSessionDate)!
+            .slice()
+            .sort((a, b) => a.setNumber - b.setNumber)
+        : [];
+
     return {
       ...exercise,
       todaySets,
       trend,
       overload,
       lastWeightUsed: lastWeightUsed != null ? Number(lastWeightUsed) : null,
+      lastSessionDate,
+      lastSessionSets,
     };
   });
 

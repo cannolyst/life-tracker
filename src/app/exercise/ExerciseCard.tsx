@@ -8,7 +8,7 @@ import {
   archiveExercise,
   type ActionState,
 } from "./actions";
-import { inputClass, labelClass, buttonClass } from "@/components/ui";
+import { inputClass, labelClass, buttonClass, formatDate } from "@/components/ui";
 import { jewelChipStyle, JEWELS, NEUTRAL_JEWEL } from "@/lib/jewels";
 import { Sparkle } from "@/components/Sparkle";
 import type { WeekTrend } from "@/lib/workout";
@@ -37,9 +37,16 @@ type Exercise = {
   trend: WeekTrend;
   overload: { ready: boolean; currentWeight: number | null };
   lastWeightUsed: number | null;
+  lastSessionDate: string | null;
+  lastSessionSets: SetRow[];
 };
 
 const initialState: ActionState = {};
+
+function formatSet(set: SetRow, tracksDuration: boolean): string {
+  if (tracksDuration) return `${set.durationSeconds}s`;
+  return `${set.weight != null ? Number(set.weight) : "—"} lbs × ${set.reps ?? "—"}`;
+}
 
 export function TrendBadge({ trend }: { trend: WeekTrend }) {
   if (trend === "no-data") return null;
@@ -158,6 +165,13 @@ export function ExerciseCard({
         </form>
       )}
 
+      {exercise.lastSessionSets.length > 0 && (
+        <p className="mb-3 text-xs text-neutral-500">
+          Last time ({formatDate(exercise.lastSessionDate)}):{" "}
+          {exercise.lastSessionSets.map((s) => formatSet(s, exercise.tracksDuration)).join(", ")}
+        </p>
+      )}
+
       {exercise.todaySets.length > 0 && (
         <ul className="mb-3 space-y-1">
           {exercise.todaySets.map((set) => (
@@ -167,10 +181,7 @@ export function ExerciseCard({
               style={jewelChipStyle(jewel)}
             >
               <span>
-                Set {set.setNumber}:{" "}
-                {exercise.tracksDuration
-                  ? `${set.durationSeconds}s`
-                  : `${set.weight != null ? Number(set.weight) : "—"} lbs × ${set.reps ?? "—"}`}
+                Set {set.setNumber}: {formatSet(set, exercise.tracksDuration)}
               </span>
               <form action={deleteSet.bind(null, set.id)}>
                 <button type="submit" aria-label="Delete set" className="hover:text-red-400">
