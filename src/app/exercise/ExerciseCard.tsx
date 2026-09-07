@@ -41,7 +41,7 @@ type Exercise = {
 
 const initialState: ActionState = {};
 
-function TrendBadge({ trend }: { trend: WeekTrend }) {
+export function TrendBadge({ trend }: { trend: WeekTrend }) {
   if (trend === "no-data") return null;
   const jewel = trend === "up" ? UP_JEWEL : trend === "down" ? DOWN_JEWEL : NEUTRAL_JEWEL;
   const label = trend === "up" ? "▲ Up" : trend === "down" ? "▼ Down" : "— Flat";

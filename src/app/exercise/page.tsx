@@ -1,8 +1,13 @@
 import Link from "next/link";
-import { getWorkoutDays, getWorkoutDayData, getWorkoutWeekProgress } from "@/db/queries";
+import {
+  getWorkoutDays,
+  getWorkoutDayData,
+  getWorkoutWeekProgress,
+  getWorkoutDashboardStats,
+} from "@/db/queries";
 import { Nav } from "@/components/Nav";
 import { Card, formatDateRange } from "@/components/ui";
-import { ExerciseCard } from "./ExerciseCard";
+import { ExerciseCard, TrendBadge } from "./ExerciseCard";
 import { AddExerciseForm } from "./ExerciseForms";
 import { jewelFor, jewelChipStyle, JEWELS } from "@/lib/jewels";
 
@@ -29,9 +34,10 @@ export default async function ExercisePage({
   }
 
   const selectedDayId = dayParam && days.some((d) => d.id === dayParam) ? dayParam : days[0].id;
-  const [{ day, exercises }, weekProgress] = await Promise.all([
+  const [{ day, exercises }, weekProgress, stats] = await Promise.all([
     getWorkoutDayData(selectedDayId),
     getWorkoutWeekProgress(),
+    getWorkoutDashboardStats(),
   ]);
 
   return (
@@ -59,6 +65,27 @@ export default async function ExercisePage({
                 {d.name}
               </span>
             ))}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-neutral-500">Ready to increase</p>
+              <p className="text-2xl font-semibold" style={{ color: JEWELS[4].color }}>
+                {stats.readyToIncreaseCount}
+              </p>
+            </div>
+            <div>
+              <p className="text-neutral-500">Weekly volume</p>
+              <p className="text-2xl font-semibold">
+                {stats.thisWeekVolume.toLocaleString()}{" "}
+                <span className="text-sm font-normal text-neutral-500">lb·reps</span>
+              </p>
+              <div className="mt-1">
+                <TrendBadge trend={stats.volumeTrend} />
+              </div>
+            </div>
           </div>
         </Card>
 

@@ -40,7 +40,12 @@ import { computeStreak } from "@/lib/streak";
 import { computeCleaningStatus, classifyByTimeframe } from "@/lib/cleaningStatus";
 import { dateKeyInAppTimezone, dateOnlyInAppTimezone, startOfWeekUtc } from "@/lib/timezone";
 import { computeMinimumPaymentStatus, computeExtraPaidOverMinimum } from "@/lib/minimumPayment";
-import { compareWeekOverWeek, evaluateProgressiveOverload, type SetEntry } from "@/lib/workout";
+import {
+  compareWeekOverWeek,
+  evaluateProgressiveOverload,
+  type SetEntry,
+  type WeekTrend,
+} from "@/lib/workout";
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -750,6 +755,37 @@ function toSetEntry(set: { weight: string | null; reps: number | null; durationS
   };
 }
 
+type WorkoutSetRow = { sessionId: string; weight: string | null; reps: number | null; durationSeconds: number | null };
+
+// Groups an exercise's sets by the session date they were logged on, so
+// overload evaluation can compare "session N-1" against "session N" rather
+// than individual sets.
+function groupSetsBySessionDate(
+  exerciseSets: WorkoutSetRow[],
+  sessionById: Map<string, { date: string }>,
+): Map<string, WorkoutSetRow[]> {
+  const bySessionDate = new Map<string, WorkoutSetRow[]>();
+  for (const set of exerciseSets) {
+    const session = sessionById.get(set.sessionId);
+    if (!session) continue;
+    const list = bySessionDate.get(session.date) ?? [];
+    list.push(set);
+    bySessionDate.set(session.date, list);
+  }
+  return bySessionDate;
+}
+
+function computeOverloadForExercise(
+  exerciseSets: WorkoutSetRow[],
+  sessionById: Map<string, { date: string }>,
+  targetReps: number,
+) {
+  const bySessionDate = groupSetsBySessionDate(exerciseSets, sessionById);
+  const sortedDates = Array.from(bySessionDate.keys()).sort();
+  const recentSessionSets = sortedDates.map((d) => bySessionDate.get(d)!.map(toSetEntry));
+  return evaluateProgressiveOverload(recentSessionSets, targetReps);
+}
+
 export async function getWorkoutDays() {
   return db
     .select()
@@ -791,6 +827,80 @@ export async function getWorkoutWeekProgress() {
   };
 }
 
+// Two whole-app rollups for the top of the Exercise page: how many active
+// exercises are currently flagged ready for a weight increase, and how
+// this week's total training volume (weight x reps, strength sets only —
+// duration holds like Plank aren't measured in "volume") compares to last
+// week's.
+export async function getWorkoutDashboardStats() {
+  const exercises = await db
+    .select()
+    .from(workoutExercises)
+    .where(eq(workoutExercises.archived, false));
+
+  const exerciseIds = exercises.map((e) => e.id);
+  const allSets =
+    exerciseIds.length > 0
+      ? await db.select().from(workoutSets).where(inArray(workoutSets.exerciseId, exerciseIds))
+      : [];
+
+  const sessionIds = Array.from(new Set(allSets.map((s) => s.sessionId)));
+  const sessions =
+    sessionIds.length > 0
+      ? await db.select().from(workoutSessions).where(inArray(workoutSessions.id, sessionIds))
+      : [];
+  const sessionById = new Map(sessions.map((s) => [s.id, s]));
+
+  const setsByExercise = new Map<string, WorkoutSetRow[]>();
+  for (const set of allSets) {
+    const list = setsByExercise.get(set.exerciseId) ?? [];
+    list.push(set);
+    setsByExercise.set(set.exerciseId, list);
+  }
+
+  let readyToIncreaseCount = 0;
+  for (const exercise of exercises) {
+    const exerciseSets = setsByExercise.get(exercise.id) ?? [];
+    const overload = computeOverloadForExercise(exerciseSets, sessionById, exercise.targetReps);
+    if (overload.ready) readyToIncreaseCount++;
+  }
+
+  const todayOnly = dateOnlyInAppTimezone();
+  const thisWeekStart = startOfWeekUtc(todayOnly);
+  const thisWeekEnd = new Date(thisWeekStart.getTime() + 6 * MS_PER_DAY);
+  const lastWeekStart = new Date(thisWeekStart.getTime() - 7 * MS_PER_DAY);
+  const lastWeekEnd = new Date(thisWeekStart.getTime() - MS_PER_DAY);
+  const inRange = (dateKey: string, start: Date, end: Date) => {
+    const d = new Date(`${dateKey}T00:00:00Z`);
+    return d.getTime() >= start.getTime() && d.getTime() <= end.getTime();
+  };
+
+  const exerciseById = new Map(exercises.map((e) => [e.id, e]));
+  let thisWeekVolume = 0;
+  let lastWeekVolume = 0;
+  for (const set of allSets) {
+    const exercise = exerciseById.get(set.exerciseId);
+    if (!exercise || exercise.tracksDuration) continue;
+    if (set.weight == null || set.reps == null) continue;
+    const session = sessionById.get(set.sessionId);
+    if (!session) continue;
+    const volume = Number(set.weight) * set.reps;
+    if (inRange(session.date, thisWeekStart, thisWeekEnd)) thisWeekVolume += volume;
+    else if (inRange(session.date, lastWeekStart, lastWeekEnd)) lastWeekVolume += volume;
+  }
+
+  const volumeTrend: WeekTrend =
+    thisWeekVolume === 0 && lastWeekVolume === 0
+      ? "no-data"
+      : thisWeekVolume > lastWeekVolume
+        ? "up"
+        : thisWeekVolume < lastWeekVolume
+          ? "down"
+          : "flat";
+
+  return { readyToIncreaseCount, thisWeekVolume, lastWeekVolume, volumeTrend };
+}
+
 export async function getWorkoutDayData(dayId: string) {
   const [day] = await db.select().from(workoutDays).where(eq(workoutDays.id, dayId));
   const exercises = await db
@@ -823,18 +933,9 @@ export async function getWorkoutDayData(dayId: string) {
 
   const exercisesWithData = exercises.map((exercise) => {
     const exerciseSets = allSets.filter((s) => s.exerciseId === exercise.id);
-
-    const setsBySessionDate = new Map<string, typeof exerciseSets>();
-    for (const set of exerciseSets) {
-      const session = sessionById.get(set.sessionId);
-      if (!session) continue;
-      const list = setsBySessionDate.get(session.date) ?? [];
-      list.push(set);
-      setsBySessionDate.set(session.date, list);
-    }
+    const setsBySessionDate = groupSetsBySessionDate(exerciseSets, sessionById);
     const sortedDates = Array.from(setsBySessionDate.keys()).sort();
-    const recentSessionSets = sortedDates.map((d) => setsBySessionDate.get(d)!.map(toSetEntry));
-    const overload = evaluateProgressiveOverload(recentSessionSets, exercise.targetReps);
+    const overload = computeOverloadForExercise(exerciseSets, sessionById, exercise.targetReps);
 
     const inRange = (dateKey: string, start: Date, end: Date) => {
       const d = new Date(`${dateKey}T00:00:00Z`);
