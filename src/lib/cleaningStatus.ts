@@ -1,4 +1,4 @@
-import { dateOnlyInAppTimezone } from "./timezone";
+import { dateOnlyInAppTimezone, startOfWeekUtc } from "./timezone";
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -37,12 +37,6 @@ export function computeCleaningStatus(
 }
 
 export type CleaningTimeframeBucket = "overdue" | "week" | "next-week" | "month" | "later";
-
-function startOfWeekUtc(d: Date): Date {
-  const sunday = new Date(d);
-  sunday.setUTCDate(sunday.getUTCDate() - d.getUTCDay());
-  return sunday;
-}
 
 function endOfMonthUtc(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0));

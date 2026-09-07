@@ -1,4 +1,4 @@
-import { eq, sum, desc } from "drizzle-orm";
+import { eq, and, inArray, sum, desc } from "drizzle-orm";
 import { db } from "./index";
 import {
   accounts,
@@ -24,6 +24,10 @@ import {
   yearReviewItemPeople,
   places,
   yearReviewItemPlaces,
+  workoutDays,
+  workoutExercises,
+  workoutSessions,
+  workoutSets,
 } from "./schema";
 import {
   projectSavingsDate,
@@ -34,8 +38,9 @@ import {
 } from "@/lib/projections";
 import { computeStreak } from "@/lib/streak";
 import { computeCleaningStatus, classifyByTimeframe } from "@/lib/cleaningStatus";
-import { dateKeyInAppTimezone, dateOnlyInAppTimezone } from "@/lib/timezone";
+import { dateKeyInAppTimezone, dateOnlyInAppTimezone, startOfWeekUtc } from "@/lib/timezone";
 import { computeMinimumPaymentStatus, computeExtraPaidOverMinimum } from "@/lib/minimumPayment";
+import { compareWeekOverWeek, evaluateProgressiveOverload, type SetEntry } from "@/lib/workout";
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -733,4 +738,139 @@ export async function getYearReviewData(selectedYear?: number) {
   }));
 
   return { years, year, categoriesWithItems, allPeople, allPlaces };
+}
+
+// --- Workout tracker ---
+
+function toSetEntry(set: { weight: string | null; reps: number | null; durationSeconds: number | null }): SetEntry {
+  return {
+    weight: set.weight != null ? Number(set.weight) : null,
+    reps: set.reps,
+    durationSeconds: set.durationSeconds,
+  };
+}
+
+export async function getWorkoutDays() {
+  return db
+    .select()
+    .from(workoutDays)
+    .where(eq(workoutDays.archived, false))
+    .orderBy(workoutDays.orderIndex);
+}
+
+export async function getWorkoutDayData(dayId: string) {
+  const [day] = await db.select().from(workoutDays).where(eq(workoutDays.id, dayId));
+  const exercises = await db
+    .select()
+    .from(workoutExercises)
+    .where(and(eq(workoutExercises.dayId, dayId), eq(workoutExercises.archived, false)))
+    .orderBy(workoutExercises.orderIndex);
+
+  const sessions = await db
+    .select()
+    .from(workoutSessions)
+    .where(eq(workoutSessions.dayId, dayId))
+    .orderBy(desc(workoutSessions.date));
+  const sessionById = new Map(sessions.map((s) => [s.id, s]));
+
+  const sessionIds = sessions.map((s) => s.id);
+  const allSets =
+    sessionIds.length > 0
+      ? await db.select().from(workoutSets).where(inArray(workoutSets.sessionId, sessionIds))
+      : [];
+
+  const todayKey = dateKeyInAppTimezone();
+  const todaySession = sessions.find((s) => s.date === todayKey) ?? null;
+
+  const todayOnly = dateOnlyInAppTimezone();
+  const thisWeekStart = startOfWeekUtc(todayOnly);
+  const thisWeekEnd = new Date(thisWeekStart.getTime() + 6 * MS_PER_DAY);
+  const lastWeekStart = new Date(thisWeekStart.getTime() - 7 * MS_PER_DAY);
+  const lastWeekEnd = new Date(thisWeekStart.getTime() - MS_PER_DAY);
+
+  const exercisesWithData = exercises.map((exercise) => {
+    const exerciseSets = allSets.filter((s) => s.exerciseId === exercise.id);
+
+    const setsBySessionDate = new Map<string, typeof exerciseSets>();
+    for (const set of exerciseSets) {
+      const session = sessionById.get(set.sessionId);
+      if (!session) continue;
+      const list = setsBySessionDate.get(session.date) ?? [];
+      list.push(set);
+      setsBySessionDate.set(session.date, list);
+    }
+    const sortedDates = Array.from(setsBySessionDate.keys()).sort();
+    const recentSessionSets = sortedDates.map((d) => setsBySessionDate.get(d)!.map(toSetEntry));
+    const overload = evaluateProgressiveOverload(recentSessionSets, exercise.targetReps);
+
+    const inRange = (dateKey: string, start: Date, end: Date) => {
+      const d = new Date(`${dateKey}T00:00:00Z`);
+      return d.getTime() >= start.getTime() && d.getTime() <= end.getTime();
+    };
+    const thisWeekSets = exerciseSets
+      .filter((s) => inRange(sessionById.get(s.sessionId)!.date, thisWeekStart, thisWeekEnd))
+      .map(toSetEntry);
+    const lastWeekSets = exerciseSets
+      .filter((s) => inRange(sessionById.get(s.sessionId)!.date, lastWeekStart, lastWeekEnd))
+      .map(toSetEntry);
+    const trend = compareWeekOverWeek(thisWeekSets, lastWeekSets);
+
+    const todaySets = (todaySession ? exerciseSets.filter((s) => s.sessionId === todaySession.id) : [])
+      .slice()
+      .sort((a, b) => a.setNumber - b.setNumber);
+
+    const mostRecentDate = sortedDates[sortedDates.length - 1];
+    const lastWeightUsed =
+      mostRecentDate !== undefined
+        ? (setsBySessionDate
+            .get(mostRecentDate)!
+            .slice()
+            .reverse()
+            .find((s) => s.weight != null)?.weight ?? null)
+        : null;
+
+    return {
+      ...exercise,
+      todaySets,
+      trend,
+      overload,
+      lastWeightUsed: lastWeightUsed != null ? Number(lastWeightUsed) : null,
+    };
+  });
+
+  return { day, exercises: exercisesWithData };
+}
+
+export async function getExerciseHistory(exerciseId: string) {
+  const [exercise] = await db
+    .select()
+    .from(workoutExercises)
+    .where(eq(workoutExercises.id, exerciseId));
+  if (!exercise) return null;
+
+  const sets = await db.select().from(workoutSets).where(eq(workoutSets.exerciseId, exerciseId));
+  const sessionIds = Array.from(new Set(sets.map((s) => s.sessionId)));
+  const sessions =
+    sessionIds.length > 0
+      ? await db.select().from(workoutSessions).where(inArray(workoutSessions.id, sessionIds))
+      : [];
+  const sessionById = new Map(sessions.map((s) => [s.id, s]));
+
+  const bySessionDate = new Map<string, typeof sets>();
+  for (const set of sets) {
+    const session = sessionById.get(set.sessionId);
+    if (!session) continue;
+    const list = bySessionDate.get(session.date) ?? [];
+    list.push(set);
+    bySessionDate.set(session.date, list);
+  }
+
+  const history = Array.from(bySessionDate.entries())
+    .map(([date, dateSets]) => ({
+      date,
+      sets: dateSets.slice().sort((a, b) => a.setNumber - b.setNumber),
+    }))
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+
+  return { exercise, history };
 }

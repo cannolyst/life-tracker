@@ -50,6 +50,13 @@
       "when": 1788300970736,
       "tag": "0006_simple_wildside",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788813892308,
+      "tag": "0007_melted_tarot",
+      "breakpoints": true
     }
   ]
 }

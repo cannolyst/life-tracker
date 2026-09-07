@@ -30,3 +30,11 @@ const dayOfMonthFormatter = new Intl.DateTimeFormat("en-US", {
 export function dayOfMonthInAppTimezone(date: Date): number {
   return Number(dayOfMonthFormatter.format(date));
 }
+
+// The Sunday (UTC midnight) of the calendar week containing a UTC-midnight-
+// anchored date-only value (see dateOnlyInAppTimezone). Weeks run Sun-Sat.
+export function startOfWeekUtc(d: Date): Date {
+  const sunday = new Date(d);
+  sunday.setUTCDate(sunday.getUTCDate() - d.getUTCDay());
+  return sunday;
+}

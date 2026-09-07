@@ -9,6 +9,7 @@ import { JEWELS } from "@/lib/jewels";
 const LINKS = [
   { href: "/points", label: "Points" },
   { href: "/cleaning", label: "Cleaning" },
+  { href: "/exercise", label: "Exercise" },
   { href: "/finance", label: "Finance" },
   { href: "/lists", label: "Lists" },
   { href: "/todo", label: "To-do" },

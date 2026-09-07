@@ -320,3 +320,63 @@ export const yearReviewItemPlaces = pgTable(
   },
   (table) => [primaryKey({ columns: [table.itemId, table.placeId] })],
 );
+
+// --- Workout tracker ---
+
+export const workoutDays = pgTable("workout_days", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  orderIndex: integer("order_index").notNull().default(0),
+  archived: boolean("archived").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const workoutExercises = pgTable("workout_exercises", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  dayId: uuid("day_id")
+    .notNull()
+    .references(() => workoutDays.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  // Plank/Side Plank track a hold time instead of weight x reps.
+  tracksDuration: boolean("tracks_duration").notNull().default(false),
+  targetReps: integer("target_reps").notNull().default(12),
+  weightIncrement: numeric("weight_increment", { precision: 6, scale: 2 })
+    .notNull()
+    .default("5"),
+  orderIndex: integer("order_index").notNull().default(0),
+  archived: boolean("archived").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// One row per workout performed on a given day of the split.
+export const workoutSessions = pgTable("workout_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  dayId: uuid("day_id")
+    .notNull()
+    .references(() => workoutDays.id, { onDelete: "cascade" }),
+  date: date("date").notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const workoutSets = pgTable("workout_sets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sessionId: uuid("session_id")
+    .notNull()
+    .references(() => workoutSessions.id, { onDelete: "cascade" }),
+  exerciseId: uuid("exercise_id")
+    .notNull()
+    .references(() => workoutExercises.id, { onDelete: "cascade" }),
+  setNumber: integer("set_number").notNull(),
+  weight: numeric("weight", { precision: 6, scale: 2 }),
+  reps: integer("reps"),
+  durationSeconds: integer("duration_seconds"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
