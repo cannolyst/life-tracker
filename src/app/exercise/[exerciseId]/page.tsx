@@ -3,6 +3,7 @@ import { getExerciseHistory } from "@/db/queries";
 import { Nav } from "@/components/Nav";
 import { Card, formatDate } from "@/components/ui";
 import { ExerciseHistoryChart } from "./ExerciseHistoryChart";
+import { ExerciseSetsChart } from "./ExerciseSetsChart";
 
 export const dynamic = "force-dynamic";
 
@@ -16,24 +17,48 @@ export default async function ExerciseHistoryPage({
   if (!data) notFound();
   const { exercise, history } = data;
 
-  const chartData = history
-    .slice()
-    .reverse()
-    .slice(-20)
-    .map((entry) => {
-      const scores = entry.sets.map((s) =>
-        exercise.tracksDuration
-          ? (s.durationSeconds ?? 0)
-          : s.weight != null && s.reps != null
-            ? Number(s.weight) * s.reps
-            : 0,
-      );
-      return {
-        dateKey: entry.date,
-        label: formatDate(new Date(`${entry.date}T00:00:00Z`)),
-        score: Math.max(0, ...scores),
-      };
+  const recentHistory = history.slice().reverse().slice(-20);
+
+  // Duration exercises (Plank, etc.) still get the simple "best hold time
+  // per session" bar — there's no weight/reps breakdown to stack there.
+  const durationChartData = recentHistory.map((entry) => ({
+    dateKey: entry.date,
+    label: formatDate(new Date(`${entry.date}T00:00:00Z`)),
+    score: Math.max(0, ...entry.sets.map((s) => s.durationSeconds ?? 0)),
+  }));
+
+  // Weight exercises: one stacked bar per session, one segment per distinct
+  // weight used, so the actual weight for each chunk of work is visible
+  // (via the tooltip) instead of being collapsed into a single "best set"
+  // number. Sets sharing a weight are combined into one taller segment —
+  // its height is their combined reps, and hovering lists each set's own
+  // rep count so different-rep sets at the same weight aren't hidden.
+  function groupSetsByWeight(sets: { weight: string | null; reps: number | null }[]) {
+    const groups: { weight: number | null; repsList: number[] }[] = [];
+    for (const s of sets) {
+      const weight = s.weight != null ? Number(s.weight) : null;
+      const reps = s.reps ?? 0;
+      const existing = groups.find((g) => g.weight === weight);
+      if (existing) existing.repsList.push(reps);
+      else groups.push({ weight, repsList: [reps] });
+    }
+    return groups;
+  }
+
+  const groupedHistory = recentHistory.map((entry) => groupSetsByWeight(entry.sets));
+  const maxSets = Math.max(0, ...groupedHistory.map((groups) => groups.length));
+  const setsChartData = recentHistory.map((entry, entryIndex) => {
+    const point: { dateKey: string; label: string; [key: string]: string | number | number[] } = {
+      dateKey: entry.date,
+      label: formatDate(new Date(`${entry.date}T00:00:00Z`)),
+    };
+    groupedHistory[entryIndex].forEach((g, i) => {
+      point[`reps_${i}`] = g.repsList.reduce((sum, r) => sum + r, 0);
+      point[`weight_${i}`] = g.weight ?? 0;
+      point[`repsList_${i}`] = g.repsList;
     });
+    return point;
+  });
 
   return (
     <div className="flex min-h-full flex-col">
@@ -41,13 +66,17 @@ export default async function ExerciseHistoryPage({
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-xl font-semibold">{exercise.name}</h1>
 
-        {history.length > 0 && (
+        {history.length > 0 && exercise.tracksDuration && (
           <Card>
-            <h2 className="mb-3 font-medium">Best set per session</h2>
-            <ExerciseHistoryChart
-              data={chartData}
-              unitLabel={exercise.tracksDuration ? "sec" : "lb×reps"}
-            />
+            <h2 className="mb-3 font-medium">Best hold time per session</h2>
+            <ExerciseHistoryChart data={durationChartData} unitLabel="sec" />
+          </Card>
+        )}
+
+        {history.length > 0 && !exercise.tracksDuration && (
+          <Card>
+            <h2 className="mb-3 font-medium">Sets per session</h2>
+            <ExerciseSetsChart data={setsChartData} maxSets={maxSets} />
           </Card>
         )}
 
