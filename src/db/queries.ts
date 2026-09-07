@@ -813,7 +813,11 @@ export async function getWorkoutWeekProgress() {
     .select()
     .from(workoutSessions)
     .where(and(gte(workoutSessions.date, weekStartKey), lte(workoutSessions.date, weekEndKey)));
-  const sessionByDayId = new Map(sessions.map((s) => [s.dayId, s]));
+
+  const countByDayId = new Map<string, number>();
+  for (const s of sessions) {
+    countByDayId.set(s.dayId, (countByDayId.get(s.dayId) ?? 0) + 1);
+  }
 
   return {
     weekStart,
@@ -821,8 +825,7 @@ export async function getWorkoutWeekProgress() {
     days: days.map((d) => ({
       id: d.id,
       name: d.name,
-      completed: sessionByDayId.has(d.id),
-      date: sessionByDayId.get(d.id)?.date ?? null,
+      count: countByDayId.get(d.id) ?? 0,
     })),
   };
 }

@@ -55,14 +55,15 @@ export default async function ExercisePage({
               <span
                 key={d.id}
                 className={
-                  d.completed
+                  d.count > 0
                     ? "rounded-full px-3 py-1.5 text-sm"
                     : "rounded-full border border-neutral-800 px-3 py-1.5 text-sm text-neutral-500"
                 }
-                style={d.completed ? jewelChipStyle(JEWELS[2]) : undefined}
+                style={d.count > 0 ? jewelChipStyle(JEWELS[2]) : undefined}
               >
-                {d.completed ? "✓ " : ""}
+                {d.count > 0 ? "✓ " : ""}
                 {d.name}
+                {d.count > 1 ? ` ×${d.count}` : ""}
               </span>
             ))}
           </div>
