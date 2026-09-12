@@ -74,8 +74,20 @@ export default async function ExercisePage({
             <div>
               <p className="text-neutral-500">Ready to increase</p>
               <p className="text-2xl font-semibold" style={{ color: JEWELS[4].color }}>
-                {stats.readyToIncreaseCount}
+                {stats.readyExercises.length}
               </p>
+              {stats.readyExercises.length > 0 && (
+                <ul className="mt-1 space-y-0.5">
+                  {stats.readyExercises.map((ex) => (
+                    <li key={ex.id} className="text-xs text-neutral-500">
+                      <Link href={`/exercise/${ex.id}`} className="hover:underline">
+                        {ex.name}
+                      </Link>{" "}
+                      → {ex.suggestedWeight.toFixed(0)} lbs
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div>
               <p className="text-neutral-500">Weekly volume</p>

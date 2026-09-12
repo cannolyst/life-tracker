@@ -861,11 +861,19 @@ export async function getWorkoutDashboardStats() {
     setsByExercise.set(set.exerciseId, list);
   }
 
-  let readyToIncreaseCount = 0;
+  const readyExercises: { id: string; name: string; currentWeight: number; suggestedWeight: number }[] =
+    [];
   for (const exercise of exercises) {
     const exerciseSets = setsByExercise.get(exercise.id) ?? [];
     const overload = computeOverloadForExercise(exerciseSets, sessionById, exercise.targetReps);
-    if (overload.ready) readyToIncreaseCount++;
+    if (overload.ready && overload.currentWeight != null) {
+      readyExercises.push({
+        id: exercise.id,
+        name: exercise.name,
+        currentWeight: overload.currentWeight,
+        suggestedWeight: overload.currentWeight + Number(exercise.weightIncrement),
+      });
+    }
   }
 
   const todayOnly = dateOnlyInAppTimezone();
@@ -901,7 +909,7 @@ export async function getWorkoutDashboardStats() {
           ? "down"
           : "flat";
 
-  return { readyToIncreaseCount, thisWeekVolume, lastWeekVolume, volumeTrend };
+  return { readyExercises, thisWeekVolume, lastWeekVolume, volumeTrend };
 }
 
 export async function getWorkoutDayData(dayId: string) {

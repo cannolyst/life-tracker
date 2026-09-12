@@ -111,6 +111,11 @@ export async function updateExercise(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const name = formData.get("name");
+  if (typeof name !== "string" || !name.trim()) {
+    return { error: "Name is required" };
+  }
+
   const targetRepsRaw = formData.get("targetReps");
   const incrementRaw = formData.get("weightIncrement");
   const targetReps = Number(targetRepsRaw);
@@ -125,7 +130,7 @@ export async function updateExercise(
 
   await db
     .update(workoutExercises)
-    .set({ targetReps, weightIncrement: weightIncrement.toFixed(2) })
+    .set({ name: name.trim(), targetReps, weightIncrement: weightIncrement.toFixed(2) })
     .where(eq(workoutExercises.id, exerciseId));
   revalidateAll();
   return {};

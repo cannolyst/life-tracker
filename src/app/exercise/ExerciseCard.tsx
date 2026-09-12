@@ -134,6 +134,15 @@ export function ExerciseCard({
           action={formAction}
           className="mb-3 flex flex-wrap items-end gap-2 rounded-md border border-neutral-800 p-3"
         >
+          <div className="min-w-[160px] flex-1 space-y-1">
+            <label className={labelClass}>Name</label>
+            <input
+              name="name"
+              defaultValue={exercise.name}
+              required
+              className={inputClass}
+            />
+          </div>
           <div className="space-y-1">
             <label className={labelClass}>Target reps</label>
             <input
