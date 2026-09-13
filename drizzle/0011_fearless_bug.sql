@@ -1,0 +1,1 @@
+ALTER TABLE "workout_days" ALTER COLUMN "program_id" SET NOT NULL;

@@ -24,6 +24,7 @@ import {
   yearReviewItemPeople,
   places,
   yearReviewItemPlaces,
+  workoutPrograms,
   workoutDays,
   workoutExercises,
   workoutSessions,
@@ -836,21 +837,59 @@ function computeOverloadForExercise(
   return evaluateProgressiveOverload(recentSessionSets, targetReps);
 }
 
-export async function getWorkoutDays(userId: string) {
+export async function getWorkoutPrograms(userId: string) {
+  return db
+    .select()
+    .from(workoutPrograms)
+    .where(eq(workoutPrograms.userId, userId))
+    .orderBy(workoutPrograms.createdAt);
+}
+
+// For the programs-management page: every program alongside its (non-
+// archived) days, so rename/reorder/archive controls can be rendered
+// per-program without an extra round trip per program.
+export async function getWorkoutProgramsWithDays(userId: string) {
+  const programs = await getWorkoutPrograms(userId);
+  const allDays = await db
+    .select()
+    .from(workoutDays)
+    .where(and(eq(workoutDays.userId, userId), eq(workoutDays.archived, false)))
+    .orderBy(workoutDays.orderIndex);
+
+  return programs.map((program) => ({
+    program,
+    days: allDays.filter((d) => d.programId === program.id),
+  }));
+}
+
+export async function getWorkoutDays(userId: string, programId: string) {
   return db
     .select()
     .from(workoutDays)
-    .where(and(eq(workoutDays.archived, false), eq(workoutDays.userId, userId)))
+    .where(
+      and(
+        eq(workoutDays.archived, false),
+        eq(workoutDays.userId, userId),
+        eq(workoutDays.programId, programId),
+      ),
+    )
     .orderBy(workoutDays.orderIndex);
 }
 
-// Which of the split's days have already been logged this calendar week,
-// so the page can show progress at a glance (e.g. "Leg day done").
-export async function getWorkoutWeekProgress(userId: string) {
+// Which of the selected program's days have already been logged this
+// calendar week, so the page can show progress at a glance (e.g. "Leg day
+// done").
+export async function getWorkoutWeekProgress(userId: string, programId: string) {
   const days = await db
     .select()
     .from(workoutDays)
-    .where(and(eq(workoutDays.archived, false), eq(workoutDays.userId, userId)))
+    .where(
+      and(
+        eq(workoutDays.archived, false),
+        eq(workoutDays.userId, userId),
+        eq(workoutDays.programId, programId),
+      ),
+    )
     .orderBy(workoutDays.orderIndex);
 
   const todayOnly = dateOnlyInAppTimezone();
@@ -890,12 +929,28 @@ export async function getWorkoutWeekProgress(userId: string) {
 // exercises are currently flagged ready for a weight increase, and how
 // this week's total training volume (weight x reps, strength sets only —
 // duration holds like Plank aren't measured in "volume") compares to last
-// week's.
-export async function getWorkoutDashboardStats(userId: string) {
-  const exercises = await db
-    .select()
-    .from(workoutExercises)
-    .where(and(eq(workoutExercises.archived, false), eq(workoutExercises.userId, userId)));
+// week's. Scoped to the selected program's days — mixing volume/readiness
+// numbers across differently-purposed programs wouldn't mean anything.
+export async function getWorkoutDashboardStats(userId: string, programId: string) {
+  const programDays = await db
+    .select({ id: workoutDays.id })
+    .from(workoutDays)
+    .where(and(eq(workoutDays.userId, userId), eq(workoutDays.programId, programId)));
+  const dayIds = programDays.map((d) => d.id);
+
+  const exercises =
+    dayIds.length > 0
+      ? await db
+          .select()
+          .from(workoutExercises)
+          .where(
+            and(
+              eq(workoutExercises.archived, false),
+              eq(workoutExercises.userId, userId),
+              inArray(workoutExercises.dayId, dayIds),
+            ),
+          )
+      : [];
 
   const exerciseIds = exercises.map((e) => e.id);
   const allSets =

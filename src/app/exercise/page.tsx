@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  getWorkoutPrograms,
   getWorkoutDays,
   getWorkoutDayData,
   getWorkoutWeekProgress,
@@ -10,6 +11,9 @@ import { Nav } from "@/components/Nav";
 import { Card, formatDateRange } from "@/components/ui";
 import { ExerciseCard, TrendBadge } from "./ExerciseCard";
 import { AddExerciseForm } from "./ExerciseForms";
+import { ProgramSwitcher } from "./ProgramSwitcher";
+import { ProgramPresetPicker } from "./programs/ProgramPresetPicker";
+import { AddDayForm } from "./programs/AddDayForm";
 import { jewelFor, jewelChipStyle, JEWELS } from "@/lib/jewels";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +25,31 @@ export default async function ExercisePage({
 }) {
   const { day: dayParam } = await searchParams;
   const userId = await requireUserId();
-  const days = await getWorkoutDays(userId);
+  const programs = await getWorkoutPrograms(userId);
+  const activeProgram = programs.find((p) => p.active);
+
+  if (!activeProgram) {
+    return (
+      <div className="flex min-h-full flex-col">
+        <Nav />
+        <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
+          <h1 className="text-xl font-semibold">Exercise</h1>
+          {programs.length > 0 && (
+            <Card>
+              <h2 className="mb-3 font-medium">Pick up where you left off</h2>
+              <ProgramSwitcher programs={programs} />
+            </Card>
+          )}
+          <ProgramPresetPicker
+            redirectTo="/exercise"
+            heading="How do you want to group your workouts?"
+          />
+        </main>
+      </div>
+    );
+  }
+
+  const days = await getWorkoutDays(userId, activeProgram.id);
 
   if (days.length === 0) {
     return (
@@ -29,7 +57,11 @@ export default async function ExercisePage({
         <Nav />
         <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
           <h1 className="text-xl font-semibold">Exercise</h1>
-          <p className="text-sm text-neutral-500">No workout days set up yet.</p>
+          <ProgramSwitcher programs={programs} />
+          <Card>
+            <h2 className="mb-3 font-medium">Add a day to {activeProgram.name}</h2>
+            <AddDayForm programId={activeProgram.id} />
+          </Card>
         </main>
       </div>
     );
@@ -38,8 +70,8 @@ export default async function ExercisePage({
   const selectedDayId = dayParam && days.some((d) => d.id === dayParam) ? dayParam : days[0].id;
   const [{ day, exercises }, weekProgress, stats] = await Promise.all([
     getWorkoutDayData(selectedDayId, userId),
-    getWorkoutWeekProgress(userId),
-    getWorkoutDashboardStats(userId),
+    getWorkoutWeekProgress(userId, activeProgram.id),
+    getWorkoutDashboardStats(userId, activeProgram.id),
   ]);
 
   return (
@@ -47,6 +79,8 @@ export default async function ExercisePage({
       <Nav />
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-xl font-semibold">Exercise</h1>
+
+        <ProgramSwitcher programs={programs} />
 
         <Card>
           <h2 className="mb-3 font-medium">

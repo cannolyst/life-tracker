@@ -71,6 +71,20 @@
       "when": 1789259157591,
       "tag": "0009_motionless_flatman",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789262596627,
+      "tag": "0010_sad_brother_voodoo",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789262790475,
+      "tag": "0011_fearless_bug",
+      "breakpoints": true
     }
   ]
 }

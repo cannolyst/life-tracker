@@ -504,11 +504,30 @@ export const yearReviewItemPlaces = pgTable(
 
 // --- Workout tracker ---
 
+// A saved, switchable workout structure (e.g. "A/B Split", "Body Part
+// Split"). Exactly one is "active" per user at a time; enforced by
+// application logic in setActiveProgram rather than a DB constraint, since
+// this is a UX nicety rather than a tenant-isolation boundary.
+export const workoutPrograms = pgTable(
+  "workout_programs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    active: boolean("active").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [unique("workout_programs_id_user_id_unique").on(table.id, table.userId)],
+).enableRLS();
+
 export const workoutDays = pgTable(
   "workout_days",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     userId: uuid("user_id").notNull(),
+    programId: uuid("program_id").notNull(),
     name: text("name").notNull(),
     orderIndex: integer("order_index").notNull().default(0),
     archived: boolean("archived").notNull().default(false),
@@ -516,7 +535,14 @@ export const workoutDays = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [unique("workout_days_id_user_id_unique").on(table.id, table.userId)],
+  (table) => [
+    unique("workout_days_id_user_id_unique").on(table.id, table.userId),
+    foreignKey({
+      columns: [table.programId, table.userId],
+      foreignColumns: [workoutPrograms.id, workoutPrograms.userId],
+      name: "workout_days_program_id_user_id_fk",
+    }).onDelete("cascade"),
+  ],
 ).enableRLS();
 
 export const workoutExercises = pgTable(
