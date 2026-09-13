@@ -1,89 +1,22 @@
-"use client";
+import { requireUserId } from "@/lib/session";
+import { getModuleSettings } from "@/db/queries";
+import { MODULES } from "@/lib/modules";
+import { NavClient } from "./NavClient";
 
-import Link from "next/link";
-import { useState } from "react";
-import { logout } from "@/app/logout-actions";
-import { Sparkle } from "@/components/Sparkle";
-import { JEWELS } from "@/lib/jewels";
+const SETTINGS_FIELD = {
+  points: "showPoints",
+  cleaning: "showCleaning",
+  exercise: "showExercise",
+  finance: "showFinance",
+  lists: "showLists",
+  todo: "showTodo",
+  yearReview: "showYearReview",
+} as const;
 
-const LINKS = [
-  { href: "/points", label: "Points" },
-  { href: "/cleaning", label: "Cleaning" },
-  { href: "/exercise", label: "Exercise" },
-  { href: "/finance", label: "Finance" },
-  { href: "/lists", label: "Lists" },
-  { href: "/todo", label: "To-do" },
-  { href: "/year-review", label: "Year in review" },
-];
+export async function Nav() {
+  const userId = await requireUserId();
+  const settings = await getModuleSettings(userId);
+  const links = MODULES.filter((m) => settings[SETTINGS_FIELD[m.key]]);
 
-export function Nav() {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <header className="relative border-b border-neutral-800">
-      <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
-        <Link
-          href="/"
-          className="font-display flex items-center gap-1.5 text-lg font-semibold text-neutral-100"
-          onClick={() => setOpen(false)}
-        >
-          <Sparkle className="h-4 w-4" color={JEWELS[0].color} />
-          Life Tracker
-        </Link>
-
-        <nav className="font-display hidden items-center gap-4 text-sm sm:flex">
-          {LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-neutral-400 hover:text-neutral-100"
-            >
-              {link.label}
-            </Link>
-          ))}
-          <form action={logout}>
-            <button
-              type="submit"
-              className="font-display text-neutral-400 hover:text-neutral-100"
-            >
-              Sign out
-            </button>
-          </form>
-        </nav>
-
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-label="Toggle menu"
-          aria-expanded={open}
-          className="flex h-9 w-9 items-center justify-center rounded-md text-xl text-neutral-400 hover:text-neutral-100 sm:hidden"
-        >
-          {open ? "✕" : "☰"}
-        </button>
-      </div>
-
-      {open && (
-        <nav className="font-display flex flex-col border-t border-neutral-800 px-4 text-sm sm:hidden">
-          {LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setOpen(false)}
-              className="border-b border-neutral-800 py-3 text-neutral-300 last:border-b-0"
-            >
-              {link.label}
-            </Link>
-          ))}
-          <form action={logout}>
-            <button
-              type="submit"
-              className="font-display w-full py-3 text-left text-neutral-300"
-            >
-              Sign out
-            </button>
-          </form>
-        </nav>
-      )}
-    </header>
-  );
+  return <NavClient links={links} />;
 }

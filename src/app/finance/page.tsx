@@ -123,7 +123,7 @@ export default async function DashboardPage() {
         </section>
 
         <section>
-          <h2 className="mb-3 text-lg font-semibold">Credit card debt</h2>
+          <h2 className="mb-3 text-lg font-semibold">Credit card</h2>
           {debtSummaries.length === 0 ? (
             <EmptyState label="No credit cards tracked yet" />
           ) : (

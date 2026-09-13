@@ -624,3 +624,22 @@ export const workoutSets = pgTable(
     }).onDelete("cascade"),
   ],
 ).enableRLS();
+
+// --- Per-user module visibility (which nav tabs a user has chosen to show) ---
+
+// One row per user; no child table ever references this row, so the
+// owner's id is the primary key directly (same pattern as
+// savingsDetails/debtDetails) rather than a separate id + composite unique.
+export const moduleSettings = pgTable("module_settings", {
+  userId: uuid("user_id").primaryKey(),
+  showPoints: boolean("show_points").notNull().default(true),
+  showCleaning: boolean("show_cleaning").notNull().default(true),
+  showExercise: boolean("show_exercise").notNull().default(true),
+  showFinance: boolean("show_finance").notNull().default(true),
+  showLists: boolean("show_lists").notNull().default(true),
+  showTodo: boolean("show_todo").notNull().default(true),
+  showYearReview: boolean("show_year_review").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+}).enableRLS();

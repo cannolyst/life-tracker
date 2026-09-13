@@ -4,6 +4,7 @@ import {
   getCleaningDashboardData,
   listAccountsSummary,
   getTodos,
+  getModuleSettings,
 } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
@@ -24,21 +25,25 @@ type CleaningTask = {
 
 export default async function OverviewPage() {
   const userId = await requireUserId();
-  const [pointsSummary, cleaning, { debtSummaries }, allTodos] = await Promise.all([
-    getPointsSummary(userId),
-    getCleaningDashboardData(userId),
-    listAccountsSummary(userId),
-    getTodos(userId),
+  const settings = await getModuleSettings(userId);
+
+  const [pointsSummary, cleaning, accountsSummary, allTodos] = await Promise.all([
+    settings.showPoints ? getPointsSummary(userId) : Promise.resolve(null),
+    settings.showCleaning ? getCleaningDashboardData(userId) : Promise.resolve(null),
+    settings.showFinance ? listAccountsSummary(userId) : Promise.resolve(null),
+    settings.showTodo ? getTodos(userId) : Promise.resolve([]),
   ]);
-  const { balance, pointsToday, pointsYesterday, streak } = pointsSummary;
+
   const activeTodos = allTodos.filter((t) => !t.done);
 
-  const allCleaningTasks: CleaningTask[] = [
-    ...cleaning.areasWithTasks.flatMap(({ area, tasks }) =>
-      tasks.map((t) => ({ ...t, areaName: area.name })),
-    ),
-    ...cleaning.unassignedTasks.map((t) => ({ ...t, areaName: null })),
-  ];
+  const allCleaningTasks: CleaningTask[] = cleaning
+    ? [
+        ...cleaning.areasWithTasks.flatMap(({ area, tasks }) =>
+          tasks.map((t) => ({ ...t, areaName: area.name })),
+        ),
+        ...cleaning.unassignedTasks.map((t) => ({ ...t, areaName: null })),
+      ]
+    : [];
 
   const byDueDate = (a: CleaningTask, b: CleaningTask) => a.dueDate.getTime() - b.dueDate.getTime();
   const buckets: Record<CleaningTimeframeBucket, CleaningTask[]> = {
@@ -63,9 +68,14 @@ export default async function OverviewPage() {
 
   const boundaries = getTimeframeBoundaries();
 
-  const paymentsDue = debtSummaries.filter(
-    (d) => d.latestStatement && Number(d.latestStatement.minimumPaymentDue) > 0,
-  );
+  const paymentsDue = accountsSummary
+    ? accountsSummary.debtSummaries.filter(
+        (d) => d.latestStatement && Number(d.latestStatement.minimumPaymentDue) > 0,
+      )
+    : [];
+
+  const nothingEnabled =
+    !settings.showPoints && !settings.showCleaning && !settings.showFinance && !settings.showTodo;
 
   return (
     <div className="flex min-h-full flex-col">
@@ -73,119 +83,141 @@ export default async function OverviewPage() {
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-8 px-4 py-8">
         <h1 className="text-xl font-semibold">Overview</h1>
 
-        <Link href="/points" className="block">
-          <Card className="transition hover:border-neutral-600">
-            <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
-              <div>
-                <p className="text-neutral-500">Total points</p>
-                <p className="text-2xl font-semibold">{balance}</p>
-              </div>
-              <div>
-                <p className="text-neutral-500">Yesterday</p>
-                <p className="text-2xl font-semibold">{pointsYesterday}</p>
-              </div>
-              <div>
-                <p className="text-neutral-500">Today</p>
-                <p className="text-2xl font-semibold">{pointsToday}</p>
-              </div>
-              <div>
-                <p className="text-neutral-500">Streak</p>
-                <p className="text-2xl font-semibold">{streak > 0 ? `Day ${streak}` : "—"}</p>
-                {streak > 0 && (
-                  <div className="mt-0.5">
-                    <StreakBadge streak={streak} />
-                  </div>
-                )}
-              </div>
-            </div>
+        {nothingEnabled && (
+          <Card>
+            <p className="text-sm text-neutral-500">
+              Nothing to show here yet — pick some tabs in{" "}
+              <Link href="/settings" className="underline hover:text-neutral-300">
+                Settings
+              </Link>
+              .
+            </p>
           </Card>
-        </Link>
+        )}
 
-        <section className="space-y-3">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-lg font-semibold">To-do</h2>
-            <Link href="/todo" className="text-sm text-neutral-500 hover:text-neutral-100">
-              View all
-            </Link>
-          </div>
-          {activeTodos.length === 0 ? (
-            <Card>
-              <p className="text-sm text-neutral-500">Nothing to do — nice.</p>
-            </Card>
-          ) : (
-            <Card>
-              <ul className="divide-y divide-neutral-800">
-                {activeTodos.map((todo) => (
-                  <li key={todo.id} className="py-2 text-sm">
-                    {todo.text}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          )}
-        </section>
-
-        <section className="space-y-3">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-lg font-semibold">Cleaning</h2>
-            <Link href="/cleaning" className="text-sm text-neutral-500 hover:text-neutral-100">
-              View all
-            </Link>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <CleaningColumn title="Overdue" tasks={dueOverdue} emptyLabel="Nothing overdue" />
-            <CleaningColumn
-              title="This week"
-              subtitle={formatDateRange(boundaries.thisWeekStart, boundaries.thisWeekEnd)}
-              tasks={dueThisWeek}
-              emptyLabel="Nothing due this week"
-            />
-            <CleaningColumn
-              title="Next week"
-              subtitle={formatDateRange(boundaries.nextWeekStart, boundaries.nextWeekEnd)}
-              tasks={dueNextWeek}
-              emptyLabel="Nothing due next week"
-            />
-            <CleaningColumn
-              title="This month"
-              subtitle={formatMonthName(boundaries.monthStart)}
-              tasks={dueThisMonth}
-              emptyLabel="Nothing else due this month"
-            />
-          </div>
-        </section>
-
-        <section className="space-y-3">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-lg font-semibold">Payments due</h2>
-            <Link href="/finance" className="text-sm text-neutral-500 hover:text-neutral-100">
-              View all
-            </Link>
-          </div>
-          {paymentsDue.length === 0 ? (
-            <Card>
-              <p className="text-sm text-neutral-500">No minimum payments due right now.</p>
-            </Card>
-          ) : (
-            <Card>
-              <ul className="divide-y divide-neutral-800">
-                {paymentsDue.map((d) => (
-                  <li key={d.account.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                    <Link href={`/debt/${d.account.id}`} className="hover:underline">
-                      {d.account.name}
-                    </Link>
-                    <div className="flex items-center gap-3">
-                      <span className="text-neutral-500">
-                        {formatCurrency(Number(d.latestStatement!.minimumPaymentDue))} due
-                      </span>
-                      <MinimumPaymentBadge status={d.minimumPaymentStatus} />
+        {settings.showPoints && pointsSummary && (
+          <Link href="/points" className="block">
+            <Card className="transition hover:border-neutral-600">
+              <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+                <div>
+                  <p className="text-neutral-500">Total points</p>
+                  <p className="text-2xl font-semibold">{pointsSummary.balance}</p>
+                </div>
+                <div>
+                  <p className="text-neutral-500">Yesterday</p>
+                  <p className="text-2xl font-semibold">{pointsSummary.pointsYesterday}</p>
+                </div>
+                <div>
+                  <p className="text-neutral-500">Today</p>
+                  <p className="text-2xl font-semibold">{pointsSummary.pointsToday}</p>
+                </div>
+                <div>
+                  <p className="text-neutral-500">Streak</p>
+                  <p className="text-2xl font-semibold">
+                    {pointsSummary.streak > 0 ? `Day ${pointsSummary.streak}` : "—"}
+                  </p>
+                  {pointsSummary.streak > 0 && (
+                    <div className="mt-0.5">
+                      <StreakBadge streak={pointsSummary.streak} />
                     </div>
-                  </li>
-                ))}
-              </ul>
+                  )}
+                </div>
+              </div>
             </Card>
-          )}
-        </section>
+          </Link>
+        )}
+
+        {settings.showTodo && (
+          <section className="space-y-3">
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-lg font-semibold">To-do</h2>
+              <Link href="/todo" className="text-sm text-neutral-500 hover:text-neutral-100">
+                View all
+              </Link>
+            </div>
+            {activeTodos.length === 0 ? (
+              <Card>
+                <p className="text-sm text-neutral-500">Nothing to do — nice.</p>
+              </Card>
+            ) : (
+              <Card>
+                <ul className="divide-y divide-neutral-800">
+                  {activeTodos.map((todo) => (
+                    <li key={todo.id} className="py-2 text-sm">
+                      {todo.text}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+          </section>
+        )}
+
+        {settings.showCleaning && (
+          <section className="space-y-3">
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-lg font-semibold">Cleaning</h2>
+              <Link href="/cleaning" className="text-sm text-neutral-500 hover:text-neutral-100">
+                View all
+              </Link>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <CleaningColumn title="Overdue" tasks={dueOverdue} emptyLabel="Nothing overdue" />
+              <CleaningColumn
+                title="This week"
+                subtitle={formatDateRange(boundaries.thisWeekStart, boundaries.thisWeekEnd)}
+                tasks={dueThisWeek}
+                emptyLabel="Nothing due this week"
+              />
+              <CleaningColumn
+                title="Next week"
+                subtitle={formatDateRange(boundaries.nextWeekStart, boundaries.nextWeekEnd)}
+                tasks={dueNextWeek}
+                emptyLabel="Nothing due next week"
+              />
+              <CleaningColumn
+                title="This month"
+                subtitle={formatMonthName(boundaries.monthStart)}
+                tasks={dueThisMonth}
+                emptyLabel="Nothing else due this month"
+              />
+            </div>
+          </section>
+        )}
+
+        {settings.showFinance && (
+          <section className="space-y-3">
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-lg font-semibold">Payments due</h2>
+              <Link href="/finance" className="text-sm text-neutral-500 hover:text-neutral-100">
+                View all
+              </Link>
+            </div>
+            {paymentsDue.length === 0 ? (
+              <Card>
+                <p className="text-sm text-neutral-500">No minimum payments due right now.</p>
+              </Card>
+            ) : (
+              <Card>
+                <ul className="divide-y divide-neutral-800">
+                  {paymentsDue.map((d) => (
+                    <li key={d.account.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                      <Link href={`/debt/${d.account.id}`} className="hover:underline">
+                        {d.account.name}
+                      </Link>
+                      <div className="flex items-center gap-3">
+                        <span className="text-neutral-500">
+                          {formatCurrency(Number(d.latestStatement!.minimumPaymentDue))} due
+                        </span>
+                        <MinimumPaymentBadge status={d.minimumPaymentStatus} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+          </section>
+        )}
       </main>
     </div>
   );

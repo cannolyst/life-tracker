@@ -29,6 +29,7 @@ import {
   workoutExercises,
   workoutSessions,
   workoutSets,
+  moduleSettings,
 } from "./schema";
 import {
   projectSavingsDate,
@@ -1168,4 +1169,25 @@ export async function getExerciseHistory(exerciseId: string, userId: string) {
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 
   return { exercise, history };
+}
+
+// --- Per-user module visibility ---
+
+export async function getModuleSettings(userId: string) {
+  const [row] = await db
+    .select()
+    .from(moduleSettings)
+    .where(eq(moduleSettings.userId, userId));
+  return (
+    row ?? {
+      userId,
+      showPoints: true,
+      showCleaning: true,
+      showExercise: true,
+      showFinance: true,
+      showLists: true,
+      showTodo: true,
+      showYearReview: true,
+    }
+  );
 }

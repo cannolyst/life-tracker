@@ -52,6 +52,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // First-time users pick which tabs they want before seeing the app.
+  // user_metadata comes free on the already-fetched user object, so this
+  // adds no extra request — a real DB check here would need the Node.js
+  // runtime, which this Edge middleware doesn't run under.
+  if (!pathname.startsWith("/onboarding") && user.user_metadata?.onboarded !== true) {
+    return NextResponse.redirect(new URL("/onboarding", request.url));
+  }
+
   return response;
 }
 
