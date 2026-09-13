@@ -57,6 +57,20 @@
       "when": 1788813892308,
       "tag": "0007_melted_tarot",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789258499767,
+      "tag": "0008_fine_fenris",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789259157591,
+      "tag": "0009_motionless_flatman",
+      "breakpoints": true
     }
   ]
 }

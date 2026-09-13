@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listAccountsSummary, getGamificationStats } from "@/db/queries";
+import { requireUserId } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 import { Nav } from "@/components/Nav";
@@ -10,9 +11,10 @@ import { MinimumPaymentBadge } from "@/components/MinimumPaymentBadge";
 import { FinanceChart } from "@/components/FinanceChart";
 
 export default async function DashboardPage() {
+  const userId = await requireUserId();
   const [{ savingsSummaries, debtSummaries }, stats] = await Promise.all([
-    listAccountsSummary(),
-    getGamificationStats(),
+    listAccountsSummary(userId),
+    getGamificationStats(userId),
   ]);
 
   const totalInterestSaved = debtSummaries.reduce(

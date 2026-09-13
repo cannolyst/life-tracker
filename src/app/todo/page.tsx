@@ -1,4 +1,5 @@
 import { getTodos } from "@/db/queries";
+import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
 import { AddTodoForm } from "./TodoForm";
@@ -7,7 +8,7 @@ import { setTodoDone, deleteTodo, clearCompletedTodos } from "./actions";
 export const dynamic = "force-dynamic";
 
 export default async function TodoPage() {
-  const allTodos = await getTodos();
+  const allTodos = await getTodos(await requireUserId());
   const active = allTodos.filter((t) => !t.done);
   const done = allTodos.filter((t) => t.done);
 

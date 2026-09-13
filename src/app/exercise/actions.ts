@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { workoutSessions, workoutSets, workoutExercises } from "@/db/schema";
+import { requireUserId } from "@/lib/session";
 import { dateKeyInAppTimezone } from "@/lib/timezone";
 
 export type ActionState = { error?: string };
@@ -12,17 +13,23 @@ function revalidateAll() {
   revalidatePath("/exercise");
 }
 
-async function getOrCreateTodaySession(dayId: string) {
+async function getOrCreateTodaySession(dayId: string, userId: string) {
   const todayKey = dateKeyInAppTimezone();
   const [existing] = await db
     .select()
     .from(workoutSessions)
-    .where(and(eq(workoutSessions.dayId, dayId), eq(workoutSessions.date, todayKey)));
+    .where(
+      and(
+        eq(workoutSessions.dayId, dayId),
+        eq(workoutSessions.date, todayKey),
+        eq(workoutSessions.userId, userId),
+      ),
+    );
   if (existing) return existing;
 
   const [created] = await db
     .insert(workoutSessions)
-    .values({ dayId, date: todayKey })
+    .values({ userId, dayId, date: todayKey })
     .returning();
   return created;
 }
@@ -39,16 +46,24 @@ export async function addSet(dayId: string, exerciseId: string, formData: FormDa
 
   if (weight === null && durationSeconds === null) return;
 
-  const session = await getOrCreateTodaySession(dayId);
+  const userId = await requireUserId();
+  const session = await getOrCreateTodaySession(dayId, userId);
 
   const existingSets = await db
     .select()
     .from(workoutSets)
-    .where(and(eq(workoutSets.sessionId, session.id), eq(workoutSets.exerciseId, exerciseId)));
+    .where(
+      and(
+        eq(workoutSets.sessionId, session.id),
+        eq(workoutSets.exerciseId, exerciseId),
+        eq(workoutSets.userId, userId),
+      ),
+    );
   const setNumber =
     existingSets.length > 0 ? Math.max(...existingSets.map((s) => s.setNumber)) + 1 : 1;
 
   await db.insert(workoutSets).values({
+    userId,
     sessionId: session.id,
     exerciseId,
     setNumber,
@@ -60,7 +75,8 @@ export async function addSet(dayId: string, exerciseId: string, formData: FormDa
 }
 
 export async function deleteSet(setId: string) {
-  await db.delete(workoutSets).where(eq(workoutSets.id, setId));
+  const userId = await requireUserId();
+  await db.delete(workoutSets).where(and(eq(workoutSets.id, setId), eq(workoutSets.userId, userId)));
   revalidateAll();
 }
 
@@ -89,12 +105,14 @@ export async function addExercise(
     return { error: "Increment must be a positive number" };
   }
 
+  const userId = await requireUserId();
   const existing = await db
     .select()
     .from(workoutExercises)
-    .where(eq(workoutExercises.dayId, dayId));
+    .where(and(eq(workoutExercises.dayId, dayId), eq(workoutExercises.userId, userId)));
 
   await db.insert(workoutExercises).values({
+    userId,
     dayId,
     name: name.trim(),
     tracksDuration,
@@ -128,15 +146,20 @@ export async function updateExercise(
     return { error: "Increment must be a positive number" };
   }
 
+  const userId = await requireUserId();
   await db
     .update(workoutExercises)
     .set({ name: name.trim(), targetReps, weightIncrement: weightIncrement.toFixed(2) })
-    .where(eq(workoutExercises.id, exerciseId));
+    .where(and(eq(workoutExercises.id, exerciseId), eq(workoutExercises.userId, userId)));
   revalidateAll();
   return {};
 }
 
 export async function archiveExercise(exerciseId: string) {
-  await db.update(workoutExercises).set({ archived: true }).where(eq(workoutExercises.id, exerciseId));
+  const userId = await requireUserId();
+  await db
+    .update(workoutExercises)
+    .set({ archived: true })
+    .where(and(eq(workoutExercises.id, exerciseId), eq(workoutExercises.userId, userId)));
   revalidateAll();
 }

@@ -9,13 +9,30 @@ import {
   integer,
   check,
   primaryKey,
+  foreignKey,
+  unique,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+
+// NOTE on multi-tenancy: every table has a `user_id` column (nullable for
+// now — see the migration plan). It intentionally has no `.references()`
+// call here: it points at Supabase Auth's `auth.users(id)`, a table in a
+// schema drizzle-kit doesn't manage, so that FK is added by hand in the
+// generated migration SQL instead of being declared here.
+//
+// Every "root" table additionally gets a composite `unique(id, user_id)`,
+// and every child table's foreign key to its parent is a composite
+// `(parent_id, user_id) references parent(id, user_id)` instead of a
+// plain `parent_id references parent(id)`. This makes Postgres itself
+// reject a child row whose user_id doesn't match its parent's — a
+// database-enforced guarantee instead of a convention every insert has to
+// remember.
 
 export const accounts = pgTable(
   "accounts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
     type: text("type").notNull(),
     name: text("name").notNull(),
     startingBalance: numeric("starting_balance", { precision: 12, scale: 2 })
@@ -26,24 +43,35 @@ export const accounts = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [check("accounts_type_check", sql`${table.type} in ('savings','debt')`)],
-);
+  (table) => [
+    check("accounts_type_check", sql`${table.type} in ('savings','debt')`),
+    unique("accounts_id_user_id_unique").on(table.id, table.userId),
+  ],
+).enableRLS();
 
-export const savingsDetails = pgTable("savings_details", {
-  accountId: uuid("account_id")
-    .primaryKey()
-    .references(() => accounts.id, { onDelete: "cascade" }),
-  dailyGoal: numeric("daily_goal", { precision: 12, scale: 2 })
-    .notNull()
-    .default("0"),
-});
+export const savingsDetails = pgTable(
+  "savings_details",
+  {
+    accountId: uuid("account_id").primaryKey(),
+    userId: uuid("user_id").notNull(),
+    dailyGoal: numeric("daily_goal", { precision: 12, scale: 2 })
+      .notNull()
+      .default("0"),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.accountId, table.userId],
+      foreignColumns: [accounts.id, accounts.userId],
+      name: "savings_details_account_id_user_id_fk",
+    }).onDelete("cascade"),
+  ],
+).enableRLS();
 
 export const debtDetails = pgTable(
   "debt_details",
   {
-    accountId: uuid("account_id")
-      .primaryKey()
-      .references(() => accounts.id, { onDelete: "cascade" }),
+    accountId: uuid("account_id").primaryKey(),
+    userId: uuid("user_id").notNull(),
     apr: numeric("apr", { precision: 6, scale: 4 }).notNull(),
     dailyMicropaymentGoal: numeric("daily_micropayment_goal", {
       precision: 12,
@@ -58,16 +86,20 @@ export const debtDetails = pgTable(
       "debt_details_statement_day_check",
       sql`${table.statementDay} between 1 and 28`,
     ),
+    foreignKey({
+      columns: [table.accountId, table.userId],
+      foreignColumns: [accounts.id, accounts.userId],
+      name: "debt_details_account_id_user_id_fk",
+    }).onDelete("cascade"),
   ],
-);
+).enableRLS();
 
 export const transactions = pgTable(
   "transactions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    accountId: uuid("account_id")
-      .notNull()
-      .references(() => accounts.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull(),
+    accountId: uuid("account_id").notNull(),
     date: date("date").notNull().defaultNow(),
     amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
     category: text("category").notNull(),
@@ -81,302 +113,488 @@ export const transactions = pgTable(
       "transactions_category_check",
       sql`${table.category} in ('one_time','recurring_goal','minimum_payment','interest')`,
     ),
+    foreignKey({
+      columns: [table.accountId, table.userId],
+      foreignColumns: [accounts.id, accounts.userId],
+      name: "transactions_account_id_user_id_fk",
+    }).onDelete("cascade"),
   ],
-);
+).enableRLS();
 
-export const debtStatements = pgTable("debt_statements", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  accountId: uuid("account_id")
-    .notNull()
-    .references(() => accounts.id, { onDelete: "cascade" }),
-  statementDate: date("statement_date").notNull(),
-  minimumPaymentDue: numeric("minimum_payment_due", {
-    precision: 12,
-    scale: 2,
-  }).notNull(),
-  interestCharged: numeric("interest_charged", { precision: 12, scale: 2 })
-    .notNull()
-    .default("0"),
-  statementBalance: numeric("statement_balance", { precision: 12, scale: 2 }),
-});
+export const debtStatements = pgTable(
+  "debt_statements",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    accountId: uuid("account_id").notNull(),
+    statementDate: date("statement_date").notNull(),
+    minimumPaymentDue: numeric("minimum_payment_due", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+    interestCharged: numeric("interest_charged", { precision: 12, scale: 2 })
+      .notNull()
+      .default("0"),
+    statementBalance: numeric("statement_balance", { precision: 12, scale: 2 }),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.accountId, table.userId],
+      foreignColumns: [accounts.id, accounts.userId],
+      name: "debt_statements_account_id_user_id_fk",
+    }).onDelete("cascade"),
+  ],
+).enableRLS();
 
-export const goals = pgTable("goals", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  accountId: uuid("account_id")
-    .notNull()
-    .references(() => accounts.id, { onDelete: "cascade" }),
-  targetAmount: numeric("target_amount", { precision: 12, scale: 2 }).notNull(),
-  targetDate: date("target_date"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const goals = pgTable(
+  "goals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    accountId: uuid("account_id").notNull(),
+    targetAmount: numeric("target_amount", { precision: 12, scale: 2 }).notNull(),
+    targetDate: date("target_date"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.accountId, table.userId],
+      foreignColumns: [accounts.id, accounts.userId],
+      name: "goals_account_id_user_id_fk",
+    }).onDelete("cascade"),
+  ],
+).enableRLS();
 
 // --- Points / habit tracker ---
 // Ported from tracker-app's goals/tasks/completions/rewards. Named
 // "habit_*" to avoid colliding with the finance `goals` table above.
 
-export const habitCategories = pgTable("habit_categories", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const habitCategories = pgTable(
+  "habit_categories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [unique("habit_categories_id_user_id_unique").on(table.id, table.userId)],
+).enableRLS();
 
-export const habitTasks = pgTable("habit_tasks", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  categoryId: uuid("category_id").references(() => habitCategories.id, {
-    onDelete: "set null",
-  }),
-  name: text("name").notNull(),
-  points: integer("points").notNull(),
-  // Repeatable tasks (e.g. "drink 8oz of water") can be logged more than
-  // once per day; non-repeatable tasks are a once-a-day checkbox.
-  repeatable: boolean("repeatable").notNull().default(false),
-  archived: boolean("archived").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const habitTasks = pgTable(
+  "habit_tasks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    categoryId: uuid("category_id"),
+    name: text("name").notNull(),
+    points: integer("points").notNull(),
+    // Repeatable tasks (e.g. "drink 8oz of water") can be logged more than
+    // once per day; non-repeatable tasks are a once-a-day checkbox.
+    repeatable: boolean("repeatable").notNull().default(false),
+    archived: boolean("archived").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("habit_tasks_id_user_id_unique").on(table.id, table.userId),
+    foreignKey({
+      columns: [table.categoryId, table.userId],
+      foreignColumns: [habitCategories.id, habitCategories.userId],
+      name: "habit_tasks_category_id_user_id_fk",
+    }).onDelete("set null"),
+  ],
+).enableRLS();
 
-export const habitCompletions = pgTable("habit_completions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  taskId: uuid("task_id")
-    .notNull()
-    .references(() => habitTasks.id, { onDelete: "cascade" }),
-  date: date("date").notNull().defaultNow(),
-  // Snapshotted so editing a task's point value later doesn't rewrite history.
-  pointsAwarded: integer("points_awarded").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const habitCompletions = pgTable(
+  "habit_completions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    taskId: uuid("task_id").notNull(),
+    date: date("date").notNull().defaultNow(),
+    // Snapshotted so editing a task's point value later doesn't rewrite history.
+    pointsAwarded: integer("points_awarded").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.taskId, table.userId],
+      foreignColumns: [habitTasks.id, habitTasks.userId],
+      name: "habit_completions_task_id_user_id_fk",
+    }).onDelete("cascade"),
+  ],
+).enableRLS();
 
-export const rewards = pgTable("rewards", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  cost: integer("cost").notNull(),
-  priceUsd: numeric("price_usd", { precision: 12, scale: 2 }),
-  link: text("link"),
-  archived: boolean("archived").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const rewards = pgTable(
+  "rewards",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    cost: integer("cost").notNull(),
+    priceUsd: numeric("price_usd", { precision: 12, scale: 2 }),
+    link: text("link"),
+    archived: boolean("archived").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [unique("rewards_id_user_id_unique").on(table.id, table.userId)],
+).enableRLS();
 
-export const redemptions = pgTable("redemptions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  rewardId: uuid("reward_id").references(() => rewards.id, {
-    onDelete: "set null",
-  }),
-  // Snapshotted so a deleted reward keeps its redemption history intact.
-  rewardName: text("reward_name").notNull(),
-  pointsCost: integer("points_cost").notNull(),
-  date: date("date").notNull().defaultNow(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const redemptions = pgTable(
+  "redemptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    rewardId: uuid("reward_id"),
+    // Snapshotted so a deleted reward keeps its redemption history intact.
+    rewardName: text("reward_name").notNull(),
+    pointsCost: integer("points_cost").notNull(),
+    date: date("date").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.rewardId, table.userId],
+      foreignColumns: [rewards.id, rewards.userId],
+      name: "redemptions_reward_id_user_id_fk",
+    }).onDelete("set null"),
+  ],
+).enableRLS();
 
 // --- Cleaning tracker ---
 
-export const cleaningAreas = pgTable("cleaning_areas", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const cleaningAreas = pgTable(
+  "cleaning_areas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [unique("cleaning_areas_id_user_id_unique").on(table.id, table.userId)],
+).enableRLS();
 
-export const cleaningTasks = pgTable("cleaning_tasks", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  areaId: uuid("area_id").references(() => cleaningAreas.id, {
-    onDelete: "set null",
-  }),
-  name: text("name").notNull(),
-  frequencyDays: integer("frequency_days").notNull(),
-  points: integer("points").notNull(),
-  archived: boolean("archived").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const cleaningTasks = pgTable(
+  "cleaning_tasks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    areaId: uuid("area_id"),
+    name: text("name").notNull(),
+    frequencyDays: integer("frequency_days").notNull(),
+    points: integer("points").notNull(),
+    archived: boolean("archived").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("cleaning_tasks_id_user_id_unique").on(table.id, table.userId),
+    foreignKey({
+      columns: [table.areaId, table.userId],
+      foreignColumns: [cleaningAreas.id, cleaningAreas.userId],
+      name: "cleaning_tasks_area_id_user_id_fk",
+    }).onDelete("set null"),
+  ],
+).enableRLS();
 
-export const cleaningCompletions = pgTable("cleaning_completions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  taskId: uuid("task_id")
-    .notNull()
-    .references(() => cleaningTasks.id, { onDelete: "cascade" }),
-  date: date("date").notNull().defaultNow(),
-  pointsAwarded: integer("points_awarded").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const cleaningCompletions = pgTable(
+  "cleaning_completions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    taskId: uuid("task_id").notNull(),
+    date: date("date").notNull().defaultNow(),
+    pointsAwarded: integer("points_awarded").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.taskId, table.userId],
+      foreignColumns: [cleaningTasks.id, cleaningTasks.userId],
+      name: "cleaning_completions_task_id_user_id_fk",
+    }).onDelete("cascade"),
+  ],
+).enableRLS();
 
 // --- Lists (books to read, movies to watch, etc. — no points) ---
 
-export const listCategories = pgTable("list_categories", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const listCategories = pgTable(
+  "list_categories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [unique("list_categories_id_user_id_unique").on(table.id, table.userId)],
+).enableRLS();
 
-export const listItems = pgTable("list_items", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  categoryId: uuid("category_id")
-    .notNull()
-    .references(() => listCategories.id, { onDelete: "cascade" }),
-  text: text("text").notNull(),
-  done: boolean("done").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const listItems = pgTable(
+  "list_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    categoryId: uuid("category_id").notNull(),
+    text: text("text").notNull(),
+    done: boolean("done").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.categoryId, table.userId],
+      foreignColumns: [listCategories.id, listCategories.userId],
+      name: "list_items_category_id_user_id_fk",
+    }).onDelete("cascade"),
+  ],
+).enableRLS();
 
 // --- To-do (flat list — no points) ---
 
 export const todos = pgTable("todos", {
   id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
   text: text("text").notNull(),
   done: boolean("done").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}).enableRLS();
 
 // --- Year in review (books read, concerts, trips, etc. — no points) ---
 
-export const yearReviewCategories = pgTable("year_review_categories", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const yearReviewCategories = pgTable(
+  "year_review_categories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [unique("year_review_categories_id_user_id_unique").on(table.id, table.userId)],
+).enableRLS();
 
-export const yearReviewItems = pgTable("year_review_items", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  categoryId: uuid("category_id")
-    .notNull()
-    .references(() => yearReviewCategories.id, { onDelete: "cascade" }),
-  text: text("text").notNull(),
-  // Precision varies per entry: year is always known; month and the exact
-  // day are filled in only as far as the entry's real precision goes
-  // (year-only, month+year, or a full date).
-  year: integer("year").notNull(),
-  month: integer("month"),
-  date: date("date"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const yearReviewItems = pgTable(
+  "year_review_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    categoryId: uuid("category_id").notNull(),
+    text: text("text").notNull(),
+    // Precision varies per entry: year is always known; month and the exact
+    // day are filled in only as far as the entry's real precision goes
+    // (year-only, month+year, or a full date).
+    year: integer("year").notNull(),
+    month: integer("month"),
+    date: date("date"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("year_review_items_id_user_id_unique").on(table.id, table.userId),
+    foreignKey({
+      columns: [table.categoryId, table.userId],
+      foreignColumns: [yearReviewCategories.id, yearReviewCategories.userId],
+      name: "year_review_items_category_id_user_id_fk",
+    }).onDelete("cascade"),
+  ],
+).enableRLS();
 
 // People you can tag on a year-in-review item (e.g. who you ate with).
 // Reused across items so the same person doesn't get re-created each time.
-export const people = pgTable("people", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull().unique(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const people = pgTable(
+  "people",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("people_id_user_id_unique").on(table.id, table.userId),
+    unique("people_user_id_name_unique").on(table.userId, table.name),
+  ],
+).enableRLS();
 
 export const yearReviewItemPeople = pgTable(
   "year_review_item_people",
   {
-    itemId: uuid("item_id")
-      .notNull()
-      .references(() => yearReviewItems.id, { onDelete: "cascade" }),
-    personId: uuid("person_id")
-      .notNull()
-      .references(() => people.id, { onDelete: "cascade" }),
+    itemId: uuid("item_id").notNull(),
+    personId: uuid("person_id").notNull(),
+    userId: uuid("user_id").notNull(),
   },
-  (table) => [primaryKey({ columns: [table.itemId, table.personId] })],
-);
+  (table) => [
+    primaryKey({ columns: [table.itemId, table.personId] }),
+    foreignKey({
+      columns: [table.itemId, table.userId],
+      foreignColumns: [yearReviewItems.id, yearReviewItems.userId],
+      name: "year_review_item_people_item_id_user_id_fk",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.personId, table.userId],
+      foreignColumns: [people.id, people.userId],
+      name: "year_review_item_people_person_id_user_id_fk",
+    }).onDelete("cascade"),
+  ],
+).enableRLS();
 
 // Places you can tag on a year-in-review item (e.g. what city).
 // Reused across items so the same place doesn't get re-created each time.
-export const places = pgTable("places", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull().unique(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const places = pgTable(
+  "places",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("places_id_user_id_unique").on(table.id, table.userId),
+    unique("places_user_id_name_unique").on(table.userId, table.name),
+  ],
+).enableRLS();
 
 export const yearReviewItemPlaces = pgTable(
   "year_review_item_places",
   {
-    itemId: uuid("item_id")
-      .notNull()
-      .references(() => yearReviewItems.id, { onDelete: "cascade" }),
-    placeId: uuid("place_id")
-      .notNull()
-      .references(() => places.id, { onDelete: "cascade" }),
+    itemId: uuid("item_id").notNull(),
+    placeId: uuid("place_id").notNull(),
+    userId: uuid("user_id").notNull(),
   },
-  (table) => [primaryKey({ columns: [table.itemId, table.placeId] })],
-);
+  (table) => [
+    primaryKey({ columns: [table.itemId, table.placeId] }),
+    foreignKey({
+      columns: [table.itemId, table.userId],
+      foreignColumns: [yearReviewItems.id, yearReviewItems.userId],
+      name: "year_review_item_places_item_id_user_id_fk",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.placeId, table.userId],
+      foreignColumns: [places.id, places.userId],
+      name: "year_review_item_places_place_id_user_id_fk",
+    }).onDelete("cascade"),
+  ],
+).enableRLS();
 
 // --- Workout tracker ---
 
-export const workoutDays = pgTable("workout_days", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  orderIndex: integer("order_index").notNull().default(0),
-  archived: boolean("archived").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const workoutDays = pgTable(
+  "workout_days",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    orderIndex: integer("order_index").notNull().default(0),
+    archived: boolean("archived").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [unique("workout_days_id_user_id_unique").on(table.id, table.userId)],
+).enableRLS();
 
-export const workoutExercises = pgTable("workout_exercises", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  dayId: uuid("day_id")
-    .notNull()
-    .references(() => workoutDays.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  // Plank/Side Plank track a hold time instead of weight x reps.
-  tracksDuration: boolean("tracks_duration").notNull().default(false),
-  targetReps: integer("target_reps").notNull().default(12),
-  weightIncrement: numeric("weight_increment", { precision: 6, scale: 2 })
-    .notNull()
-    .default("5"),
-  orderIndex: integer("order_index").notNull().default(0),
-  archived: boolean("archived").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const workoutExercises = pgTable(
+  "workout_exercises",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    dayId: uuid("day_id").notNull(),
+    name: text("name").notNull(),
+    // Plank/Side Plank track a hold time instead of weight x reps.
+    tracksDuration: boolean("tracks_duration").notNull().default(false),
+    targetReps: integer("target_reps").notNull().default(12),
+    weightIncrement: numeric("weight_increment", { precision: 6, scale: 2 })
+      .notNull()
+      .default("5"),
+    orderIndex: integer("order_index").notNull().default(0),
+    archived: boolean("archived").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("workout_exercises_id_user_id_unique").on(table.id, table.userId),
+    foreignKey({
+      columns: [table.dayId, table.userId],
+      foreignColumns: [workoutDays.id, workoutDays.userId],
+      name: "workout_exercises_day_id_user_id_fk",
+    }).onDelete("cascade"),
+  ],
+).enableRLS();
 
 // One row per workout performed on a given day of the split.
-export const workoutSessions = pgTable("workout_sessions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  dayId: uuid("day_id")
-    .notNull()
-    .references(() => workoutDays.id, { onDelete: "cascade" }),
-  date: date("date").notNull().defaultNow(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const workoutSessions = pgTable(
+  "workout_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    dayId: uuid("day_id").notNull(),
+    date: date("date").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("workout_sessions_id_user_id_unique").on(table.id, table.userId),
+    foreignKey({
+      columns: [table.dayId, table.userId],
+      foreignColumns: [workoutDays.id, workoutDays.userId],
+      name: "workout_sessions_day_id_user_id_fk",
+    }).onDelete("cascade"),
+  ],
+).enableRLS();
 
-export const workoutSets = pgTable("workout_sets", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  sessionId: uuid("session_id")
-    .notNull()
-    .references(() => workoutSessions.id, { onDelete: "cascade" }),
-  exerciseId: uuid("exercise_id")
-    .notNull()
-    .references(() => workoutExercises.id, { onDelete: "cascade" }),
-  setNumber: integer("set_number").notNull(),
-  weight: numeric("weight", { precision: 6, scale: 2 }),
-  reps: integer("reps"),
-  durationSeconds: integer("duration_seconds"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const workoutSets = pgTable(
+  "workout_sets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    sessionId: uuid("session_id").notNull(),
+    exerciseId: uuid("exercise_id").notNull(),
+    setNumber: integer("set_number").notNull(),
+    weight: numeric("weight", { precision: 6, scale: 2 }),
+    reps: integer("reps"),
+    durationSeconds: integer("duration_seconds"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.sessionId, table.userId],
+      foreignColumns: [workoutSessions.id, workoutSessions.userId],
+      name: "workout_sets_session_id_user_id_fk",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.exerciseId, table.userId],
+      foreignColumns: [workoutExercises.id, workoutExercises.userId],
+      name: "workout_sets_exercise_id_user_id_fk",
+    }).onDelete("cascade"),
+  ],
+).enableRLS();

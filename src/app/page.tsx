@@ -5,6 +5,7 @@ import {
   listAccountsSummary,
   getTodos,
 } from "@/db/queries";
+import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
 import { Card, formatCurrency, formatDate, formatDateRange, formatMonthName } from "@/components/ui";
 import { MinimumPaymentBadge } from "@/components/MinimumPaymentBadge";
@@ -22,11 +23,12 @@ type CleaningTask = {
 };
 
 export default async function OverviewPage() {
+  const userId = await requireUserId();
   const [pointsSummary, cleaning, { debtSummaries }, allTodos] = await Promise.all([
-    getPointsSummary(),
-    getCleaningDashboardData(),
-    listAccountsSummary(),
-    getTodos(),
+    getPointsSummary(userId),
+    getCleaningDashboardData(userId),
+    listAccountsSummary(userId),
+    getTodos(userId),
   ]);
   const { balance, pointsToday, pointsYesterday, streak } = pointsSummary;
   const activeTodos = allTodos.filter((t) => !t.done);

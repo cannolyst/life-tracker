@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { cleaningAreas, cleaningTasks, cleaningCompletions } from "@/db/schema";
+import { requireUserId } from "@/lib/session";
 import { dateKeyInAppTimezone } from "@/lib/timezone";
 
 export type ActionState = { error?: string };
@@ -22,7 +23,8 @@ export async function addArea(
   if (typeof name !== "string" || !name.trim()) {
     return { error: "Name is required" };
   }
-  await db.insert(cleaningAreas).values({ name: name.trim() });
+  const userId = await requireUserId();
+  await db.insert(cleaningAreas).values({ userId, name: name.trim() });
   revalidateAll();
   return {};
 }
@@ -48,7 +50,9 @@ export async function addTask(
     return { error: "Points must be a positive whole number" };
   }
 
+  const userId = await requireUserId();
   await db.insert(cleaningTasks).values({
+    userId,
     name: name.trim(),
     areaId: typeof areaId === "string" && areaId ? areaId : null,
     frequencyDays,
@@ -59,23 +63,40 @@ export async function addTask(
 }
 
 export async function archiveTask(taskId: string) {
-  await db.update(cleaningTasks).set({ archived: true }).where(eq(cleaningTasks.id, taskId));
+  const userId = await requireUserId();
+  await db
+    .update(cleaningTasks)
+    .set({ archived: true })
+    .where(and(eq(cleaningTasks.id, taskId), eq(cleaningTasks.userId, userId)));
   revalidateAll();
 }
 
 export async function markDone(taskId: string) {
+  const userId = await requireUserId();
   const todayKey = dateKeyInAppTimezone();
   const [existing] = await db
     .select()
     .from(cleaningCompletions)
-    .where(and(eq(cleaningCompletions.taskId, taskId), eq(cleaningCompletions.date, todayKey)));
+    .where(
+      and(
+        eq(cleaningCompletions.taskId, taskId),
+        eq(cleaningCompletions.date, todayKey),
+        eq(cleaningCompletions.userId, userId),
+      ),
+    );
 
   if (existing) {
-    await db.delete(cleaningCompletions).where(eq(cleaningCompletions.id, existing.id));
+    await db
+      .delete(cleaningCompletions)
+      .where(and(eq(cleaningCompletions.id, existing.id), eq(cleaningCompletions.userId, userId)));
   } else {
-    const [task] = await db.select().from(cleaningTasks).where(eq(cleaningTasks.id, taskId));
+    const [task] = await db
+      .select()
+      .from(cleaningTasks)
+      .where(and(eq(cleaningTasks.id, taskId), eq(cleaningTasks.userId, userId)));
     if (!task) return;
     await db.insert(cleaningCompletions).values({
+      userId,
       taskId,
       date: todayKey,
       pointsAwarded: task.points,

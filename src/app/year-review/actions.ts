@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import {
   yearReviewCategories,
@@ -11,6 +11,7 @@ import {
   places,
   yearReviewItemPlaces,
 } from "@/db/schema";
+import { requireUserId } from "@/lib/session";
 
 export type ActionState = { error?: string };
 
@@ -26,21 +27,29 @@ export async function addYearReviewCategory(
   if (typeof name !== "string" || !name.trim()) {
     return { error: "Name is required" };
   }
-  await db.insert(yearReviewCategories).values({ name: name.trim() });
+  const userId = await requireUserId();
+  await db.insert(yearReviewCategories).values({ userId, name: name.trim() });
   revalidateAll();
   return {};
 }
 
 export async function deleteYearReviewCategory(categoryId: string) {
-  await db.delete(yearReviewCategories).where(eq(yearReviewCategories.id, categoryId));
+  const userId = await requireUserId();
+  await db
+    .delete(yearReviewCategories)
+    .where(and(eq(yearReviewCategories.id, categoryId), eq(yearReviewCategories.userId, userId)));
   revalidateAll();
 }
 
 // Parses a comma-separated tag field, and finds-or-creates a row per name
 // (case-insensitive match) in the given reusable-tag table (people/places).
+// Scoped to the current user — without this filter, typing a name that
+// happens to match another user's contact/place would silently reuse and
+// tag their row instead of creating a new one.
 async function resolveTagIds(
   table: typeof people | typeof places,
   rawValue: FormDataEntryValue | null,
+  userId: string,
 ): Promise<string[]> {
   const names =
     typeof rawValue === "string"
@@ -48,7 +57,7 @@ async function resolveTagIds(
       : [];
   if (names.length === 0) return [];
 
-  const existing = await db.select().from(table);
+  const existing = await db.select().from(table).where(eq(table.userId, userId));
   const existingByLowerName = new Map(existing.map((row) => [row.name.toLowerCase(), row]));
 
   const ids: string[] = [];
@@ -57,7 +66,7 @@ async function resolveTagIds(
     if (match) {
       ids.push(match.id);
     } else {
-      const [created] = await db.insert(table).values({ name }).returning();
+      const [created] = await db.insert(table).values({ userId, name }).returning();
       ids.push(created.id);
     }
   }
@@ -123,23 +132,25 @@ export async function addYearReviewItem(
     return { error: parsedDate.error };
   }
 
+  const userId = await requireUserId();
+
   const [item] = await db
     .insert(yearReviewItems)
-    .values({ categoryId, text: text.trim(), ...parsedDate })
+    .values({ userId, categoryId, text: text.trim(), ...parsedDate })
     .returning();
 
-  const personIds = await resolveTagIds(people, formData.get("people"));
+  const personIds = await resolveTagIds(people, formData.get("people"), userId);
   if (personIds.length > 0) {
     await db
       .insert(yearReviewItemPeople)
-      .values(personIds.map((personId) => ({ itemId: item.id, personId })));
+      .values(personIds.map((personId) => ({ userId, itemId: item.id, personId })));
   }
 
-  const placeIds = await resolveTagIds(places, formData.get("places"));
+  const placeIds = await resolveTagIds(places, formData.get("places"), userId);
   if (placeIds.length > 0) {
     await db
       .insert(yearReviewItemPlaces)
-      .values(placeIds.map((placeId) => ({ itemId: item.id, placeId })));
+      .values(placeIds.map((placeId) => ({ userId, itemId: item.id, placeId })));
   }
 
   revalidateAll();
@@ -161,23 +172,31 @@ export async function updateYearReviewItem(
     return { error: parsedDate.error };
   }
 
+  const userId = await requireUserId();
+
   await db
     .update(yearReviewItems)
     .set({ text: text.trim(), ...parsedDate })
-    .where(eq(yearReviewItems.id, itemId));
+    .where(and(eq(yearReviewItems.id, itemId), eq(yearReviewItems.userId, userId)));
 
-  const personIds = await resolveTagIds(people, formData.get("people"));
-  await db.delete(yearReviewItemPeople).where(eq(yearReviewItemPeople.itemId, itemId));
+  const personIds = await resolveTagIds(people, formData.get("people"), userId);
+  await db
+    .delete(yearReviewItemPeople)
+    .where(and(eq(yearReviewItemPeople.itemId, itemId), eq(yearReviewItemPeople.userId, userId)));
   if (personIds.length > 0) {
     await db
       .insert(yearReviewItemPeople)
-      .values(personIds.map((personId) => ({ itemId, personId })));
+      .values(personIds.map((personId) => ({ userId, itemId, personId })));
   }
 
-  const placeIds = await resolveTagIds(places, formData.get("places"));
-  await db.delete(yearReviewItemPlaces).where(eq(yearReviewItemPlaces.itemId, itemId));
+  const placeIds = await resolveTagIds(places, formData.get("places"), userId);
+  await db
+    .delete(yearReviewItemPlaces)
+    .where(and(eq(yearReviewItemPlaces.itemId, itemId), eq(yearReviewItemPlaces.userId, userId)));
   if (placeIds.length > 0) {
-    await db.insert(yearReviewItemPlaces).values(placeIds.map((placeId) => ({ itemId, placeId })));
+    await db
+      .insert(yearReviewItemPlaces)
+      .values(placeIds.map((placeId) => ({ userId, itemId, placeId })));
   }
 
   revalidateAll();
@@ -185,6 +204,9 @@ export async function updateYearReviewItem(
 }
 
 export async function deleteYearReviewItem(itemId: string) {
-  await db.delete(yearReviewItems).where(eq(yearReviewItems.id, itemId));
+  const userId = await requireUserId();
+  await db
+    .delete(yearReviewItems)
+    .where(and(eq(yearReviewItems.id, itemId), eq(yearReviewItems.userId, userId)));
   revalidateAll();
 }

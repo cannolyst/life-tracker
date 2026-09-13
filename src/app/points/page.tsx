@@ -1,4 +1,5 @@
 import { getHabitDashboardData } from "@/db/queries";
+import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
 import { Card, buttonClass, formatCurrency, formatDate } from "@/components/ui";
 import { StreakBadge } from "@/components/StreakBadge";
@@ -28,7 +29,7 @@ export default async function PointsPage() {
     recentRedemptions,
     categories,
     cleaningTasks,
-  } = await getHabitDashboardData();
+  } = await getHabitDashboardData(await requireUserId());
 
   return (
     <div className="flex min-h-full flex-col">

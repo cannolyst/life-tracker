@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getDebtAccountDetail } from "@/db/queries";
+import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
 import { Card, formatCurrency, formatDate, buildBalancePoints } from "@/components/ui";
 import { BalanceChart } from "@/components/BalanceChart";
@@ -26,7 +27,7 @@ export default async function DebtDetailPage({
   params: Promise<{ accountId: string }>;
 }) {
   const { accountId } = await params;
-  const detail = await getDebtAccountDetail(accountId);
+  const detail = await getDebtAccountDetail(accountId, await requireUserId());
   if (!detail) notFound();
 
   const {

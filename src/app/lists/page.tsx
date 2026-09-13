@@ -1,4 +1,5 @@
 import { getListsData } from "@/db/queries";
+import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
 import { AddListCategoryForm, AddListItemForm } from "./ListsForms";
@@ -10,7 +11,7 @@ import { Sparkle } from "@/components/Sparkle";
 export const dynamic = "force-dynamic";
 
 export default async function ListsPage() {
-  const { categoriesWithItems } = await getListsData();
+  const { categoriesWithItems } = await getListsData(await requireUserId());
 
   return (
     <div className="flex min-h-full flex-col">

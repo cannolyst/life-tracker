@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getSavingsAccountDetail } from "@/db/queries";
+import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
 import { Card, ProgressBar, formatCurrency, formatDate, buildBalancePoints } from "@/components/ui";
 import { BalanceChart } from "@/components/BalanceChart";
@@ -18,7 +19,7 @@ export default async function SavingsDetailPage({
   params: Promise<{ accountId: string }>;
 }) {
   const { accountId } = await params;
-  const detail = await getSavingsAccountDetail(accountId);
+  const detail = await getSavingsAccountDetail(accountId, await requireUserId());
   if (!detail) notFound();
 
   const { account, details, goal, transactions, balance, projectedDate, pace, streak } = detail;

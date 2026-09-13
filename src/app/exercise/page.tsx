@@ -5,6 +5,7 @@ import {
   getWorkoutWeekProgress,
   getWorkoutDashboardStats,
 } from "@/db/queries";
+import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
 import { Card, formatDateRange } from "@/components/ui";
 import { ExerciseCard, TrendBadge } from "./ExerciseCard";
@@ -19,7 +20,8 @@ export default async function ExercisePage({
   searchParams: Promise<{ day?: string }>;
 }) {
   const { day: dayParam } = await searchParams;
-  const days = await getWorkoutDays();
+  const userId = await requireUserId();
+  const days = await getWorkoutDays(userId);
 
   if (days.length === 0) {
     return (
@@ -35,9 +37,9 @@ export default async function ExercisePage({
 
   const selectedDayId = dayParam && days.some((d) => d.id === dayParam) ? dayParam : days[0].id;
   const [{ day, exercises }, weekProgress, stats] = await Promise.all([
-    getWorkoutDayData(selectedDayId),
-    getWorkoutWeekProgress(),
-    getWorkoutDashboardStats(),
+    getWorkoutDayData(selectedDayId, userId),
+    getWorkoutWeekProgress(userId),
+    getWorkoutDashboardStats(userId),
   ]);
 
   return (

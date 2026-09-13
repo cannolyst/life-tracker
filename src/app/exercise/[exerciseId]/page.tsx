@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getExerciseHistory } from "@/db/queries";
+import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
 import { Card, formatDate } from "@/components/ui";
 import { ExerciseHistoryChart } from "./ExerciseHistoryChart";
@@ -13,7 +14,7 @@ export default async function ExerciseHistoryPage({
   params: Promise<{ exerciseId: string }>;
 }) {
   const { exerciseId } = await params;
-  const data = await getExerciseHistory(exerciseId);
+  const data = await getExerciseHistory(exerciseId, await requireUserId());
   if (!data) notFound();
   const { exercise, history } = data;
 

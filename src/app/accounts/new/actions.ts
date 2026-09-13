@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { accounts, savingsDetails, debtDetails, goals } from "@/db/schema";
+import { requireUserId } from "@/lib/session";
 
 export type CreateAccountState = { error?: string };
 
@@ -25,6 +26,7 @@ export async function createAccount(
     return { error: "Starting balance must be a non-negative number" };
   }
 
+  const userId = await requireUserId();
   let accountId: string;
 
   if (type === "savings") {
@@ -38,11 +40,12 @@ export async function createAccount(
 
     const [account] = await db
       .insert(accounts)
-      .values({ type, name: name.trim(), startingBalance: startingBalance.toFixed(2) })
+      .values({ userId, type, name: name.trim(), startingBalance: startingBalance.toFixed(2) })
       .returning();
     accountId = account.id;
 
     await db.insert(savingsDetails).values({
+      userId,
       accountId,
       dailyGoal: dailyGoal.toFixed(2),
     });
@@ -53,6 +56,7 @@ export async function createAccount(
         return { error: "Goal amount must be a positive number" };
       }
       await db.insert(goals).values({
+        userId,
         accountId,
         targetAmount: targetAmount.toFixed(2),
         targetDate:
@@ -77,11 +81,12 @@ export async function createAccount(
 
     const [account] = await db
       .insert(accounts)
-      .values({ type, name: name.trim(), startingBalance: startingBalance.toFixed(2) })
+      .values({ userId, type, name: name.trim(), startingBalance: startingBalance.toFixed(2) })
       .returning();
     accountId = account.id;
 
     await db.insert(debtDetails).values({
+      userId,
       accountId,
       apr: (aprPercent / 100).toFixed(4),
       dailyMicropaymentGoal: dailyMicropaymentGoal.toFixed(2),
@@ -89,6 +94,7 @@ export async function createAccount(
     });
 
     await db.insert(goals).values({
+      userId,
       accountId,
       targetAmount: "0",
     });

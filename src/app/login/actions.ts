@@ -1,34 +1,30 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import {
-  createSessionToken,
-  SESSION_COOKIE,
-  SESSION_DURATION_SECONDS,
-} from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 
-export async function login(_prevState: { error?: string }, formData: FormData) {
+export type ActionState = { error?: string };
+
+export async function login(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  const email = formData.get("email");
   const password = formData.get("password");
-  const appPassword = process.env.APP_PASSWORD;
 
-  if (!appPassword) {
-    throw new Error("APP_PASSWORD is not set");
+  if (typeof email !== "string" || !email.trim()) {
+    return { error: "Email is required" };
+  }
+  if (typeof password !== "string" || !password) {
+    return { error: "Password is required" };
   }
 
-  if (typeof password !== "string" || password !== appPassword) {
-    return { error: "Incorrect password" };
-  }
-
-  const token = await createSessionToken();
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: SESSION_DURATION_SECONDS,
-    path: "/",
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({
+    email: email.trim(),
+    password,
   });
+
+  if (error) {
+    return { error: "Incorrect email or password" };
+  }
 
   redirect("/");
 }

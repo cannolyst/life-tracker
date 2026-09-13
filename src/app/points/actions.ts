@@ -5,6 +5,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { db } from "@/db";
 import { habitCategories, habitTasks, habitCompletions, rewards, redemptions } from "@/db/schema";
 import { getPointsBalance } from "@/db/queries";
+import { requireUserId } from "@/lib/session";
 import { dateKeyInAppTimezone } from "@/lib/timezone";
 
 export type ActionState = { error?: string };
@@ -22,7 +23,8 @@ export async function addCategory(
   if (typeof name !== "string" || !name.trim()) {
     return { error: "Name is required" };
   }
-  await db.insert(habitCategories).values({ name: name.trim() });
+  const userId = await requireUserId();
+  await db.insert(habitCategories).values({ userId, name: name.trim() });
   revalidateAll();
   return {};
 }
@@ -43,7 +45,9 @@ export async function addTask(
     return { error: "Points must be a positive whole number" };
   }
 
+  const userId = await requireUserId();
   await db.insert(habitTasks).values({
+    userId,
     name: name.trim(),
     points,
     categoryId: typeof categoryId === "string" && categoryId ? categoryId : null,
@@ -54,7 +58,11 @@ export async function addTask(
 }
 
 export async function archiveTask(taskId: string) {
-  await db.update(habitTasks).set({ archived: true }).where(eq(habitTasks.id, taskId));
+  const userId = await requireUserId();
+  await db
+    .update(habitTasks)
+    .set({ archived: true })
+    .where(and(eq(habitTasks.id, taskId), eq(habitTasks.userId, userId)));
   revalidateAll();
 }
 
@@ -75,6 +83,7 @@ export async function updateTask(
     return { error: "Points must be a positive whole number" };
   }
 
+  const userId = await requireUserId();
   await db
     .update(habitTasks)
     .set({
@@ -83,7 +92,7 @@ export async function updateTask(
       categoryId: typeof categoryId === "string" && categoryId ? categoryId : null,
       repeatable: formData.get("repeatable") === "on",
     })
-    .where(eq(habitTasks.id, taskId));
+    .where(and(eq(habitTasks.id, taskId), eq(habitTasks.userId, userId)));
   revalidateAll();
   return {};
 }
@@ -91,18 +100,31 @@ export async function updateTask(
 // Non-repeatable tasks are a once-a-day checkbox: toggles the single
 // completion for today on/off.
 export async function toggleTaskCompletion(taskId: string) {
+  const userId = await requireUserId();
   const todayKey = dateKeyInAppTimezone();
   const [existing] = await db
     .select()
     .from(habitCompletions)
-    .where(and(eq(habitCompletions.taskId, taskId), eq(habitCompletions.date, todayKey)));
+    .where(
+      and(
+        eq(habitCompletions.taskId, taskId),
+        eq(habitCompletions.date, todayKey),
+        eq(habitCompletions.userId, userId),
+      ),
+    );
 
   if (existing) {
-    await db.delete(habitCompletions).where(eq(habitCompletions.id, existing.id));
+    await db
+      .delete(habitCompletions)
+      .where(and(eq(habitCompletions.id, existing.id), eq(habitCompletions.userId, userId)));
   } else {
-    const [task] = await db.select().from(habitTasks).where(eq(habitTasks.id, taskId));
+    const [task] = await db
+      .select()
+      .from(habitTasks)
+      .where(and(eq(habitTasks.id, taskId), eq(habitTasks.userId, userId)));
     if (!task) return;
     await db.insert(habitCompletions).values({
+      userId,
       taskId,
       date: todayKey,
       pointsAwarded: task.points,
@@ -113,9 +135,14 @@ export async function toggleTaskCompletion(taskId: string) {
 
 // Repeatable tasks can be logged more than once per day.
 export async function logRepeatableCompletion(taskId: string) {
-  const [task] = await db.select().from(habitTasks).where(eq(habitTasks.id, taskId));
+  const userId = await requireUserId();
+  const [task] = await db
+    .select()
+    .from(habitTasks)
+    .where(and(eq(habitTasks.id, taskId), eq(habitTasks.userId, userId)));
   if (!task) return;
   await db.insert(habitCompletions).values({
+    userId,
     taskId,
     date: dateKeyInAppTimezone(),
     pointsAwarded: task.points,
@@ -124,15 +151,24 @@ export async function logRepeatableCompletion(taskId: string) {
 }
 
 export async function undoRepeatableCompletion(taskId: string) {
+  const userId = await requireUserId();
   const todayKey = dateKeyInAppTimezone();
   const [mostRecent] = await db
     .select()
     .from(habitCompletions)
-    .where(and(eq(habitCompletions.taskId, taskId), eq(habitCompletions.date, todayKey)))
+    .where(
+      and(
+        eq(habitCompletions.taskId, taskId),
+        eq(habitCompletions.date, todayKey),
+        eq(habitCompletions.userId, userId),
+      ),
+    )
     .orderBy(desc(habitCompletions.createdAt))
     .limit(1);
   if (!mostRecent) return;
-  await db.delete(habitCompletions).where(eq(habitCompletions.id, mostRecent.id));
+  await db
+    .delete(habitCompletions)
+    .where(and(eq(habitCompletions.id, mostRecent.id), eq(habitCompletions.userId, userId)));
   revalidateAll();
 }
 
@@ -162,7 +198,9 @@ export async function addReward(
     priceUsd = price.toFixed(2);
   }
 
+  const userId = await requireUserId();
   await db.insert(rewards).values({
+    userId,
     name: name.trim(),
     cost,
     priceUsd,
@@ -173,21 +211,27 @@ export async function addReward(
 }
 
 export async function archiveReward(rewardId: string) {
-  await db.update(rewards).set({ archived: true }).where(eq(rewards.id, rewardId));
+  const userId = await requireUserId();
+  await db
+    .update(rewards)
+    .set({ archived: true })
+    .where(and(eq(rewards.id, rewardId), eq(rewards.userId, userId)));
   revalidateAll();
 }
 
 export async function redeemReward(rewardId: string) {
+  const userId = await requireUserId();
   const [reward] = await db
     .select()
     .from(rewards)
-    .where(and(eq(rewards.id, rewardId), eq(rewards.archived, false)));
+    .where(and(eq(rewards.id, rewardId), eq(rewards.archived, false), eq(rewards.userId, userId)));
   if (!reward) return;
 
-  const balance = await getPointsBalance();
+  const balance = await getPointsBalance(userId);
   if (balance < reward.cost) return;
 
   await db.insert(redemptions).values({
+    userId,
     rewardId: reward.id,
     rewardName: reward.name,
     pointsCost: reward.cost,
@@ -195,6 +239,9 @@ export async function redeemReward(rewardId: string) {
   });
   // Redeeming is one-time: archive it so it drops off the active list and
   // can't be redeemed again.
-  await db.update(rewards).set({ archived: true }).where(eq(rewards.id, rewardId));
+  await db
+    .update(rewards)
+    .set({ archived: true })
+    .where(and(eq(rewards.id, rewardId), eq(rewards.userId, userId)));
   revalidateAll();
 }

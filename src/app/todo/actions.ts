@@ -1,9 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { todos } from "@/db/schema";
+import { requireUserId } from "@/lib/session";
 
 export type ActionState = { error?: string };
 
@@ -19,22 +20,26 @@ export async function addTodo(
   if (typeof text !== "string" || !text.trim()) {
     return { error: "Text is required" };
   }
-  await db.insert(todos).values({ text: text.trim() });
+  const userId = await requireUserId();
+  await db.insert(todos).values({ userId, text: text.trim() });
   revalidateAll();
   return {};
 }
 
 export async function setTodoDone(todoId: string, done: boolean) {
-  await db.update(todos).set({ done }).where(eq(todos.id, todoId));
+  const userId = await requireUserId();
+  await db.update(todos).set({ done }).where(and(eq(todos.id, todoId), eq(todos.userId, userId)));
   revalidateAll();
 }
 
 export async function deleteTodo(todoId: string) {
-  await db.delete(todos).where(eq(todos.id, todoId));
+  const userId = await requireUserId();
+  await db.delete(todos).where(and(eq(todos.id, todoId), eq(todos.userId, userId)));
   revalidateAll();
 }
 
 export async function clearCompletedTodos() {
-  await db.delete(todos).where(eq(todos.done, true));
+  const userId = await requireUserId();
+  await db.delete(todos).where(and(eq(todos.done, true), eq(todos.userId, userId)));
   revalidateAll();
 }

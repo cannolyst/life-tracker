@@ -1,15 +1,15 @@
 "use client";
 
 import { useActionState } from "react";
-import { login } from "./actions";
+import Link from "next/link";
+import { login, type ActionState } from "./actions";
 import { Sparkle } from "@/components/Sparkle";
 import { JEWELS } from "@/lib/jewels";
 
+const initialState: ActionState = {};
+
 export default function LoginPage() {
-  const [state, formAction, pending] = useActionState<{ error?: string }, FormData>(
-    login,
-    {},
-  );
+  const [state, formAction, pending] = useActionState(login, initialState);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-950 px-4">
@@ -22,6 +22,19 @@ export default function LoginPage() {
           Life Tracker
         </h1>
         <div className="space-y-1">
+          <label htmlFor="email" className="text-sm text-neutral-400">
+            Email
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autoFocus
+            className="w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-neutral-100 outline-none focus:border-neutral-500"
+          />
+        </div>
+        <div className="space-y-1">
           <label htmlFor="password" className="text-sm text-neutral-400">
             Password
           </label>
@@ -30,7 +43,6 @@ export default function LoginPage() {
             name="password"
             type="password"
             required
-            autoFocus
             className="w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-neutral-100 outline-none focus:border-neutral-500"
           />
         </div>
@@ -44,6 +56,12 @@ export default function LoginPage() {
         >
           {pending ? "Signing in..." : "Sign in"}
         </button>
+        <p className="text-center text-sm text-neutral-500">
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="text-neutral-300 hover:underline">
+            Sign up
+          </Link>
+        </p>
       </form>
     </div>
   );

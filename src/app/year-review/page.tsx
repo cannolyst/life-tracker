@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getYearReviewData } from "@/db/queries";
+import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
 import { AddYearReviewCategoryForm, AddYearReviewItemForm } from "./YearReviewForms";
@@ -18,7 +19,7 @@ export default async function YearReviewPage({
   const { year: yearParam } = await searchParams;
   const selectedYear = yearParam ? Number(yearParam) : undefined;
   const { years, year, categoriesWithItems, allPeople, allPlaces } =
-    await getYearReviewData(selectedYear);
+    await getYearReviewData(await requireUserId(), selectedYear);
 
   return (
     <div className="flex min-h-full flex-col">

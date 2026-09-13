@@ -49,11 +49,11 @@ import {
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
-async function getBalance(accountId: string, startingBalance: number) {
+async function getBalance(accountId: string, userId: string, startingBalance: number) {
   const [row] = await db
     .select({ total: sum(transactions.amount) })
     .from(transactions)
-    .where(eq(transactions.accountId, accountId));
+    .where(and(eq(transactions.accountId, accountId), eq(transactions.userId, userId)));
   return startingBalance + Number(row?.total ?? 0);
 }
 
@@ -61,8 +61,11 @@ function streakFromTransactions(txns: { date: Date | string; category: string }[
   return computeStreak(txns.filter((t) => t.category === "recurring_goal").map((t) => t.date));
 }
 
-export async function listAccountsSummary() {
-  const allAccounts = await db.select().from(accounts).where(eq(accounts.archived, false));
+export async function listAccountsSummary(userId: string) {
+  const allAccounts = await db
+    .select()
+    .from(accounts)
+    .where(and(eq(accounts.archived, false), eq(accounts.userId, userId)));
 
   const savings = allAccounts.filter((a) => a.type === "savings");
   const debts = allAccounts.filter((a) => a.type === "debt");
@@ -72,17 +75,17 @@ export async function listAccountsSummary() {
       const [details] = await db
         .select()
         .from(savingsDetails)
-        .where(eq(savingsDetails.accountId, account.id));
+        .where(and(eq(savingsDetails.accountId, account.id), eq(savingsDetails.userId, userId)));
       const [goal] = await db
         .select()
         .from(goals)
-        .where(eq(goals.accountId, account.id))
+        .where(and(eq(goals.accountId, account.id), eq(goals.userId, userId)))
         .orderBy(goals.createdAt);
-      const balance = await getBalance(account.id, Number(account.startingBalance));
+      const balance = await getBalance(account.id, userId, Number(account.startingBalance));
       const txns = await db
         .select({ date: transactions.date, amount: transactions.amount, category: transactions.category })
         .from(transactions)
-        .where(eq(transactions.accountId, account.id));
+        .where(and(eq(transactions.accountId, account.id), eq(transactions.userId, userId)));
 
       const projectedDate = goal
         ? projectSavingsDate(
@@ -110,17 +113,17 @@ export async function listAccountsSummary() {
       const [details] = await db
         .select()
         .from(debtDetails)
-        .where(eq(debtDetails.accountId, account.id));
+        .where(and(eq(debtDetails.accountId, account.id), eq(debtDetails.userId, userId)));
       const [goal] = await db
         .select()
         .from(goals)
-        .where(eq(goals.accountId, account.id))
+        .where(and(eq(goals.accountId, account.id), eq(goals.userId, userId)))
         .orderBy(goals.createdAt);
-      const balance = await getBalance(account.id, Number(account.startingBalance));
+      const balance = await getBalance(account.id, userId, Number(account.startingBalance));
       const statements = await db
         .select()
         .from(debtStatements)
-        .where(eq(debtStatements.accountId, account.id))
+        .where(and(eq(debtStatements.accountId, account.id), eq(debtStatements.userId, userId)))
         .orderBy(debtStatements.statementDate);
       const latestStatement = statements[statements.length - 1];
       const txns = await db
@@ -130,7 +133,7 @@ export async function listAccountsSummary() {
           category: transactions.category,
         })
         .from(transactions)
-        .where(eq(transactions.accountId, account.id));
+        .where(and(eq(transactions.accountId, account.id), eq(transactions.userId, userId)));
 
       const minimumPaymentDue = Number(latestStatement?.minimumPaymentDue ?? 0);
       const projectedDate = details
@@ -184,24 +187,27 @@ export async function listAccountsSummary() {
   return { savingsSummaries, debtSummaries };
 }
 
-export async function getSavingsAccountDetail(accountId: string) {
-  const [account] = await db.select().from(accounts).where(eq(accounts.id, accountId));
+export async function getSavingsAccountDetail(accountId: string, userId: string) {
+  const [account] = await db
+    .select()
+    .from(accounts)
+    .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)));
   if (!account) return null;
   const [details] = await db
     .select()
     .from(savingsDetails)
-    .where(eq(savingsDetails.accountId, accountId));
+    .where(and(eq(savingsDetails.accountId, accountId), eq(savingsDetails.userId, userId)));
   const [goal] = await db
     .select()
     .from(goals)
-    .where(eq(goals.accountId, accountId))
+    .where(and(eq(goals.accountId, accountId), eq(goals.userId, userId)))
     .orderBy(goals.createdAt);
   const txns = await db
     .select()
     .from(transactions)
-    .where(eq(transactions.accountId, accountId))
+    .where(and(eq(transactions.accountId, accountId), eq(transactions.userId, userId)))
     .orderBy(transactions.date);
-  const balance = await getBalance(accountId, Number(account.startingBalance));
+  const balance = await getBalance(accountId, userId, Number(account.startingBalance));
 
   const projectedDate = goal
     ? projectSavingsDate(
@@ -224,29 +230,32 @@ export async function getSavingsAccountDetail(accountId: string) {
   };
 }
 
-export async function getDebtAccountDetail(accountId: string) {
-  const [account] = await db.select().from(accounts).where(eq(accounts.id, accountId));
+export async function getDebtAccountDetail(accountId: string, userId: string) {
+  const [account] = await db
+    .select()
+    .from(accounts)
+    .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)));
   if (!account) return null;
   const [details] = await db
     .select()
     .from(debtDetails)
-    .where(eq(debtDetails.accountId, accountId));
+    .where(and(eq(debtDetails.accountId, accountId), eq(debtDetails.userId, userId)));
   const [goal] = await db
     .select()
     .from(goals)
-    .where(eq(goals.accountId, accountId))
+    .where(and(eq(goals.accountId, accountId), eq(goals.userId, userId)))
     .orderBy(goals.createdAt);
   const statements = await db
     .select()
     .from(debtStatements)
-    .where(eq(debtStatements.accountId, accountId))
+    .where(and(eq(debtStatements.accountId, accountId), eq(debtStatements.userId, userId)))
     .orderBy(debtStatements.statementDate);
   const txns = await db
     .select()
     .from(transactions)
-    .where(eq(transactions.accountId, accountId))
+    .where(and(eq(transactions.accountId, accountId), eq(transactions.userId, userId)))
     .orderBy(transactions.date);
-  const balance = await getBalance(accountId, Number(account.startingBalance));
+  const balance = await getBalance(accountId, userId, Number(account.startingBalance));
 
   const latestStatement = statements[statements.length - 1];
   const minimumPaymentDue = Number(latestStatement?.minimumPaymentDue ?? 0);
@@ -346,7 +355,7 @@ function buildAllFinanceCharts(
   };
 }
 
-export async function getGamificationStats() {
+export async function getGamificationStats(userId: string) {
   const rows = await db
     .select({
       amount: transactions.amount,
@@ -355,7 +364,8 @@ export async function getGamificationStats() {
       accountType: accounts.type,
     })
     .from(transactions)
-    .innerJoin(accounts, eq(transactions.accountId, accounts.id));
+    .innerJoin(accounts, eq(transactions.accountId, accounts.id))
+    .where(eq(transactions.userId, userId));
 
   const todayKey = dateKeyInAppTimezone();
   const monthPrefix = todayKey.slice(0, 7); // "YYYY-MM"
@@ -411,11 +421,17 @@ export async function getGamificationStats() {
 
 // --- Points / habit tracker ---
 
-export async function getPointsBalance(): Promise<number> {
+export async function getPointsBalance(userId: string): Promise<number> {
   const [[{ habitEarned }], [{ cleaningEarned }], [{ spent }]] = await Promise.all([
-    db.select({ habitEarned: sum(habitCompletions.pointsAwarded) }).from(habitCompletions),
-    db.select({ cleaningEarned: sum(cleaningCompletions.pointsAwarded) }).from(cleaningCompletions),
-    db.select({ spent: sum(redemptions.pointsCost) }).from(redemptions),
+    db
+      .select({ habitEarned: sum(habitCompletions.pointsAwarded) })
+      .from(habitCompletions)
+      .where(eq(habitCompletions.userId, userId)),
+    db
+      .select({ cleaningEarned: sum(cleaningCompletions.pointsAwarded) })
+      .from(cleaningCompletions)
+      .where(eq(cleaningCompletions.userId, userId)),
+    db.select({ spent: sum(redemptions.pointsCost) }).from(redemptions).where(eq(redemptions.userId, userId)),
   ]);
   return Number(habitEarned ?? 0) + Number(cleaningEarned ?? 0) - Number(spent ?? 0);
 }
@@ -432,13 +448,15 @@ function addDaysToDateKey(dateKey: string, days: number): string {
 // The four points-page headline stats (total/yesterday/today/streak),
 // shared by the Points page itself and the overview page so they always
 // match. Reflects the whole shared economy (habit + cleaning completions).
-export async function getPointsSummary() {
+export async function getPointsSummary(userId: string) {
   const completions = await db
     .select({ date: habitCompletions.date, pointsAwarded: habitCompletions.pointsAwarded })
-    .from(habitCompletions);
+    .from(habitCompletions)
+    .where(eq(habitCompletions.userId, userId));
   const cleaningCompletionsAll = await db
     .select({ date: cleaningCompletions.date, pointsAwarded: cleaningCompletions.pointsAwarded })
-    .from(cleaningCompletions);
+    .from(cleaningCompletions)
+    .where(eq(cleaningCompletions.userId, userId));
 
   const todayKey = dateKeyInAppTimezone();
   const yesterdayKey = addDaysToDateKey(todayKey, -1);
@@ -451,7 +469,7 @@ export async function getPointsSummary() {
 
   const distinctDays = Array.from(new Set(completions.map((c) => c.date)));
 
-  const balance = await getPointsBalance();
+  const balance = await getPointsBalance(userId);
 
   return {
     balance,
@@ -550,25 +568,30 @@ function buildAllPointsCharts(
   };
 }
 
-export async function getHabitDashboardData() {
+export async function getHabitDashboardData(userId: string) {
   const categories = await db
     .select()
     .from(habitCategories)
+    .where(eq(habitCategories.userId, userId))
     .orderBy(habitCategories.createdAt);
   const tasks = await db
     .select()
     .from(habitTasks)
-    .where(eq(habitTasks.archived, false))
+    .where(and(eq(habitTasks.archived, false), eq(habitTasks.userId, userId)))
     .orderBy(habitTasks.createdAt);
-  const completions = await db.select().from(habitCompletions);
+  const completions = await db
+    .select()
+    .from(habitCompletions)
+    .where(eq(habitCompletions.userId, userId));
   const activeRewards = await db
     .select()
     .from(rewards)
-    .where(eq(rewards.archived, false))
+    .where(and(eq(rewards.archived, false), eq(rewards.userId, userId)))
     .orderBy(rewards.cost);
   const recentRedemptions = await db
     .select()
     .from(redemptions)
+    .where(eq(redemptions.userId, userId))
     .orderBy(redemptions.date);
 
   const todayKey = dateKeyInAppTimezone();
@@ -579,7 +602,7 @@ export async function getHabitDashboardData() {
     }
   }
 
-  const { balance, pointsToday, pointsYesterday, streak } = await getPointsSummary();
+  const { balance, pointsToday, pointsYesterday, streak } = await getPointsSummary(userId);
 
   const categoriesWithTasks = categories.map((category) => ({
     category,
@@ -589,10 +612,11 @@ export async function getHabitDashboardData() {
 
   const cleaningCompletionsAll = await db
     .select({ date: cleaningCompletions.date, pointsAwarded: cleaningCompletions.pointsAwarded })
-    .from(cleaningCompletions);
+    .from(cleaningCompletions)
+    .where(eq(cleaningCompletions.userId, userId));
   const chartData = buildAllPointsCharts([...completions, ...cleaningCompletionsAll]);
 
-  const cleaningTasksWithStatus = await getCleaningTasksWithStatus();
+  const cleaningTasksWithStatus = await getCleaningTasksWithStatus(userId);
 
   return {
     categories,
@@ -612,15 +636,18 @@ export async function getHabitDashboardData() {
 
 // --- Cleaning tracker ---
 
-async function getCleaningTasksWithStatus() {
-  const areas = await db.select().from(cleaningAreas);
+async function getCleaningTasksWithStatus(userId: string) {
+  const areas = await db.select().from(cleaningAreas).where(eq(cleaningAreas.userId, userId));
   const areaNameById = new Map(areas.map((a) => [a.id, a.name]));
   const tasks = await db
     .select()
     .from(cleaningTasks)
-    .where(eq(cleaningTasks.archived, false))
+    .where(and(eq(cleaningTasks.archived, false), eq(cleaningTasks.userId, userId)))
     .orderBy(cleaningTasks.createdAt);
-  const allCompletions = await db.select().from(cleaningCompletions);
+  const allCompletions = await db
+    .select()
+    .from(cleaningCompletions)
+    .where(eq(cleaningCompletions.userId, userId));
 
   const todayKey = dateKeyInAppTimezone();
 
@@ -647,9 +674,13 @@ async function getCleaningTasksWithStatus() {
   });
 }
 
-export async function getCleaningDashboardData() {
-  const areas = await db.select().from(cleaningAreas).orderBy(cleaningAreas.createdAt);
-  const tasksWithStatus = await getCleaningTasksWithStatus();
+export async function getCleaningDashboardData(userId: string) {
+  const areas = await db
+    .select()
+    .from(cleaningAreas)
+    .where(eq(cleaningAreas.userId, userId))
+    .orderBy(cleaningAreas.createdAt);
+  const tasksWithStatus = await getCleaningTasksWithStatus(userId);
 
   const areasWithTasks = areas.map((area) => ({
     area,
@@ -662,9 +693,17 @@ export async function getCleaningDashboardData() {
 
 // --- Lists (books to read, movies to watch, etc.) ---
 
-export async function getListsData() {
-  const categories = await db.select().from(listCategories).orderBy(listCategories.createdAt);
-  const items = await db.select().from(listItems).orderBy(listItems.createdAt);
+export async function getListsData(userId: string) {
+  const categories = await db
+    .select()
+    .from(listCategories)
+    .where(eq(listCategories.userId, userId))
+    .orderBy(listCategories.createdAt);
+  const items = await db
+    .select()
+    .from(listItems)
+    .where(eq(listItems.userId, userId))
+    .orderBy(listItems.createdAt);
 
   const categoriesWithItems = categories.map((category) => ({
     category,
@@ -676,8 +715,8 @@ export async function getListsData() {
 
 // --- To-do ---
 
-export async function getTodos() {
-  return db.select().from(todos).orderBy(desc(todos.createdAt));
+export async function getTodos(userId: string) {
+  return db.select().from(todos).where(eq(todos.userId, userId)).orderBy(desc(todos.createdAt));
 }
 
 // --- Year in review ---
@@ -691,16 +730,27 @@ function yearReviewItemSortKey(item: { year: number; month: number | null; date:
   return `${item.year}-01-01`;
 }
 
-export async function getYearReviewData(selectedYear?: number) {
+export async function getYearReviewData(userId: string, selectedYear?: number) {
   const categories = await db
     .select()
     .from(yearReviewCategories)
+    .where(eq(yearReviewCategories.userId, userId))
     .orderBy(yearReviewCategories.createdAt);
-  const allItems = await db.select().from(yearReviewItems).orderBy(desc(yearReviewItems.createdAt));
-  const allPeople = await db.select().from(people).orderBy(people.name);
-  const itemPeopleLinks = await db.select().from(yearReviewItemPeople);
-  const allPlaces = await db.select().from(places).orderBy(places.name);
-  const itemPlaceLinks = await db.select().from(yearReviewItemPlaces);
+  const allItems = await db
+    .select()
+    .from(yearReviewItems)
+    .where(eq(yearReviewItems.userId, userId))
+    .orderBy(desc(yearReviewItems.createdAt));
+  const allPeople = await db.select().from(people).where(eq(people.userId, userId)).orderBy(people.name);
+  const itemPeopleLinks = await db
+    .select()
+    .from(yearReviewItemPeople)
+    .where(eq(yearReviewItemPeople.userId, userId));
+  const allPlaces = await db.select().from(places).where(eq(places.userId, userId)).orderBy(places.name);
+  const itemPlaceLinks = await db
+    .select()
+    .from(yearReviewItemPlaces)
+    .where(eq(yearReviewItemPlaces.userId, userId));
 
   const peopleById = new Map(allPeople.map((p) => [p.id, p]));
   const peopleByItemId = new Map<string, { id: string; name: string }[]>();
@@ -786,21 +836,21 @@ function computeOverloadForExercise(
   return evaluateProgressiveOverload(recentSessionSets, targetReps);
 }
 
-export async function getWorkoutDays() {
+export async function getWorkoutDays(userId: string) {
   return db
     .select()
     .from(workoutDays)
-    .where(eq(workoutDays.archived, false))
+    .where(and(eq(workoutDays.archived, false), eq(workoutDays.userId, userId)))
     .orderBy(workoutDays.orderIndex);
 }
 
 // Which of the split's days have already been logged this calendar week,
 // so the page can show progress at a glance (e.g. "Leg day done").
-export async function getWorkoutWeekProgress() {
+export async function getWorkoutWeekProgress(userId: string) {
   const days = await db
     .select()
     .from(workoutDays)
-    .where(eq(workoutDays.archived, false))
+    .where(and(eq(workoutDays.archived, false), eq(workoutDays.userId, userId)))
     .orderBy(workoutDays.orderIndex);
 
   const todayOnly = dateOnlyInAppTimezone();
@@ -812,7 +862,13 @@ export async function getWorkoutWeekProgress() {
   const sessions = await db
     .select()
     .from(workoutSessions)
-    .where(and(gte(workoutSessions.date, weekStartKey), lte(workoutSessions.date, weekEndKey)));
+    .where(
+      and(
+        gte(workoutSessions.date, weekStartKey),
+        lte(workoutSessions.date, weekEndKey),
+        eq(workoutSessions.userId, userId),
+      ),
+    );
 
   const countByDayId = new Map<string, number>();
   for (const s of sessions) {
@@ -835,22 +891,28 @@ export async function getWorkoutWeekProgress() {
 // this week's total training volume (weight x reps, strength sets only —
 // duration holds like Plank aren't measured in "volume") compares to last
 // week's.
-export async function getWorkoutDashboardStats() {
+export async function getWorkoutDashboardStats(userId: string) {
   const exercises = await db
     .select()
     .from(workoutExercises)
-    .where(eq(workoutExercises.archived, false));
+    .where(and(eq(workoutExercises.archived, false), eq(workoutExercises.userId, userId)));
 
   const exerciseIds = exercises.map((e) => e.id);
   const allSets =
     exerciseIds.length > 0
-      ? await db.select().from(workoutSets).where(inArray(workoutSets.exerciseId, exerciseIds))
+      ? await db
+          .select()
+          .from(workoutSets)
+          .where(and(inArray(workoutSets.exerciseId, exerciseIds), eq(workoutSets.userId, userId)))
       : [];
 
   const sessionIds = Array.from(new Set(allSets.map((s) => s.sessionId)));
   const sessions =
     sessionIds.length > 0
-      ? await db.select().from(workoutSessions).where(inArray(workoutSessions.id, sessionIds))
+      ? await db
+          .select()
+          .from(workoutSessions)
+          .where(and(inArray(workoutSessions.id, sessionIds), eq(workoutSessions.userId, userId)))
       : [];
   const sessionById = new Map(sessions.map((s) => [s.id, s]));
 
@@ -912,25 +974,37 @@ export async function getWorkoutDashboardStats() {
   return { readyExercises, thisWeekVolume, lastWeekVolume, volumeTrend };
 }
 
-export async function getWorkoutDayData(dayId: string) {
-  const [day] = await db.select().from(workoutDays).where(eq(workoutDays.id, dayId));
+export async function getWorkoutDayData(dayId: string, userId: string) {
+  const [day] = await db
+    .select()
+    .from(workoutDays)
+    .where(and(eq(workoutDays.id, dayId), eq(workoutDays.userId, userId)));
   const exercises = await db
     .select()
     .from(workoutExercises)
-    .where(and(eq(workoutExercises.dayId, dayId), eq(workoutExercises.archived, false)))
+    .where(
+      and(
+        eq(workoutExercises.dayId, dayId),
+        eq(workoutExercises.archived, false),
+        eq(workoutExercises.userId, userId),
+      ),
+    )
     .orderBy(workoutExercises.orderIndex);
 
   const sessions = await db
     .select()
     .from(workoutSessions)
-    .where(eq(workoutSessions.dayId, dayId))
+    .where(and(eq(workoutSessions.dayId, dayId), eq(workoutSessions.userId, userId)))
     .orderBy(desc(workoutSessions.date));
   const sessionById = new Map(sessions.map((s) => [s.id, s]));
 
   const sessionIds = sessions.map((s) => s.id);
   const allSets =
     sessionIds.length > 0
-      ? await db.select().from(workoutSets).where(inArray(workoutSets.sessionId, sessionIds))
+      ? await db
+          .select()
+          .from(workoutSets)
+          .where(and(inArray(workoutSets.sessionId, sessionIds), eq(workoutSets.userId, userId)))
       : [];
 
   const todayKey = dateKeyInAppTimezone();
@@ -1001,18 +1075,24 @@ export async function getWorkoutDayData(dayId: string) {
   return { day, exercises: exercisesWithData };
 }
 
-export async function getExerciseHistory(exerciseId: string) {
+export async function getExerciseHistory(exerciseId: string, userId: string) {
   const [exercise] = await db
     .select()
     .from(workoutExercises)
-    .where(eq(workoutExercises.id, exerciseId));
+    .where(and(eq(workoutExercises.id, exerciseId), eq(workoutExercises.userId, userId)));
   if (!exercise) return null;
 
-  const sets = await db.select().from(workoutSets).where(eq(workoutSets.exerciseId, exerciseId));
+  const sets = await db
+    .select()
+    .from(workoutSets)
+    .where(and(eq(workoutSets.exerciseId, exerciseId), eq(workoutSets.userId, userId)));
   const sessionIds = Array.from(new Set(sets.map((s) => s.sessionId)));
   const sessions =
     sessionIds.length > 0
-      ? await db.select().from(workoutSessions).where(inArray(workoutSessions.id, sessionIds))
+      ? await db
+          .select()
+          .from(workoutSessions)
+          .where(and(inArray(workoutSessions.id, sessionIds), eq(workoutSessions.userId, userId)))
       : [];
   const sessionById = new Map(sessions.map((s) => [s.id, s]));
 

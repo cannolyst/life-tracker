@@ -1,9 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { transactions, debtDetails, debtStatements, goals } from "@/db/schema";
+import { requireUserId } from "@/lib/session";
 
 export type ActionState = { error?: string };
 
@@ -33,7 +34,9 @@ export async function addDebtTransaction(
     return { error: "Date is required" };
   }
 
+  const userId = await requireUserId();
   await db.insert(transactions).values({
+    userId,
     accountId,
     amount: (direction === "add" ? amount : -amount).toFixed(2),
     category,
@@ -66,7 +69,10 @@ export async function addDebtStatement(
     return { error: "Interest charged must be a non-negative number" };
   }
 
+  const userId = await requireUserId();
+
   await db.insert(debtStatements).values({
+    userId,
     accountId,
     statementDate,
     minimumPaymentDue: minimumPaymentDue.toFixed(2),
@@ -79,6 +85,7 @@ export async function addDebtStatement(
 
   if (interestCharged > 0) {
     await db.insert(transactions).values({
+      userId,
       accountId,
       amount: interestCharged.toFixed(2),
       category: "interest",
@@ -93,7 +100,10 @@ export async function addDebtStatement(
 }
 
 export async function deleteDebtTransaction(accountId: string, transactionId: string) {
-  await db.delete(transactions).where(eq(transactions.id, transactionId));
+  const userId = await requireUserId();
+  await db
+    .delete(transactions)
+    .where(and(eq(transactions.id, transactionId), eq(transactions.userId, userId)));
   revalidatePath(`/debt/${accountId}`);
   revalidatePath("/");
 }
@@ -107,12 +117,19 @@ export async function updateDebtGoal(
   const targetDate =
     typeof targetDateRaw === "string" && targetDateRaw.trim() !== "" ? targetDateRaw : null;
 
-  const [existing] = await db.select().from(goals).where(eq(goals.accountId, accountId));
+  const userId = await requireUserId();
+  const [existing] = await db
+    .select()
+    .from(goals)
+    .where(and(eq(goals.accountId, accountId), eq(goals.userId, userId)));
 
   if (existing) {
-    await db.update(goals).set({ targetDate }).where(eq(goals.id, existing.id));
+    await db
+      .update(goals)
+      .set({ targetDate })
+      .where(and(eq(goals.id, existing.id), eq(goals.userId, userId)));
   } else {
-    await db.insert(goals).values({ accountId, targetAmount: "0", targetDate });
+    await db.insert(goals).values({ userId, accountId, targetAmount: "0", targetDate });
   }
 
   revalidatePath(`/debt/${accountId}`);
@@ -139,6 +156,7 @@ export async function updateDebtSettings(
     return { error: "Statement day must be between 1 and 28" };
   }
 
+  const userId = await requireUserId();
   await db
     .update(debtDetails)
     .set({
@@ -146,7 +164,7 @@ export async function updateDebtSettings(
       dailyMicropaymentGoal: dailyMicropaymentGoal.toFixed(2),
       statementDay,
     })
-    .where(eq(debtDetails.accountId, accountId));
+    .where(and(eq(debtDetails.accountId, accountId), eq(debtDetails.userId, userId)));
 
   revalidatePath(`/debt/${accountId}`);
   revalidatePath("/");

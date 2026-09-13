@@ -1,4 +1,5 @@
 import { getCleaningDashboardData } from "@/db/queries";
+import { requireUserId } from "@/lib/session";
 import { getTimeframeBoundaries, type CleaningTimeframeBucket } from "@/lib/cleaningStatus";
 import { Nav } from "@/components/Nav";
 import { Card, formatDateRange, formatMonthName } from "@/components/ui";
@@ -10,7 +11,9 @@ import type { Task } from "./TaskList";
 export const dynamic = "force-dynamic";
 
 export default async function CleaningPage() {
-  const { areasWithTasks, unassignedTasks, areas } = await getCleaningDashboardData();
+  const { areasWithTasks, unassignedTasks, areas } = await getCleaningDashboardData(
+    await requireUserId(),
+  );
 
   const categoryGroups: TaskGroup[] = [
     ...areasWithTasks
