@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { addArea, addTask, type ActionState } from "./actions";
 import { inputClass, labelClass, buttonClass } from "@/components/ui";
 
@@ -37,6 +37,7 @@ export function AddTaskForm({
   areas: { id: string; name: string }[];
 }) {
   const [state, formAction, pending] = useActionState(addTask, initialState);
+  const [isCustomFrequency, setIsCustomFrequency] = useState(false);
 
   return (
     <form action={formAction} className="space-y-3">
@@ -58,13 +59,30 @@ export function AddTaskForm({
         </div>
         <div className="space-y-1">
           <label className={labelClass}>Frequency</label>
-          <select name="frequencyDays" defaultValue="7" className={inputClass}>
+          <select
+            name={isCustomFrequency ? undefined : "frequencyDays"}
+            defaultValue="7"
+            onChange={(e) => setIsCustomFrequency(e.target.value === "custom")}
+            className={inputClass}
+          >
             {FREQUENCY_OPTIONS.map((f) => (
               <option key={f.label} value={f.days}>
                 {f.label}
               </option>
             ))}
+            <option value="custom">Custom (days)</option>
           </select>
+          {isCustomFrequency && (
+            <input
+              name="frequencyDays"
+              type="number"
+              step="1"
+              min="1"
+              required
+              placeholder="Number of days"
+              className={`${inputClass} mt-2`}
+            />
+          )}
         </div>
         <div className="space-y-1">
           <label className={labelClass}>Points</label>
