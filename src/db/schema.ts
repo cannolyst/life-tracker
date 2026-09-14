@@ -674,6 +674,6 @@ export const emotionEntries = pgTable(
       "emotion_entries_zone_check",
       sql`${table.zone} in ('chest','throat','stomach','jaw','none')`,
     ),
-    check("emotion_entries_mode_check", sql`${table.mode} in ('quiet','stuck')`),
+    check("emotion_entries_mode_check", sql`${table.mode} in ('quiet','stuck','big')`),
   ],
 ).enableRLS();

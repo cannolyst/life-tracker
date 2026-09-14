@@ -31,7 +31,7 @@ export type EmotionEntryInput = {
   category: string;
   word: string;
   zone: string;
-  mode: "quiet" | "stuck";
+  mode: "quiet" | "stuck" | "big";
 };
 
 export async function saveEmotionEntry(input: EmotionEntryInput) {

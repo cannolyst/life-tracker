@@ -99,6 +99,13 @@
       "when": 1789402335162,
       "tag": "0013_secret_zuras",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789404893510,
+      "tag": "0014_slimy_shaman",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,2 @@
+ALTER TABLE "emotion_entries" DROP CONSTRAINT "emotion_entries_mode_check";--> statement-breakpoint
+ALTER TABLE "emotion_entries" ADD CONSTRAINT "emotion_entries_mode_check" CHECK ("emotion_entries"."mode" in ('quiet','stuck','big'));

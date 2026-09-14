@@ -42,7 +42,7 @@ export function EmotionCheckIn({
   const [secondary, setSecondary] = useState<WheelWord | null>(null);
   const [word, setWord] = useState<string | null>(null);
   const [zone, setZone] = useState<string | null>(null);
-  const [mode, setMode] = useState<"quiet" | "stuck" | null>(null);
+  const [mode, setMode] = useState<"quiet" | "stuck" | "big" | null>(null);
   const [justSavedId, setJustSavedId] = useState<string | null>(null);
   const [entries, setEntries] = useState<EmotionEntryRow[]>(initialEntries);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -301,8 +301,8 @@ export function EmotionCheckIn({
 
         {/* Step 4: quiet vs stuck */}
         <div>
-          <h3 className="mb-3 text-[15px] font-medium">Quiet, or stuck?</h3>
-          <div className="grid grid-cols-2 gap-2">
+          <h3 className="mb-3 text-[15px] font-medium">Quiet, stuck, or big?</h3>
+          <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => setMode("quiet")}
@@ -311,7 +311,7 @@ export function EmotionCheckIn({
               }`}
             >
               <div className="text-xs font-medium">Quiet</div>
-              <div className="mt-0.5 text-[11px] text-neutral-500">It genuinely wasn&apos;t much</div>
+              <div className="mt-0.5 text-[11px] text-neutral-500">Genuinely wasn&apos;t much</div>
             </button>
             <button
               type="button"
@@ -321,7 +321,17 @@ export function EmotionCheckIn({
               }`}
             >
               <div className="text-xs font-medium">Stuck</div>
-              <div className="mt-0.5 text-[11px] text-neutral-500">Something was there, didn&apos;t surface</div>
+              <div className="mt-0.5 text-[11px] text-neutral-500">There, didn&apos;t surface</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("big")}
+              className={`rounded-sm border px-3 py-2.5 text-left ${
+                mode === "big" ? "border-neutral-500 bg-neutral-800" : "border-neutral-700 hover:border-neutral-600"
+              }`}
+            >
+              <div className="text-xs font-medium">Big</div>
+              <div className="mt-0.5 text-[11px] text-neutral-500">Strong, and it came out</div>
             </button>
           </div>
         </div>
