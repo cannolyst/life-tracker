@@ -11,6 +11,7 @@ const SETTINGS_FIELD = {
   lists: "showLists",
   todo: "showTodo",
   yearReview: "showYearReview",
+  emotionCheckin: "showEmotionCheckin",
 } as const;
 
 export async function Nav() {

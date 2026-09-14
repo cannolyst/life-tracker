@@ -30,6 +30,7 @@ import {
   workoutSessions,
   workoutSets,
   moduleSettings,
+  emotionEntries,
 } from "./schema";
 import {
   projectSavingsDate,
@@ -1188,6 +1189,29 @@ export async function getModuleSettings(userId: string) {
       showLists: true,
       showTodo: true,
       showYearReview: true,
+      showEmotionCheckin: true,
     }
   );
+}
+
+// --- Emotion check-in ---
+
+export async function getTodaysEmotionEntries(userId: string) {
+  const todayKey = dateKeyInAppTimezone();
+  return db
+    .select()
+    .from(emotionEntries)
+    .where(and(eq(emotionEntries.userId, userId), eq(emotionEntries.date, todayKey)))
+    .orderBy(desc(emotionEntries.createdAt));
+}
+
+// Read-only lookup for display purposes (e.g. the "+N pts" badge) — doesn't
+// create the task if it's missing; saveEmotionEntry's own
+// getOrCreateEmotionCheckinTask handles that lazily on first save.
+export async function getEmotionCheckinPoints(userId: string): Promise<number> {
+  const [task] = await db
+    .select({ points: habitTasks.points })
+    .from(habitTasks)
+    .where(and(eq(habitTasks.userId, userId), eq(habitTasks.name, "Emotion check-in")));
+  return task?.points ?? 2;
 }

@@ -24,6 +24,7 @@ export async function saveModuleSettings(
     showLists: formData.get("lists") === "on",
     showTodo: formData.get("todo") === "on",
     showYearReview: formData.get("yearReview") === "on",
+    showEmotionCheckin: formData.get("emotionCheckin") === "on",
   };
 
   await db

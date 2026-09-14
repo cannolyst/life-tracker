@@ -639,7 +639,41 @@ export const moduleSettings = pgTable("module_settings", {
   showLists: boolean("show_lists").notNull().default(true),
   showTodo: boolean("show_todo").notNull().default(true),
   showYearReview: boolean("show_year_review").notNull().default(true),
+  showEmotionCheckin: boolean("show_emotion_check_in").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 }).enableRLS();
+
+// --- Emotion check-in (repeatable, multiple-times-a-day mood log) ---
+
+export const emotionEntries = pgTable(
+  "emotion_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    date: date("date").notNull().defaultNow(),
+    moment: text("moment").notNull(),
+    category: text("category").notNull(),
+    word: text("word").notNull(),
+    zone: text("zone").notNull(),
+    mode: text("mode").notNull(),
+    // Snapshotted so editing the task's point value later doesn't rewrite
+    // history — same reasoning as habitCompletions.pointsAwarded.
+    pointsAwarded: integer("points_awarded").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "emotion_entries_category_check",
+      sql`${table.category} in ('mad','sad','glad','scared','surprised','disgusted')`,
+    ),
+    check(
+      "emotion_entries_zone_check",
+      sql`${table.zone} in ('chest','throat','stomach','jaw','none')`,
+    ),
+    check("emotion_entries_mode_check", sql`${table.mode} in ('quiet','stuck')`),
+  ],
+).enableRLS();
