@@ -43,6 +43,38 @@
   --color-orange-400: #a9822e; /* jewel gold (streak flame) */
 }
 
+/*
+ * Dark mode: a second set of the same custom properties, scoped under
+ * data-theme="dark" (set on <html> by the root layout from a cookie — see
+ * src/app/theme-actions.ts). Wins by source order over the :root block
+ * above for any descendant, so every existing Tailwind utility class
+ * across the app repaints with zero per-component changes. Same warm
+ * plum/rose identity as the light theme, inverted — not a generic
+ * gray-900 dark theme.
+ */
+[data-theme="dark"] {
+  --color-neutral-950: #221c28; /* page background */
+  --color-neutral-900: #2d2733; /* card background */
+  --color-neutral-800: rgba(255, 255, 255, 0.06);
+  --color-neutral-700: rgba(255, 255, 255, 0.13);
+  --color-neutral-600: #7d7488;
+  --color-neutral-500: #a89dad;
+  --color-neutral-400: #a89dad;
+  --color-neutral-300: #f3ecf0; /* ink */
+  --color-neutral-200: #f3ecf0;
+  --color-neutral-100: #f3ecf0;
+
+  --color-emerald-950: rgba(127, 201, 164, 0.16);
+  --color-emerald-500: #7fc9a4;
+  --color-emerald-400: #7fc9a4;
+  --color-red-950: rgba(226, 143, 163, 0.16);
+  --color-red-900: #e28fa3;
+  --color-red-400: #e28fa3;
+  --color-amber-950: rgba(216, 177, 104, 0.16);
+  --color-amber-400: #d8b168;
+  --color-orange-400: #d8b168;
+}
+
 body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }

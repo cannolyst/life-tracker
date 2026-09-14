@@ -4,9 +4,16 @@ import Link from "next/link";
 import { useState } from "react";
 import { logout } from "@/app/logout-actions";
 import { Sparkle } from "@/components/Sparkle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { JEWELS } from "@/lib/jewels";
 
-export function NavClient({ links }: { links: { href: string; label: string }[] }) {
+export function NavClient({
+  links,
+  theme,
+}: {
+  links: { href: string; label: string }[];
+  theme: "light" | "dark";
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -42,6 +49,7 @@ export function NavClient({ links }: { links: { href: string; label: string }[] 
               Sign out
             </button>
           </form>
+          <ThemeToggle compact theme={theme} />
         </nav>
 
         <button
@@ -82,6 +90,10 @@ export function NavClient({ links }: { links: { href: string; label: string }[] 
               Sign out
             </button>
           </form>
+          <div className="flex items-center justify-between border-t border-neutral-800 py-3">
+            <span className="font-display text-neutral-300">Appearance</span>
+            <ThemeToggle theme={theme} />
+          </div>
         </nav>
       )}
     </header>

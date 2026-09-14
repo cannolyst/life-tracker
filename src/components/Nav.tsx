@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { requireUserId } from "@/lib/session";
 import { getModuleSettings } from "@/db/queries";
 import { MODULES } from "@/lib/modules";
@@ -18,6 +19,7 @@ export async function Nav() {
   const userId = await requireUserId();
   const settings = await getModuleSettings(userId);
   const links = MODULES.filter((m) => settings[SETTINGS_FIELD[m.key]]);
+  const theme = (await cookies()).get("theme")?.value === "dark" ? "dark" : "light";
 
-  return <NavClient links={links} />;
+  return <NavClient links={links} theme={theme} />;
 }
