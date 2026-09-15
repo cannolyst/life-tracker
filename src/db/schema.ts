@@ -719,6 +719,10 @@ export const billsLineItems = pgTable(
     // Nullable: links a bill to a real debt account (e.g. Chase Sapphire) so
     // its live balance/APR/payoff date can be shown next to the bill row.
     accountId: uuid("account_id"),
+    // Nullable day-of-month this bill is due (not a specific calendar date —
+    // bills recur monthly, so a fixed day avoids re-entering a date every
+    // cycle, matching paycheckPlan.payDay1/2's same convention).
+    dueDay: integer("due_day"),
     orderIndex: integer("order_index").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -728,6 +732,7 @@ export const billsLineItems = pgTable(
       foreignColumns: [accounts.id, accounts.userId],
       name: "bills_line_items_account_id_user_id_fk",
     }),
+    check("bills_line_items_due_day_check", sql`${table.dueDay} is null or ${table.dueDay} between 1 and 31`),
   ],
 ).enableRLS();
 

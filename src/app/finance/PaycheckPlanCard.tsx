@@ -34,6 +34,20 @@ function amount(n: string) {
   return Number(n);
 }
 
+function ordinal(day: number) {
+  if (day >= 11 && day <= 13) return `${day}th`;
+  switch (day % 10) {
+    case 1:
+      return `${day}st`;
+    case 2:
+      return `${day}nd`;
+    case 3:
+      return `${day}rd`;
+    default:
+      return `${day}th`;
+  }
+}
+
 function Checkbox({
   checked,
   onChange,
@@ -300,12 +314,23 @@ function BillRow({
         className={`flex-1 ${textStyle}`}
         onSave={(v) => updateBillLineItemField(bill.id, "name", v)}
       />
-      <InlineEditableAmount
-        value={bill.monthlyAmount}
-        display={formatCurrency(amount(bill.monthlyAmount))}
-        className={textStyle}
-        onSave={(v) => updateBillLineItemField(bill.id, "monthlyAmount", v)}
-      />
+      <div className="w-20 shrink-0">
+        <InlineEditableAmount
+          value={bill.dueDay != null ? String(bill.dueDay) : ""}
+          display={bill.dueDay != null ? `Due ${ordinal(bill.dueDay)}` : "+ due date"}
+          inputMode="numeric"
+          className={`text-xs ${bill.dueDay != null ? "text-neutral-400" : "text-neutral-600"} ${paid ? "line-through" : ""}`}
+          onSave={(v) => updateBillLineItemField(bill.id, "dueDay", v)}
+        />
+      </div>
+      <div className="w-24 shrink-0 text-right">
+        <InlineEditableAmount
+          value={bill.monthlyAmount}
+          display={formatCurrency(amount(bill.monthlyAmount))}
+          className={`text-right ${textStyle}`}
+          onSave={(v) => updateBillLineItemField(bill.id, "monthlyAmount", v)}
+        />
+      </div>
       <button
         type="button"
         onClick={() => deleteBillLineItem(bill.id)}
@@ -365,6 +390,12 @@ function AddBillForm({
         inputMode="decimal"
         required
         className="w-28 shrink-0 rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-neutral-100 outline-none focus:border-neutral-500"
+      />
+      <input
+        name="dueDay"
+        placeholder="Due day"
+        inputMode="numeric"
+        className="w-24 shrink-0 rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-neutral-100 outline-none focus:border-neutral-500"
       />
       <button type="submit" className="text-sm text-neutral-300 hover:text-neutral-100">
         Save

@@ -1,0 +1,2 @@
+ALTER TABLE "bills_line_items" ADD COLUMN "due_day" integer;--> statement-breakpoint
+ALTER TABLE "bills_line_items" ADD CONSTRAINT "bills_line_items_due_day_check" CHECK ("bills_line_items"."due_day" is null or "bills_line_items"."due_day" between 1 and 31);

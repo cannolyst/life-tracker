@@ -76,10 +76,17 @@ export async function savePaycheckPlanField(field: PaycheckPlanField, rawValue: 
 // derived server-side from the account's real name ("<Account> minimum
 // payment") rather than trusted from the client, and the account link
 // is what lets markBillPaid log a real payment against it later.
+function parseDueDay(rawValue: FormDataEntryValue | null): number | null {
+  return typeof rawValue === "string" && rawValue.trim()
+    ? Math.max(1, Math.min(31, Number(rawValue) || 1))
+    : null;
+}
+
 export async function addBillLineItem(formData: FormData) {
   const userId = await requireUserId();
   const accountIdRaw = formData.get("accountId");
   const monthlyAmount = formData.get("monthlyAmount");
+  const dueDay = parseDueDay(formData.get("dueDay"));
 
   let name: string;
   let accountId: string | null = null;
@@ -104,6 +111,7 @@ export async function addBillLineItem(formData: FormData) {
     name,
     monthlyAmount: String(monthlyAmount ?? "0"),
     accountId,
+    dueDay,
     orderIndex: existing.length,
   });
 
@@ -112,15 +120,17 @@ export async function addBillLineItem(formData: FormData) {
 
 export async function updateBillLineItemField(
   id: string,
-  field: "name" | "monthlyAmount",
+  field: "name" | "monthlyAmount" | "dueDay",
   rawValue: string,
 ) {
   const userId = await requireUserId();
   if (!rawValue.trim()) return;
 
+  const value: string | number = field === "dueDay" ? Math.max(1, Math.min(31, Number(rawValue) || 1)) : rawValue;
+
   await db
     .update(billsLineItems)
-    .set({ [field]: rawValue })
+    .set({ [field]: value })
     .where(and(eq(billsLineItems.id, id), eq(billsLineItems.userId, userId)));
 
   revalidateFinance();
