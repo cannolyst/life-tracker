@@ -106,6 +106,13 @@
       "when": 1789404893510,
       "tag": "0014_slimy_shaman",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1789509345241,
+      "tag": "0015_careful_slayback",
+      "breakpoints": true
     }
   ]
 }

@@ -31,6 +31,9 @@ import {
   workoutSets,
   moduleSettings,
   emotionEntries,
+  paycheckPlan,
+  billsLineItems,
+  paycheckChecklistChecks,
 } from "./schema";
 import {
   projectSavingsDate,
@@ -1214,4 +1217,35 @@ export async function getEmotionCheckinPoints(userId: string): Promise<number> {
     .from(habitTasks)
     .where(and(eq(habitTasks.userId, userId), eq(habitTasks.name, "Emotion check-in")));
   return task?.points ?? 2;
+}
+
+// --- Paycheck & debt payoff plan ---
+
+export async function getPaycheckPlan(userId: string) {
+  const [row] = await db.select().from(paycheckPlan).where(eq(paycheckPlan.userId, userId));
+  return row ?? null;
+}
+
+export async function getBillsLineItems(userId: string) {
+  return db
+    .select()
+    .from(billsLineItems)
+    .where(eq(billsLineItems.userId, userId))
+    .orderBy(billsLineItems.orderIndex);
+}
+
+export async function getChecklistChecks(
+  userId: string,
+  periodKey: string,
+): Promise<Set<string>> {
+  const rows = await db
+    .select({ itemKey: paycheckChecklistChecks.itemKey })
+    .from(paycheckChecklistChecks)
+    .where(
+      and(
+        eq(paycheckChecklistChecks.userId, userId),
+        eq(paycheckChecklistChecks.periodKey, periodKey),
+      ),
+    );
+  return new Set(rows.map((r) => r.itemKey));
 }

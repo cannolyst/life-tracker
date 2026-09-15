@@ -677,3 +677,78 @@ export const emotionEntries = pgTable(
     check("emotion_entries_mode_check", sql`${table.mode} in ('quiet','stuck','big')`),
   ],
 ).enableRLS();
+
+// --- Paycheck & debt payoff plan (a recurring, per-pay-period checklist on
+// the Finance page — connects to the real accounts/goals above) ---
+
+// One row per user; no child table ever references this row, so the
+// owner's id is the primary key directly (same pattern as moduleSettings).
+export const paycheckPlan = pgTable(
+  "paycheck_plan",
+  {
+    userId: uuid("user_id").primaryKey(),
+    plannedAmount: numeric("planned_amount", { precision: 10, scale: 2 }).notNull(),
+    actualAmount: numeric("actual_amount", { precision: 10, scale: 2 }).notNull(),
+    payDay1: integer("pay_day_1").notNull(),
+    payDay2: integer("pay_day_2").notNull(),
+    billsTransferAmount: numeric("bills_transfer_amount", { precision: 10, scale: 2 }).notNull(),
+    hysaTransferAmount: numeric("hysa_transfer_amount", { precision: 10, scale: 2 }).notNull(),
+    // Nullable: links this plan's HYSA row to a real savings account so its
+    // live balance/progress can be shown alongside the plan.
+    hysaAccountId: uuid("hysa_account_id"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("paycheck_plan_pay_day_1_check", sql`${table.payDay1} between 1 and 31`),
+    check("paycheck_plan_pay_day_2_check", sql`${table.payDay2} between 1 and 31`),
+    foreignKey({
+      columns: [table.hysaAccountId, table.userId],
+      foreignColumns: [accounts.id, accounts.userId],
+      name: "paycheck_plan_hysa_account_id_user_id_fk",
+    }),
+  ],
+).enableRLS();
+
+export const billsLineItems = pgTable(
+  "bills_line_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    monthlyAmount: numeric("monthly_amount", { precision: 10, scale: 2 }).notNull(),
+    // Nullable: links a bill to a real debt account (e.g. Chase Sapphire) so
+    // its live balance/APR/payoff date can be shown next to the bill row.
+    accountId: uuid("account_id"),
+    orderIndex: integer("order_index").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.accountId, table.userId],
+      foreignColumns: [accounts.id, accounts.userId],
+      name: "bills_line_items_account_id_user_id_fk",
+    }),
+  ],
+).enableRLS();
+
+// A checked box for one item ("bills_transfer", "hysa_transfer", or
+// "bill_<billsLineItems.id>") for one pay period. Checked state is derived
+// per-period from row existence rather than a boolean column, so a new pay
+// period naturally starts unchecked with no reset job needed.
+export const paycheckChecklistChecks = pgTable(
+  "paycheck_checklist_checks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    itemKey: text("item_key").notNull(),
+    periodKey: text("period_key").notNull(),
+    checkedAt: timestamp("checked_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("paycheck_checklist_checks_user_item_period_unique").on(
+      table.userId,
+      table.itemKey,
+      table.periodKey,
+    ),
+  ],
+).enableRLS();

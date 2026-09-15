@@ -1,6 +1,13 @@
 import Link from "next/link";
-import { listAccountsSummary, getGamificationStats } from "@/db/queries";
+import {
+  listAccountsSummary,
+  getGamificationStats,
+  getPaycheckPlan,
+  getBillsLineItems,
+  getChecklistChecks,
+} from "@/db/queries";
 import { requireUserId } from "@/lib/session";
+import { getCurrentPeriodKey } from "@/lib/paycheckPeriod";
 
 export const dynamic = "force-dynamic";
 import { Nav } from "@/components/Nav";
@@ -9,13 +16,19 @@ import { StreakBadge } from "@/components/StreakBadge";
 import { PaceBadge } from "@/components/PaceBadge";
 import { MinimumPaymentBadge } from "@/components/MinimumPaymentBadge";
 import { FinanceChart } from "@/components/FinanceChart";
+import { PaycheckPlanCard } from "./PaycheckPlanCard";
 
 export default async function DashboardPage() {
   const userId = await requireUserId();
-  const [{ savingsSummaries, debtSummaries }, stats] = await Promise.all([
+  const [{ savingsSummaries, debtSummaries }, stats, plan, billsLineItems] = await Promise.all([
     listAccountsSummary(userId),
     getGamificationStats(userId),
+    getPaycheckPlan(userId),
+    getBillsLineItems(userId),
   ]);
+
+  const currentPeriodKey = getCurrentPeriodKey(plan?.payDay1 ?? 15, plan?.payDay2 ?? 30);
+  const checkedItemKeys = Array.from(await getChecklistChecks(userId, currentPeriodKey));
 
   const totalInterestSaved = debtSummaries.reduce(
     (sum, d) => sum + (d.interestSaved ?? 0),
@@ -36,6 +49,16 @@ export default async function DashboardPage() {
             New account
           </Link>
         </div>
+
+        <PaycheckPlanCard
+          key={currentPeriodKey}
+          plan={plan}
+          billsLineItems={billsLineItems}
+          checkedItemKeys={checkedItemKeys}
+          currentPeriodKey={currentPeriodKey}
+          debtSummaries={debtSummaries}
+          savingsSummaries={savingsSummaries}
+        />
 
         <Card>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
