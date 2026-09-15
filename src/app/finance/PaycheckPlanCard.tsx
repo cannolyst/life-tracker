@@ -10,6 +10,7 @@ import {
   updateBillLineItemField,
   deleteBillLineItem,
   toggleChecklistItem,
+  markBillPaid,
 } from "./plan-actions";
 
 type Plan = NonNullable<Awaited<ReturnType<typeof getPaycheckPlan>>>;
@@ -37,14 +38,16 @@ function Checkbox({
   checked,
   onChange,
   label,
+  title,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label: string;
+  title?: string;
 }) {
   const [isPending, startTransition] = useTransition();
   return (
-    <label className="flex items-center gap-2 text-sm text-neutral-300">
+    <label className="flex items-center gap-2 text-sm text-neutral-300" title={title}>
       <input
         type="checkbox"
         checked={checked}
@@ -80,14 +83,23 @@ export function PaycheckPlanCard({
   const [addingBill, setAddingBill] = useState(false);
 
   const isChecked = (itemKey: string) => checked.has(itemKey);
-  const setItemChecked = (itemKey: string, value: boolean) => {
+  const markChecked = (itemKey: string, value: boolean) => {
     setChecked((prev) => {
       const next = new Set(prev);
       if (value) next.add(itemKey);
       else next.delete(itemKey);
       return next;
     });
+  };
+  const setItemChecked = (itemKey: string, value: boolean) => {
+    markChecked(itemKey, value);
     toggleChecklistItem(itemKey, currentPeriodKey, value);
+  };
+  // Bills linked to a real account also log an actual payment transaction
+  // when checked, so the account's balance moves — not just the checklist.
+  const setBillPaid = (billId: string, value: boolean) => {
+    markChecked(`bill_${billId}`, value);
+    markBillPaid(billId, currentPeriodKey, value);
   };
 
   const billsTotal = initialBills.reduce((sum, b) => sum + amount(b.monthlyAmount), 0);
@@ -247,8 +259,17 @@ export function PaycheckPlanCard({
                     />
                     <Checkbox
                       checked={isChecked(`bill_${bill.id}`)}
-                      onChange={(v) => setItemChecked(`bill_${bill.id}`, v)}
+                      onChange={(v) =>
+                        bill.accountId
+                          ? setBillPaid(bill.id, v)
+                          : setItemChecked(`bill_${bill.id}`, v)
+                      }
                       label="Paid"
+                      title={
+                        bill.accountId
+                          ? "Logs a real payment against this account when checked"
+                          : undefined
+                      }
                     />
                     <button
                       type="button"

@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { paycheckPlan, billsLineItems, paycheckChecklistChecks } from "@/db/schema";
+import { paycheckPlan, billsLineItems, paycheckChecklistChecks, transactions } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { getBillsLineItems, getPaycheckPlan } from "@/db/queries";
+import { dateKeyInAppTimezone } from "@/lib/timezone";
 
 function revalidateFinance() {
   revalidatePath("/finance");
@@ -113,6 +114,56 @@ export async function toggleChecklistItem(itemKey: string, periodKey: string, ch
       .insert(paycheckChecklistChecks)
       .values({ userId, itemKey, periodKey })
       .onConflictDoNothing();
+  } else {
+    await db
+      .delete(paycheckChecklistChecks)
+      .where(
+        and(
+          eq(paycheckChecklistChecks.userId, userId),
+          eq(paycheckChecklistChecks.itemKey, itemKey),
+          eq(paycheckChecklistChecks.periodKey, periodKey),
+        ),
+      );
+  }
+
+  revalidateFinance();
+}
+
+// Checking "Paid" on a bill linked to a real debt account also logs an
+// actual payment transaction against that account (same shape as
+// addDebtTransaction's minimum_payment category), so the account's balance
+// actually moves — not just the checklist tick. Unchecking only removes the
+// checklist tick; it deliberately does not try to reverse the transaction,
+// since matching "the one this checkbox created" back out is ambiguous once
+// other transactions exist — correct a mistaken log from the account's own
+// page instead.
+export async function markBillPaid(billId: string, periodKey: string, checked: boolean) {
+  const userId = await requireUserId();
+  const itemKey = `bill_${billId}`;
+
+  if (checked) {
+    const [bill] = await db
+      .select()
+      .from(billsLineItems)
+      .where(and(eq(billsLineItems.id, billId), eq(billsLineItems.userId, userId)));
+    if (!bill) return;
+
+    await db
+      .insert(paycheckChecklistChecks)
+      .values({ userId, itemKey, periodKey })
+      .onConflictDoNothing();
+
+    if (bill.accountId) {
+      await db.insert(transactions).values({
+        userId,
+        accountId: bill.accountId,
+        amount: (-Number(bill.monthlyAmount)).toFixed(2),
+        category: "minimum_payment",
+        date: dateKeyInAppTimezone(),
+        note: `Paycheck plan: ${bill.name}`,
+      });
+      revalidatePath(`/debt/${bill.accountId}`);
+    }
   } else {
     await db
       .delete(paycheckChecklistChecks)
