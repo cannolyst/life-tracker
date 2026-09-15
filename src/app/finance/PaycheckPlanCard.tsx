@@ -92,6 +92,9 @@ export function PaycheckPlanCard({
 
   const billsTotal = initialBills.reduce((sum, b) => sum + amount(b.monthlyAmount), 0);
   const billsTransfer = amount(plan.billsTransferAmount);
+  // Bills are monthly amounts, but the transfer happens once per paycheck —
+  // two paychecks a month — so compare against the monthly total transferred.
+  const billsTransferMonthly = billsTransfer * 2;
   const leftover =
     amount(plan.actualAmount) - amount(plan.billsTransferAmount) - amount(plan.hysaTransferAmount);
 
@@ -215,10 +218,12 @@ export function PaycheckPlanCard({
           <h3 className="text-sm font-medium text-neutral-400">Bills checking breakdown</h3>
           <span
             className={`text-xs ${
-              Math.abs(billsTotal - billsTransfer) > 0.01 ? "text-amber-400" : "text-neutral-500"
+              Math.abs(billsTotal - billsTransferMonthly) > 0.01
+                ? "text-amber-400"
+                : "text-neutral-500"
             }`}
           >
-            {formatCurrency(billsTotal)} of {formatCurrency(billsTransfer)}
+            {formatCurrency(billsTotal)} of {formatCurrency(billsTransferMonthly)}/mo
           </span>
         </div>
         <div className="space-y-2">
