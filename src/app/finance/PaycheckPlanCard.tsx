@@ -82,6 +82,7 @@ export function PaycheckPlanCard({
   billsLineItems: initialBills,
   checkedItemKeys,
   currentPeriodKey,
+  currentMonthKey,
   debtSummaries,
   savingsSummaries,
 }: {
@@ -89,6 +90,7 @@ export function PaycheckPlanCard({
   billsLineItems: BillItem[];
   checkedItemKeys: string[];
   currentPeriodKey: string;
+  currentMonthKey: string;
   debtSummaries: DebtSummary[];
   savingsSummaries: SavingsSummary[];
 }) {
@@ -105,15 +107,25 @@ export function PaycheckPlanCard({
       return next;
     });
   };
+  // "Transferred" (bills_transfer/hysa_transfer) genuinely happens each
+  // paycheck, so it's keyed by pay period.
   const setItemChecked = (itemKey: string, value: boolean) => {
     markChecked(itemKey, value);
     toggleChecklistItem(itemKey, currentPeriodKey, value);
+  };
+  // Bills are monthly obligations, not per-paycheck ones, so their "Paid"
+  // checkbox is keyed by month instead — otherwise a bill paid on the 15th
+  // would show unchecked again at the very next pay period on the 30th,
+  // well before it's actually due again.
+  const setBillChecked = (itemKey: string, value: boolean) => {
+    markChecked(itemKey, value);
+    toggleChecklistItem(itemKey, currentMonthKey, value);
   };
   // Bills linked to a real account also log an actual payment transaction
   // when checked, so the account's balance moves — not just the checklist.
   const setBillPaid = (billId: string, value: boolean) => {
     markChecked(`bill_${billId}`, value);
-    markBillPaid(billId, currentPeriodKey, value);
+    markBillPaid(billId, currentMonthKey, value);
   };
 
   const billsTotal = initialBills.reduce((sum, b) => sum + amount(b.monthlyAmount), 0);
@@ -239,7 +251,9 @@ export function PaycheckPlanCard({
       {/* Bills checklist */}
       <div className="border-t border-neutral-800 pt-4">
         <div className="mb-2 flex items-baseline justify-between">
-          <h3 className="text-sm font-medium text-neutral-400">Bills</h3>
+          <h3 className="text-sm font-medium text-neutral-400">
+            Bills <span className="font-normal text-neutral-600">(resets monthly)</span>
+          </h3>
           <span
             className={`text-xs ${
               Math.abs(billsTotal - billsTransferMonthly) > 0.01
@@ -257,7 +271,7 @@ export function PaycheckPlanCard({
               bill={bill}
               paid={isChecked(`bill_${bill.id}`)}
               onTogglePaid={(v) =>
-                bill.accountId ? setBillPaid(bill.id, v) : setItemChecked(`bill_${bill.id}`, v)
+                bill.accountId ? setBillPaid(bill.id, v) : setBillChecked(`bill_${bill.id}`, v)
               }
             />
           ))}

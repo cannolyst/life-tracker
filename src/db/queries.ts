@@ -1234,9 +1234,12 @@ export async function getBillsLineItems(userId: string) {
     .orderBy(billsLineItems.orderIndex);
 }
 
+// Accepts multiple period keys since the page checks two different
+// cadences at once: the twice-a-month pay period (for "Transferred" items)
+// and the monthly bill cycle (for "Paid" items).
 export async function getChecklistChecks(
   userId: string,
-  periodKey: string,
+  periodKeys: string[],
 ): Promise<Set<string>> {
   const rows = await db
     .select({ itemKey: paycheckChecklistChecks.itemKey })
@@ -1244,7 +1247,7 @@ export async function getChecklistChecks(
     .where(
       and(
         eq(paycheckChecklistChecks.userId, userId),
-        eq(paycheckChecklistChecks.periodKey, periodKey),
+        inArray(paycheckChecklistChecks.periodKey, periodKeys),
       ),
     );
   return new Set(rows.map((r) => r.itemKey));

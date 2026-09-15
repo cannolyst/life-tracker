@@ -7,7 +7,7 @@ import {
   getChecklistChecks,
 } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
-import { getCurrentPeriodKey } from "@/lib/paycheckPeriod";
+import { getCurrentPeriodKey, getCurrentMonthKey } from "@/lib/paycheckPeriod";
 
 export const dynamic = "force-dynamic";
 import { Nav } from "@/components/Nav";
@@ -28,7 +28,10 @@ export default async function DashboardPage() {
   ]);
 
   const currentPeriodKey = getCurrentPeriodKey(plan?.payDay1 ?? 15, plan?.payDay2 ?? 30);
-  const checkedItemKeys = Array.from(await getChecklistChecks(userId, currentPeriodKey));
+  const currentMonthKey = getCurrentMonthKey();
+  const checkedItemKeys = Array.from(
+    await getChecklistChecks(userId, [currentPeriodKey, currentMonthKey]),
+  );
 
   const totalInterestSaved = debtSummaries.reduce(
     (sum, d) => sum + (d.interestSaved ?? 0),
@@ -51,11 +54,12 @@ export default async function DashboardPage() {
         </div>
 
         <PaycheckPlanCard
-          key={currentPeriodKey}
+          key={`${currentPeriodKey}-${currentMonthKey}`}
           plan={plan}
           billsLineItems={billsLineItems}
           checkedItemKeys={checkedItemKeys}
           currentPeriodKey={currentPeriodKey}
+          currentMonthKey={currentMonthKey}
           debtSummaries={debtSummaries}
           savingsSummaries={savingsSummaries}
         />

@@ -30,3 +30,15 @@ export function getCurrentPeriodKey(
 
   return mostRecent.toISOString().slice(0, 10);
 }
+
+/**
+ * Returns the current calendar month as a "YYYY-MM" key. Bills recur
+ * monthly (unlike the twice-a-month pay-period checklist items), so their
+ * "paid" checkbox is keyed by month instead — it naturally starts unchecked
+ * again on the 1st of each month with no reset job needed, same trick as
+ * getCurrentPeriodKey.
+ */
+export function getCurrentMonthKey(today: Date = new Date()): string {
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  return `${today.getFullYear()}-${month}`;
+}
