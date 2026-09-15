@@ -1,4 +1,4 @@
-import { eq, and, inArray, gte, lte, sum, desc } from "drizzle-orm";
+import { eq, and, inArray, gte, lte, sum, desc, sql } from "drizzle-orm";
 import { db } from "./index";
 import {
   accounts,
@@ -1231,7 +1231,7 @@ export async function getBillsLineItems(userId: string) {
     .select()
     .from(billsLineItems)
     .where(eq(billsLineItems.userId, userId))
-    .orderBy(billsLineItems.orderIndex);
+    .orderBy(sql`${billsLineItems.dueDay} nulls last`, billsLineItems.orderIndex);
 }
 
 // Accepts multiple period keys since the page checks two different
