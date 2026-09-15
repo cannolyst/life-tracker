@@ -3,7 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { paycheckPlan, billsLineItems, paycheckChecklistChecks, transactions } from "@/db/schema";
+import {
+  paycheckPlan,
+  billsLineItems,
+  paycheckChecklistChecks,
+  transactions,
+  accounts,
+} from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { getBillsLineItems, getPaycheckPlan } from "@/db/queries";
 import { dateKeyInAppTimezone } from "@/lib/timezone";
@@ -65,17 +71,39 @@ export async function savePaycheckPlanField(field: PaycheckPlanField, rawValue: 
   revalidateFinance();
 }
 
+// A bill can either be a plain custom line (typed name) or tied to a real
+// debt account (picked from a dropdown): in the latter case the name is
+// derived server-side from the account's real name ("<Account> minimum
+// payment") rather than trusted from the client, and the account link
+// is what lets markBillPaid log a real payment against it later.
 export async function addBillLineItem(formData: FormData) {
   const userId = await requireUserId();
-  const name = formData.get("name");
+  const accountIdRaw = formData.get("accountId");
   const monthlyAmount = formData.get("monthlyAmount");
-  if (typeof name !== "string" || !name.trim()) return;
+
+  let name: string;
+  let accountId: string | null = null;
+
+  if (typeof accountIdRaw === "string" && accountIdRaw.trim()) {
+    const [account] = await db
+      .select({ name: accounts.name })
+      .from(accounts)
+      .where(and(eq(accounts.id, accountIdRaw), eq(accounts.userId, userId)));
+    if (!account) return;
+    name = `${account.name} minimum payment`;
+    accountId = accountIdRaw;
+  } else {
+    const nameRaw = formData.get("name");
+    if (typeof nameRaw !== "string" || !nameRaw.trim()) return;
+    name = nameRaw.trim();
+  }
 
   const existing = await getBillsLineItems(userId);
   await db.insert(billsLineItems).values({
     userId,
-    name: name.trim(),
+    name,
     monthlyAmount: String(monthlyAmount ?? "0"),
+    accountId,
     orderIndex: existing.length,
   });
 
