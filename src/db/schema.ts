@@ -558,6 +558,13 @@ export const workoutExercises = pgTable(
     weightIncrement: numeric("weight_increment", { precision: 6, scale: 2 })
       .notNull()
       .default("5"),
+    // Which muscle group(s) this exercise targets (e.g. "Leg Press" ->
+    // ["Quads"]). A Postgres text array rather than a join table — this is
+    // just a tag list, not a relation anything else references.
+    muscleGroups: text("muscle_groups")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     orderIndex: integer("order_index").notNull().default(0),
     archived: boolean("archived").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -571,6 +578,11 @@ export const workoutExercises = pgTable(
       foreignColumns: [workoutDays.id, workoutDays.userId],
       name: "workout_exercises_day_id_user_id_fk",
     }).onDelete("cascade"),
+    // Keep this literal list in sync with MUSCLE_GROUPS in src/lib/muscleGroups.ts.
+    check(
+      "workout_exercises_muscle_groups_check",
+      sql`${table.muscleGroups} <@ ARRAY['Chest','Back','Shoulders','Biceps','Triceps','Forearms','Core','Glutes','Quads','Hamstrings','Calves']::text[]`,
+    ),
   ],
 ).enableRLS();
 

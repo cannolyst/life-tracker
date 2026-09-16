@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { addExercise, type ActionState } from "./actions";
 import { inputClass, labelClass, buttonClass } from "@/components/ui";
+import { MUSCLE_GROUPS } from "@/lib/muscleGroups";
 
 const initialState: ActionState = {};
 
@@ -42,6 +43,22 @@ export function AddExerciseForm({ dayId }: { dayId: string }) {
         <input name="tracksDuration" type="checkbox" className="rounded border-neutral-700 bg-neutral-800" />
         Tracks hold time
       </label>
+      <div className="w-full space-y-1">
+        <label className={labelClass}>Muscle groups</label>
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {MUSCLE_GROUPS.map((group) => (
+            <label key={group} className="flex items-center gap-1.5 text-sm text-neutral-400">
+              <input
+                name="muscleGroups"
+                type="checkbox"
+                value={group}
+                className="rounded border-neutral-700 bg-neutral-800"
+              />
+              {group}
+            </label>
+          ))}
+        </div>
+      </div>
       <button type="submit" disabled={pending} className={buttonClass}>
         {pending ? "Adding..." : "Add"}
       </button>

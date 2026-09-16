@@ -156,7 +156,13 @@ export default async function ExercisePage({
 
         <div className="space-y-4">
           {exercises.map((exercise, i) => (
-            <ExerciseCard key={exercise.id} exercise={exercise} jewel={jewelFor(i)} />
+            <ExerciseCard
+              key={exercise.id}
+              exercise={exercise}
+              jewel={jewelFor(i)}
+              isFirst={i === 0}
+              isLast={i === exercises.length - 1}
+            />
           ))}
         </div>
 

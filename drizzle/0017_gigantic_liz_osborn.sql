@@ -1,0 +1,2 @@
+ALTER TABLE "workout_exercises" ADD COLUMN "muscle_groups" text[] DEFAULT '{}'::text[] NOT NULL;--> statement-breakpoint
+ALTER TABLE "workout_exercises" ADD CONSTRAINT "workout_exercises_muscle_groups_check" CHECK ("workout_exercises"."muscle_groups" <@ ARRAY['Chest','Back','Shoulders','Biceps','Triceps','Forearms','Core','Glutes','Quads','Hamstrings','Calves']::text[]);

@@ -6,6 +6,13 @@ import { db } from "@/db";
 import { workoutSessions, workoutSets, workoutExercises } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { dateKeyInAppTimezone } from "@/lib/timezone";
+import { MUSCLE_GROUPS } from "@/lib/muscleGroups";
+
+function parseMuscleGroups(formData: FormData): string[] {
+  return formData
+    .getAll("muscleGroups")
+    .filter((v): v is string => typeof v === "string" && (MUSCLE_GROUPS as readonly string[]).includes(v));
+}
 
 export type ActionState = { error?: string };
 
@@ -118,6 +125,7 @@ export async function addExercise(
     tracksDuration,
     targetReps,
     weightIncrement: weightIncrement.toFixed(2),
+    muscleGroups: parseMuscleGroups(formData),
     orderIndex: existing.length,
   });
   revalidateAll();
@@ -149,7 +157,12 @@ export async function updateExercise(
   const userId = await requireUserId();
   await db
     .update(workoutExercises)
-    .set({ name: name.trim(), targetReps, weightIncrement: weightIncrement.toFixed(2) })
+    .set({
+      name: name.trim(),
+      targetReps,
+      weightIncrement: weightIncrement.toFixed(2),
+      muscleGroups: parseMuscleGroups(formData),
+    })
     .where(and(eq(workoutExercises.id, exerciseId), eq(workoutExercises.userId, userId)));
   revalidateAll();
   return {};
@@ -162,4 +175,52 @@ export async function archiveExercise(exerciseId: string) {
     .set({ archived: true })
     .where(and(eq(workoutExercises.id, exerciseId), eq(workoutExercises.userId, userId)));
   revalidateAll();
+}
+
+// Swaps orderIndex with the adjacent non-archived sibling within the same
+// day — same two-row swap pattern as swapDayOrder in
+// exercise/programs/actions.ts, scoped by dayId instead of programId.
+async function swapExerciseOrder(exerciseId: string, direction: "up" | "down") {
+  const userId = await requireUserId();
+  const [exercise] = await db
+    .select()
+    .from(workoutExercises)
+    .where(and(eq(workoutExercises.id, exerciseId), eq(workoutExercises.userId, userId)));
+  if (!exercise) return;
+
+  const siblings = await db
+    .select()
+    .from(workoutExercises)
+    .where(
+      and(
+        eq(workoutExercises.dayId, exercise.dayId),
+        eq(workoutExercises.userId, userId),
+        eq(workoutExercises.archived, false),
+      ),
+    )
+    .orderBy(workoutExercises.orderIndex);
+
+  const index = siblings.findIndex((s) => s.id === exerciseId);
+  const swapIndex = direction === "up" ? index - 1 : index + 1;
+  if (index === -1 || swapIndex < 0 || swapIndex >= siblings.length) return;
+
+  const sibling = siblings[swapIndex];
+  await db
+    .update(workoutExercises)
+    .set({ orderIndex: sibling.orderIndex })
+    .where(and(eq(workoutExercises.id, exercise.id), eq(workoutExercises.userId, userId)));
+  await db
+    .update(workoutExercises)
+    .set({ orderIndex: exercise.orderIndex })
+    .where(and(eq(workoutExercises.id, sibling.id), eq(workoutExercises.userId, userId)));
+
+  revalidateAll();
+}
+
+export async function moveExerciseUp(exerciseId: string) {
+  await swapExerciseOrder(exerciseId, "up");
+}
+
+export async function moveExerciseDown(exerciseId: string) {
+  await swapExerciseOrder(exerciseId, "down");
 }

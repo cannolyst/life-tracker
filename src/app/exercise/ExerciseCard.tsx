@@ -6,12 +6,15 @@ import {
   deleteSet,
   updateExercise,
   archiveExercise,
+  moveExerciseUp,
+  moveExerciseDown,
   type ActionState,
 } from "./actions";
 import { inputClass, labelClass, buttonClass, formatDate } from "@/components/ui";
 import { jewelChipStyle, JEWELS, NEUTRAL_JEWEL } from "@/lib/jewels";
 import { Sparkle } from "@/components/Sparkle";
 import type { WeekTrend } from "@/lib/workout";
+import { MUSCLE_GROUPS } from "@/lib/muscleGroups";
 import Link from "next/link";
 
 const UP_JEWEL = JEWELS[2];
@@ -33,6 +36,7 @@ type Exercise = {
   tracksDuration: boolean;
   targetReps: number;
   weightIncrement: string;
+  muscleGroups: string[];
   todaySets: SetRow[];
   trend: WeekTrend;
   overload: { ready: boolean; currentWeight: number | null };
@@ -65,15 +69,20 @@ export function TrendBadge({ trend }: { trend: WeekTrend }) {
 export function ExerciseCard({
   exercise,
   jewel,
+  isFirst = false,
+  isLast = false,
 }: {
   exercise: Exercise;
   jewel: { color: string; soft: string };
+  isFirst?: boolean;
+  isLast?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const updateAction = updateExercise.bind(null, exercise.id);
   const [state, formAction, pending] = useActionState(updateAction, initialState);
   const wasPending = useRef(false);
   const [isRemoving, startRemoving] = useTransition();
+  const [isReordering, startReordering] = useTransition();
 
   useEffect(() => {
     if (wasPending.current && !pending && !state?.error) {
@@ -85,13 +94,28 @@ export function ExerciseCard({
   return (
     <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <Link
-          href={`/exercise/${exercise.id}`}
-          className="flex items-center gap-2 font-medium hover:underline"
-        >
-          <Sparkle className="h-3.5 w-3.5" color={jewel.color} />
-          {exercise.name}
-        </Link>
+        <div className="flex flex-col gap-1">
+          <Link
+            href={`/exercise/${exercise.id}`}
+            className="flex items-center gap-2 font-medium hover:underline"
+          >
+            <Sparkle className="h-3.5 w-3.5" color={jewel.color} />
+            {exercise.name}
+          </Link>
+          {exercise.muscleGroups.length > 0 && (
+            <div className="flex flex-wrap gap-1 pl-5">
+              {exercise.muscleGroups.map((group) => (
+                <span
+                  key={group}
+                  className="rounded-full px-2 py-0.5 text-xs"
+                  style={jewelChipStyle(jewel)}
+                >
+                  {group}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <TrendBadge trend={exercise.trend} />
           {exercise.overload.ready && exercise.overload.currentWeight != null && (
@@ -103,6 +127,24 @@ export function ExerciseCard({
               {(exercise.overload.currentWeight + Number(exercise.weightIncrement)).toFixed(0)} lbs
             </span>
           )}
+          <button
+            type="button"
+            disabled={isFirst || isReordering}
+            onClick={() => startReordering(() => moveExerciseUp(exercise.id))}
+            aria-label="Move exercise up"
+            className="text-neutral-600 hover:text-neutral-100 disabled:opacity-30"
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            disabled={isLast || isReordering}
+            onClick={() => startReordering(() => moveExerciseDown(exercise.id))}
+            aria-label="Move exercise down"
+            className="text-neutral-600 hover:text-neutral-100 disabled:opacity-30"
+          >
+            ↓
+          </button>
           <button
             type="button"
             onClick={() => setEditing((e) => !e)}
@@ -166,6 +208,23 @@ export function ExerciseCard({
               required
               className={`${inputClass} w-24`}
             />
+          </div>
+          <div className="w-full space-y-1">
+            <label className={labelClass}>Muscle groups</label>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              {MUSCLE_GROUPS.map((group) => (
+                <label key={group} className="flex items-center gap-1.5 text-sm text-neutral-400">
+                  <input
+                    name="muscleGroups"
+                    type="checkbox"
+                    value={group}
+                    defaultChecked={exercise.muscleGroups.includes(group)}
+                    className="rounded border-neutral-700 bg-neutral-800"
+                  />
+                  {group}
+                </label>
+              ))}
+            </div>
           </div>
           <button type="submit" disabled={pending} className={buttonClass}>
             {pending ? "Saving..." : "Save"}
