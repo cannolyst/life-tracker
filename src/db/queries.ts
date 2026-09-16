@@ -74,6 +74,11 @@ function streakFromTransactions(txns: { date: Date | string; category: string }[
   return computeStreak(txns.filter((t) => t.category === "recurring_goal").map((t) => t.date));
 }
 
+// Batch-fetches every account's details/goals/statements/transactions in a
+// handful of queries (one per table, scoped by the full set of account
+// ids) instead of the previous per-account sequential round trips —
+// same result, but the number of queries no longer scales with the number
+// of accounts.
 export async function listAccountsSummary(userId: string) {
   const allAccounts = await db
     .select()
@@ -82,120 +87,144 @@ export async function listAccountsSummary(userId: string) {
 
   const savings = allAccounts.filter((a) => a.type === "savings");
   const debts = allAccounts.filter((a) => a.type === "debt");
+  const accountIds = allAccounts.map((a) => a.id);
 
-  const savingsSummaries = await Promise.all(
-    savings.map(async (account) => {
-      const [details] = await db
-        .select()
-        .from(savingsDetails)
-        .where(and(eq(savingsDetails.accountId, account.id), eq(savingsDetails.userId, userId)));
-      const [goal] = await db
-        .select()
-        .from(goals)
-        .where(and(eq(goals.accountId, account.id), eq(goals.userId, userId)))
-        .orderBy(goals.createdAt);
-      const balance = await getBalance(account.id, userId, Number(account.startingBalance));
-      const txns = await db
-        .select({ date: transactions.date, amount: transactions.amount, category: transactions.category })
-        .from(transactions)
-        .where(and(eq(transactions.accountId, account.id), eq(transactions.userId, userId)));
+  if (accountIds.length === 0) {
+    return { savingsSummaries: [], debtSummaries: [] };
+  }
 
-      const projectedDate = goal
-        ? projectSavingsDate(
+  const [allSavingsDetails, allDebtDetails, allGoals, allStatements, allTxns] = await Promise.all([
+    db
+      .select()
+      .from(savingsDetails)
+      .where(and(inArray(savingsDetails.accountId, accountIds), eq(savingsDetails.userId, userId))),
+    db
+      .select()
+      .from(debtDetails)
+      .where(and(inArray(debtDetails.accountId, accountIds), eq(debtDetails.userId, userId))),
+    db
+      .select()
+      .from(goals)
+      .where(and(inArray(goals.accountId, accountIds), eq(goals.userId, userId)))
+      .orderBy(goals.createdAt),
+    db
+      .select()
+      .from(debtStatements)
+      .where(and(inArray(debtStatements.accountId, accountIds), eq(debtStatements.userId, userId)))
+      .orderBy(debtStatements.statementDate),
+    db
+      .select({
+        accountId: transactions.accountId,
+        date: transactions.date,
+        amount: transactions.amount,
+        category: transactions.category,
+      })
+      .from(transactions)
+      .where(and(inArray(transactions.accountId, accountIds), eq(transactions.userId, userId))),
+  ]);
+
+  const savingsDetailsByAccount = new Map(allSavingsDetails.map((d) => [d.accountId, d]));
+  const debtDetailsByAccount = new Map(allDebtDetails.map((d) => [d.accountId, d]));
+  // allGoals is ordered by createdAt, so the first push per account is the
+  // earliest goal — matching the original per-account `.orderBy` + take-first.
+  const firstGoalByAccount = new Map<string, (typeof allGoals)[number]>();
+  for (const g of allGoals) {
+    if (!firstGoalByAccount.has(g.accountId)) firstGoalByAccount.set(g.accountId, g);
+  }
+  const statementsByAccount = new Map<string, typeof allStatements>();
+  for (const s of allStatements) {
+    const list = statementsByAccount.get(s.accountId) ?? [];
+    list.push(s);
+    statementsByAccount.set(s.accountId, list);
+  }
+  const txnsByAccount = new Map<string, typeof allTxns>();
+  for (const t of allTxns) {
+    const list = txnsByAccount.get(t.accountId) ?? [];
+    list.push(t);
+    txnsByAccount.set(t.accountId, list);
+  }
+
+  const savingsSummaries = savings.map((account) => {
+    const details = savingsDetailsByAccount.get(account.id);
+    const goal = firstGoalByAccount.get(account.id);
+    const txns = txnsByAccount.get(account.id) ?? [];
+    const balance = Number(account.startingBalance) + txns.reduce((s, t) => s + Number(t.amount), 0);
+
+    const projectedDate = goal
+      ? projectSavingsDate(
+          balance,
+          Number(goal.targetAmount),
+          txns.map((t) => ({ date: new Date(t.date), amount: Number(t.amount) })),
+          new Date(account.createdAt),
+        )
+      : null;
+
+    return {
+      account,
+      dailyGoal: Number(details?.dailyGoal ?? 0),
+      balance,
+      goal,
+      projectedDate,
+      pace: isOnTrack(projectedDate, goal?.targetDate),
+      streak: streakFromTransactions(txns),
+    };
+  });
+
+  const debtSummaries = debts.map((account) => {
+    const details = debtDetailsByAccount.get(account.id);
+    const goal = firstGoalByAccount.get(account.id);
+    const txns = txnsByAccount.get(account.id) ?? [];
+    const balance = Number(account.startingBalance) + txns.reduce((s, t) => s + Number(t.amount), 0);
+    const statements = statementsByAccount.get(account.id) ?? [];
+    const latestStatement = statements[statements.length - 1];
+
+    const minimumPaymentDue = Number(latestStatement?.minimumPaymentDue ?? 0);
+    const projectedDate = details
+      ? projectPayoffDate(
+          balance,
+          Number(details.apr),
+          Number(details.dailyMicropaymentGoal),
+          minimumPaymentDue,
+          details.statementDay,
+        )
+      : null;
+
+    const requiredDaily =
+      details && goal?.targetDate
+        ? requiredDailyPayment(
             balance,
-            Number(goal.targetAmount),
-            txns.map((t) => ({ date: new Date(t.date), amount: Number(t.amount) })),
-            new Date(account.createdAt),
+            Number(details.apr),
+            minimumPaymentDue,
+            details.statementDay,
+            new Date(goal.targetDate),
           )
         : null;
 
-      return {
-        account,
-        dailyGoal: Number(details?.dailyGoal ?? 0),
-        balance,
-        goal,
-        projectedDate,
-        pace: isOnTrack(projectedDate, goal?.targetDate),
-        streak: streakFromTransactions(txns),
-      };
-    }),
-  );
-
-  const debtSummaries = await Promise.all(
-    debts.map(async (account) => {
-      const [details] = await db
-        .select()
-        .from(debtDetails)
-        .where(and(eq(debtDetails.accountId, account.id), eq(debtDetails.userId, userId)));
-      const [goal] = await db
-        .select()
-        .from(goals)
-        .where(and(eq(goals.accountId, account.id), eq(goals.userId, userId)))
-        .orderBy(goals.createdAt);
-      const balance = await getBalance(account.id, userId, Number(account.startingBalance));
-      const statements = await db
-        .select()
-        .from(debtStatements)
-        .where(and(eq(debtStatements.accountId, account.id), eq(debtStatements.userId, userId)))
-        .orderBy(debtStatements.statementDate);
-      const latestStatement = statements[statements.length - 1];
-      const txns = await db
-        .select({
-          date: transactions.date,
-          amount: transactions.amount,
-          category: transactions.category,
-        })
-        .from(transactions)
-        .where(and(eq(transactions.accountId, account.id), eq(transactions.userId, userId)));
-
-      const minimumPaymentDue = Number(latestStatement?.minimumPaymentDue ?? 0);
-      const projectedDate = details
-        ? projectPayoffDate(
+    return {
+      account,
+      apr: Number(details?.apr ?? 0),
+      dailyMicropaymentGoal: Number(details?.dailyMicropaymentGoal ?? 0),
+      statementDay: details?.statementDay ?? 1,
+      balance,
+      latestStatement,
+      projectedDate,
+      goal,
+      requiredDaily,
+      pace: isOnTrack(projectedDate, goal?.targetDate),
+      streak: streakFromTransactions(txns),
+      minimumPaymentStatus: computeMinimumPaymentStatus(txns, latestStatement),
+      interestSaved: details
+        ? estimateInterestSaved(
             balance,
             Number(details.apr),
             Number(details.dailyMicropaymentGoal),
             minimumPaymentDue,
             details.statementDay,
           )
-        : null;
-
-      const requiredDaily =
-        details && goal?.targetDate
-          ? requiredDailyPayment(
-              balance,
-              Number(details.apr),
-              minimumPaymentDue,
-              details.statementDay,
-              new Date(goal.targetDate),
-            )
-          : null;
-
-      return {
-        account,
-        apr: Number(details?.apr ?? 0),
-        dailyMicropaymentGoal: Number(details?.dailyMicropaymentGoal ?? 0),
-        statementDay: details?.statementDay ?? 1,
-        balance,
-        latestStatement,
-        projectedDate,
-        goal,
-        requiredDaily,
-        pace: isOnTrack(projectedDate, goal?.targetDate),
-        streak: streakFromTransactions(txns),
-        minimumPaymentStatus: computeMinimumPaymentStatus(txns, latestStatement),
-        interestSaved: details
-          ? estimateInterestSaved(
-              balance,
-              Number(details.apr),
-              Number(details.dailyMicropaymentGoal),
-              minimumPaymentDue,
-              details.statementDay,
-            )
-          : 0,
-        extraPaidOverMinimum: computeExtraPaidOverMinimum(txns, statements),
-      };
-    }),
-  );
+        : 0,
+      extraPaidOverMinimum: computeExtraPaidOverMinimum(txns, statements),
+    };
+  });
 
   return { savingsSummaries, debtSummaries };
 }
@@ -471,18 +500,21 @@ function addDaysToDateKey(dateKey: string, days: number): string {
 // shared by the Points page itself and the overview page so they always
 // match. Reflects the whole shared economy (habit + cleaning completions).
 export async function getPointsSummary(userId: string) {
-  const completions = await db
-    .select({ date: habitCompletions.date, pointsAwarded: habitCompletions.pointsAwarded })
-    .from(habitCompletions)
-    .where(eq(habitCompletions.userId, userId));
-  const cleaningCompletionsAll = await db
-    .select({ date: cleaningCompletions.date, pointsAwarded: cleaningCompletions.pointsAwarded })
-    .from(cleaningCompletions)
-    .where(eq(cleaningCompletions.userId, userId));
-  const weeklyCompletionsAll = await db
-    .select({ date: weeklyTaskCompletions.date, pointsAwarded: weeklyTaskCompletions.pointsAwarded })
-    .from(weeklyTaskCompletions)
-    .where(eq(weeklyTaskCompletions.userId, userId));
+  const [completions, cleaningCompletionsAll, weeklyCompletionsAll, [{ spent }]] = await Promise.all([
+    db
+      .select({ date: habitCompletions.date, pointsAwarded: habitCompletions.pointsAwarded })
+      .from(habitCompletions)
+      .where(eq(habitCompletions.userId, userId)),
+    db
+      .select({ date: cleaningCompletions.date, pointsAwarded: cleaningCompletions.pointsAwarded })
+      .from(cleaningCompletions)
+      .where(eq(cleaningCompletions.userId, userId)),
+    db
+      .select({ date: weeklyTaskCompletions.date, pointsAwarded: weeklyTaskCompletions.pointsAwarded })
+      .from(weeklyTaskCompletions)
+      .where(eq(weeklyTaskCompletions.userId, userId)),
+    db.select({ spent: sum(redemptions.pointsCost) }).from(redemptions).where(eq(redemptions.userId, userId)),
+  ]);
 
   const todayKey = dateKeyInAppTimezone();
   const yesterdayKey = addDaysToDateKey(todayKey, -1);
@@ -498,7 +530,13 @@ export async function getPointsSummary(userId: string) {
 
   const distinctDays = Array.from(new Set(completions.map((c) => c.date)));
 
-  const balance = await getPointsBalance(userId);
+  // Computed from the same rows already fetched above instead of calling
+  // getPointsBalance (which would re-query these same three tables again).
+  const earned = [...completions, ...cleaningCompletionsAll, ...weeklyCompletionsAll].reduce(
+    (s, c) => s + c.pointsAwarded,
+    0,
+  );
+  const balance = earned - Number(spent ?? 0);
 
   return {
     balance,
@@ -627,30 +665,25 @@ async function getWeeklyTasksWithStatus(userId: string) {
 }
 
 export async function getHabitDashboardData(userId: string) {
-  const categories = await db
-    .select()
-    .from(habitCategories)
-    .where(eq(habitCategories.userId, userId))
-    .orderBy(habitCategories.createdAt);
-  const tasks = await db
-    .select()
-    .from(habitTasks)
-    .where(and(eq(habitTasks.archived, false), eq(habitTasks.userId, userId)))
-    .orderBy(habitTasks.createdAt);
-  const completions = await db
-    .select()
-    .from(habitCompletions)
-    .where(eq(habitCompletions.userId, userId));
-  const activeRewards = await db
-    .select()
-    .from(rewards)
-    .where(and(eq(rewards.archived, false), eq(rewards.userId, userId)))
-    .orderBy(rewards.cost);
-  const recentRedemptions = await db
-    .select()
-    .from(redemptions)
-    .where(eq(redemptions.userId, userId))
-    .orderBy(redemptions.date);
+  const [categories, tasks, completions, activeRewards, recentRedemptions] = await Promise.all([
+    db
+      .select()
+      .from(habitCategories)
+      .where(eq(habitCategories.userId, userId))
+      .orderBy(habitCategories.createdAt),
+    db
+      .select()
+      .from(habitTasks)
+      .where(and(eq(habitTasks.archived, false), eq(habitTasks.userId, userId)))
+      .orderBy(habitTasks.createdAt),
+    db.select().from(habitCompletions).where(eq(habitCompletions.userId, userId)),
+    db
+      .select()
+      .from(rewards)
+      .where(and(eq(rewards.archived, false), eq(rewards.userId, userId)))
+      .orderBy(rewards.cost),
+    db.select().from(redemptions).where(eq(redemptions.userId, userId)).orderBy(redemptions.date),
+  ]);
 
   const todayKey = dateKeyInAppTimezone();
   const todayCompletionCounts = new Map<string, number>();
@@ -660,7 +693,25 @@ export async function getHabitDashboardData(userId: string) {
     }
   }
 
-  const { balance, pointsToday, pointsYesterday, streak } = await getPointsSummary(userId);
+  const [
+    { balance, pointsToday, pointsYesterday, streak },
+    cleaningCompletionsAll,
+    weeklyCompletionsAll,
+    cleaningTasksWithStatus,
+    weeklyTasksWithStatus,
+  ] = await Promise.all([
+    getPointsSummary(userId),
+    db
+      .select({ date: cleaningCompletions.date, pointsAwarded: cleaningCompletions.pointsAwarded })
+      .from(cleaningCompletions)
+      .where(eq(cleaningCompletions.userId, userId)),
+    db
+      .select({ date: weeklyTaskCompletions.date, pointsAwarded: weeklyTaskCompletions.pointsAwarded })
+      .from(weeklyTaskCompletions)
+      .where(eq(weeklyTaskCompletions.userId, userId)),
+    getCleaningTasksWithStatus(userId),
+    getWeeklyTasksWithStatus(userId),
+  ]);
 
   const categoriesWithTasks = categories.map((category) => ({
     category,
@@ -668,22 +719,11 @@ export async function getHabitDashboardData(userId: string) {
   }));
   const unassignedTasks = tasks.filter((t) => !t.categoryId);
 
-  const cleaningCompletionsAll = await db
-    .select({ date: cleaningCompletions.date, pointsAwarded: cleaningCompletions.pointsAwarded })
-    .from(cleaningCompletions)
-    .where(eq(cleaningCompletions.userId, userId));
-  const weeklyCompletionsAll = await db
-    .select({ date: weeklyTaskCompletions.date, pointsAwarded: weeklyTaskCompletions.pointsAwarded })
-    .from(weeklyTaskCompletions)
-    .where(eq(weeklyTaskCompletions.userId, userId));
   const chartData = buildAllPointsCharts([
     ...completions,
     ...cleaningCompletionsAll,
     ...weeklyCompletionsAll,
   ]);
-
-  const cleaningTasksWithStatus = await getCleaningTasksWithStatus(userId);
-  const weeklyTasksWithStatus = await getWeeklyTasksWithStatus(userId);
 
   return {
     categories,
@@ -705,17 +745,16 @@ export async function getHabitDashboardData(userId: string) {
 // --- Cleaning tracker ---
 
 async function getCleaningTasksWithStatus(userId: string) {
-  const areas = await db.select().from(cleaningAreas).where(eq(cleaningAreas.userId, userId));
+  const [areas, tasks, allCompletions] = await Promise.all([
+    db.select().from(cleaningAreas).where(eq(cleaningAreas.userId, userId)),
+    db
+      .select()
+      .from(cleaningTasks)
+      .where(and(eq(cleaningTasks.archived, false), eq(cleaningTasks.userId, userId)))
+      .orderBy(cleaningTasks.createdAt),
+    db.select().from(cleaningCompletions).where(eq(cleaningCompletions.userId, userId)),
+  ]);
   const areaNameById = new Map(areas.map((a) => [a.id, a.name]));
-  const tasks = await db
-    .select()
-    .from(cleaningTasks)
-    .where(and(eq(cleaningTasks.archived, false), eq(cleaningTasks.userId, userId)))
-    .orderBy(cleaningTasks.createdAt);
-  const allCompletions = await db
-    .select()
-    .from(cleaningCompletions)
-    .where(eq(cleaningCompletions.userId, userId));
 
   const todayKey = dateKeyInAppTimezone();
 
@@ -743,12 +782,14 @@ async function getCleaningTasksWithStatus(userId: string) {
 }
 
 export async function getCleaningDashboardData(userId: string) {
-  const areas = await db
-    .select()
-    .from(cleaningAreas)
-    .where(eq(cleaningAreas.userId, userId))
-    .orderBy(cleaningAreas.createdAt);
-  const tasksWithStatus = await getCleaningTasksWithStatus(userId);
+  const [areas, tasksWithStatus] = await Promise.all([
+    db
+      .select()
+      .from(cleaningAreas)
+      .where(eq(cleaningAreas.userId, userId))
+      .orderBy(cleaningAreas.createdAt),
+    getCleaningTasksWithStatus(userId),
+  ]);
 
   const areasWithTasks = areas.map((area) => ({
     area,
