@@ -29,7 +29,7 @@ type SetRow = {
   durationSeconds: number | null;
 };
 
-type Exercise = {
+export type Exercise = {
   id: string;
   dayId: string;
   name: string;
@@ -71,11 +71,13 @@ export function ExerciseCard({
   jewel,
   isFirst = false,
   isLast = false,
+  showReorder = true,
 }: {
   exercise: Exercise;
   jewel: { color: string; soft: string };
   isFirst?: boolean;
   isLast?: boolean;
+  showReorder?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const updateAction = updateExercise.bind(null, exercise.id);
@@ -127,24 +129,28 @@ export function ExerciseCard({
               {(exercise.overload.currentWeight + Number(exercise.weightIncrement)).toFixed(0)} lbs
             </span>
           )}
-          <button
-            type="button"
-            disabled={isFirst || isReordering}
-            onClick={() => startReordering(() => moveExerciseUp(exercise.id))}
-            aria-label="Move exercise up"
-            className="text-neutral-600 hover:text-neutral-100 disabled:opacity-30"
-          >
-            ↑
-          </button>
-          <button
-            type="button"
-            disabled={isLast || isReordering}
-            onClick={() => startReordering(() => moveExerciseDown(exercise.id))}
-            aria-label="Move exercise down"
-            className="text-neutral-600 hover:text-neutral-100 disabled:opacity-30"
-          >
-            ↓
-          </button>
+          {showReorder && (
+            <>
+              <button
+                type="button"
+                disabled={isFirst || isReordering}
+                onClick={() => startReordering(() => moveExerciseUp(exercise.id))}
+                aria-label="Move exercise up"
+                className="text-neutral-600 hover:text-neutral-100 disabled:opacity-30"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                disabled={isLast || isReordering}
+                onClick={() => startReordering(() => moveExerciseDown(exercise.id))}
+                aria-label="Move exercise down"
+                className="text-neutral-600 hover:text-neutral-100 disabled:opacity-30"
+              >
+                ↓
+              </button>
+            </>
+          )}
           <button
             type="button"
             onClick={() => setEditing((e) => !e)}

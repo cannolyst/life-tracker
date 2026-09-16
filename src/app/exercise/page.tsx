@@ -9,12 +9,13 @@ import {
 import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
 import { Card, formatDateRange } from "@/components/ui";
-import { ExerciseCard, TrendBadge } from "./ExerciseCard";
+import { TrendBadge } from "./ExerciseCard";
+import { ExerciseList } from "./ExerciseList";
 import { AddExerciseForm } from "./ExerciseForms";
 import { ProgramSwitcher } from "./ProgramSwitcher";
 import { ProgramPresetPicker } from "./programs/ProgramPresetPicker";
 import { AddDayForm } from "./programs/AddDayForm";
-import { jewelFor, jewelChipStyle, JEWELS } from "@/lib/jewels";
+import { jewelChipStyle, JEWELS } from "@/lib/jewels";
 
 export const dynamic = "force-dynamic";
 
@@ -154,17 +155,7 @@ export default async function ExercisePage({
           ))}
         </div>
 
-        <div className="space-y-4">
-          {exercises.map((exercise, i) => (
-            <ExerciseCard
-              key={exercise.id}
-              exercise={exercise}
-              jewel={jewelFor(i)}
-              isFirst={i === 0}
-              isLast={i === exercises.length - 1}
-            />
-          ))}
-        </div>
+        <ExerciseList exercises={exercises} />
 
         <Card>
           <h2 className="mb-3 font-medium">Add exercise to {day.name}</h2>
