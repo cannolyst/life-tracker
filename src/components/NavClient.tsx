@@ -64,35 +64,36 @@ export function NavClient({
       </div>
 
       {open && (
-        <nav className="font-display flex flex-col border-t border-neutral-800 px-4 text-sm sm:hidden">
-          {links.map((link) => (
+        <nav className="font-display flex flex-col gap-4 border-t border-neutral-800 px-4 py-4 text-sm sm:hidden">
+          <div className="flex flex-wrap gap-2">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className="rounded-full border border-neutral-700 px-3 py-1.5 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
+              >
+                {link.label}
+              </Link>
+            ))}
             <Link
-              key={link.href}
-              href={link.href}
+              href="/settings"
               onClick={() => setOpen(false)}
-              className="border-b border-neutral-800 py-3 text-neutral-300 last:border-b-0"
+              className="rounded-full border border-neutral-700 px-3 py-1.5 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
             >
-              {link.label}
+              Settings
             </Link>
-          ))}
-          <Link
-            href="/settings"
-            onClick={() => setOpen(false)}
-            className="border-b border-neutral-800 py-3 text-neutral-300 last:border-b-0"
-          >
-            Settings
-          </Link>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="font-display w-full py-3 text-left text-neutral-300"
-            >
-              Sign out
-            </button>
-          </form>
-          <div className="flex items-center justify-between border-t border-neutral-800 py-3">
-            <span className="font-display text-neutral-300">Appearance</span>
-            <ThemeToggle theme={theme} />
+          </div>
+          <div className="flex items-center justify-between border-t border-neutral-800 pt-3">
+            <form action={logout}>
+              <button type="submit" className="font-display text-left text-neutral-300">
+                Sign out
+              </button>
+            </form>
+            <div className="flex items-center gap-2">
+              <span className="font-display text-neutral-300">Appearance</span>
+              <ThemeToggle theme={theme} />
+            </div>
           </div>
         </nav>
       )}

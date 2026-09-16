@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, League_Spartan } from "next/font/google";
 import { cookies } from "next/headers";
+import { BACKGROUND_COLORS } from "@/lib/backgroundColors";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,12 +26,18 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const theme = (await cookies()).get("theme")?.value === "dark" ? "dark" : "light";
+  const cookieStore = await cookies();
+  const theme = cookieStore.get("theme")?.value === "dark" ? "dark" : "light";
+  const colorCookie = cookieStore.get("color")?.value;
+  const color = (BACKGROUND_COLORS as readonly string[]).includes(colorCookie ?? "")
+    ? (colorCookie as (typeof BACKGROUND_COLORS)[number])
+    : "pink";
 
   return (
     <html
       lang="en"
       data-theme={theme}
+      data-color={color}
       className={`${geistSans.variable} ${geistMono.variable} ${leagueSpartan.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-neutral-950 text-neutral-100">

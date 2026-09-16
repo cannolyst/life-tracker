@@ -44,13 +44,40 @@
 }
 
 /*
+ * Light-mode background color choice (Settings > Appearance). Only the
+ * page background changes — cards stay white and ink/jewel colors stay
+ * put, so this is a single-variable override per color, matching the
+ * "pink" default already set by the @theme block above (no override
+ * needed for pink itself). Placed before the dark-mode block below so
+ * dark mode always wins if both attributes are present at once — picking
+ * a color never changes what dark mode looks like.
+ */
+[data-color="green"] {
+  --color-neutral-950: #dcefdf;
+}
+[data-color="blue"] {
+  --color-neutral-950: #dde8f5;
+}
+[data-color="purple"] {
+  --color-neutral-950: #e7dff2;
+}
+[data-color="yellow"] {
+  --color-neutral-950: #f6f0d9;
+}
+[data-color="orange"] {
+  --color-neutral-950: #f6e4d3;
+}
+
+/*
  * Dark mode: a second set of the same custom properties, scoped under
  * data-theme="dark" (set on <html> by the root layout from a cookie — see
  * src/app/theme-actions.ts). Wins by source order over the :root block
- * above for any descendant, so every existing Tailwind utility class
- * across the app repaints with zero per-component changes. Same warm
- * plum/rose identity as the light theme, inverted — not a generic
- * gray-900 dark theme.
+ * above (and the data-color blocks above, at equal specificity) for any
+ * descendant, so every existing Tailwind utility class across the app
+ * repaints with zero per-component changes, and the background color
+ * choice is ignored while dark mode is active. Same warm plum/rose
+ * identity as the light theme, inverted — not a generic gray-900 dark
+ * theme.
  */
 [data-theme="dark"] {
   --color-neutral-950: #221c28; /* page background */
