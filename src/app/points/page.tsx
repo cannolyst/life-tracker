@@ -6,6 +6,7 @@ import { StreakBadge } from "@/components/StreakBadge";
 import { PointsChart } from "@/components/PointsChart";
 import { AddCategoryForm, AddTaskForm, AddRewardForm } from "./PointsForms";
 import { TaskRow } from "./TaskRow";
+import { WeeklyTaskRow } from "./WeeklyTaskRow";
 import { jewelFor, NEUTRAL_JEWEL } from "@/lib/jewels";
 import { Sparkle } from "@/components/Sparkle";
 import { archiveReward, redeemReward } from "./actions";
@@ -29,6 +30,7 @@ export default async function PointsPage() {
     recentRedemptions,
     categories,
     cleaningTasks,
+    weeklyTasks,
   } = await getHabitDashboardData(await requireUserId());
 
   return (
@@ -119,6 +121,25 @@ export default async function PointsPage() {
             cleaningTasks.length === 0 && (
               <p className="text-sm text-neutral-500">No tasks yet — add one below.</p>
             )}
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">
+            Weekly tasks <span className="text-sm font-normal text-neutral-500">(resets weekly)</span>
+          </h2>
+          <Card>
+            {weeklyTasks.length === 0 ? (
+              <p className="text-sm text-neutral-500">
+                No weekly tasks yet — add one below (toggle to "Weekly").
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {weeklyTasks.map((task) => (
+                  <WeeklyTaskRow key={task.id} task={task} jewel={jewelFor(1)} />
+                ))}
+              </ul>
+            )}
+          </Card>
         </section>
 
         <section className="grid gap-6 sm:grid-cols-2">

@@ -3,10 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { eq, and, desc } from "drizzle-orm";
 import { db } from "@/db";
-import { habitCategories, habitTasks, habitCompletions, rewards, redemptions } from "@/db/schema";
+import {
+  habitCategories,
+  habitTasks,
+  habitCompletions,
+  rewards,
+  redemptions,
+  weeklyTasks,
+  weeklyTaskCompletions,
+} from "@/db/schema";
 import { getPointsBalance } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
-import { dateKeyInAppTimezone } from "@/lib/timezone";
+import { dateKeyInAppTimezone, weekKeyInAppTimezone } from "@/lib/timezone";
 
 export type ActionState = { error?: string };
 
@@ -29,6 +37,10 @@ export async function addCategory(
   return {};
 }
 
+// Adds either a daily habit task or a weekly task, depending on the
+// "cadence" field — one form, two different tables under the hood (weekly
+// tasks have no category/repeatable concept, so those fields are ignored
+// for cadence "weekly").
 export async function addTask(
   _prevState: ActionState,
   formData: FormData,
@@ -36,6 +48,7 @@ export async function addTask(
   const name = formData.get("name");
   const pointsRaw = formData.get("points");
   const categoryId = formData.get("categoryId");
+  const cadence = formData.get("cadence") === "weekly" ? "weekly" : "daily";
 
   if (typeof name !== "string" || !name.trim()) {
     return { error: "Name is required" };
@@ -46,13 +59,18 @@ export async function addTask(
   }
 
   const userId = await requireUserId();
-  await db.insert(habitTasks).values({
-    userId,
-    name: name.trim(),
-    points,
-    categoryId: typeof categoryId === "string" && categoryId ? categoryId : null,
-    repeatable: formData.get("repeatable") === "on",
-  });
+
+  if (cadence === "weekly") {
+    await db.insert(weeklyTasks).values({ userId, name: name.trim(), points });
+  } else {
+    await db.insert(habitTasks).values({
+      userId,
+      name: name.trim(),
+      points,
+      categoryId: typeof categoryId === "string" && categoryId ? categoryId : null,
+      repeatable: formData.get("repeatable") === "on",
+    });
+  }
   revalidateAll();
   return {};
 }
@@ -169,6 +187,54 @@ export async function undoRepeatableCompletion(taskId: string) {
   await db
     .delete(habitCompletions)
     .where(and(eq(habitCompletions.id, mostRecent.id), eq(habitCompletions.userId, userId)));
+  revalidateAll();
+}
+
+export async function archiveWeeklyTask(taskId: string) {
+  const userId = await requireUserId();
+  await db
+    .update(weeklyTasks)
+    .set({ archived: true })
+    .where(and(eq(weeklyTasks.id, taskId), eq(weeklyTasks.userId, userId)));
+  revalidateAll();
+}
+
+// A once-a-week checkbox: toggles the single completion for the current
+// week on/off, same shape as toggleTaskCompletion's daily version.
+export async function toggleWeeklyTaskCompletion(taskId: string) {
+  const userId = await requireUserId();
+  const weekKey = weekKeyInAppTimezone();
+  const [existing] = await db
+    .select()
+    .from(weeklyTaskCompletions)
+    .where(
+      and(
+        eq(weeklyTaskCompletions.taskId, taskId),
+        eq(weeklyTaskCompletions.weekKey, weekKey),
+        eq(weeklyTaskCompletions.userId, userId),
+      ),
+    );
+
+  if (existing) {
+    await db
+      .delete(weeklyTaskCompletions)
+      .where(
+        and(eq(weeklyTaskCompletions.id, existing.id), eq(weeklyTaskCompletions.userId, userId)),
+      );
+  } else {
+    const [task] = await db
+      .select()
+      .from(weeklyTasks)
+      .where(and(eq(weeklyTasks.id, taskId), eq(weeklyTasks.userId, userId)));
+    if (!task) return;
+    await db.insert(weeklyTaskCompletions).values({
+      userId,
+      taskId,
+      weekKey,
+      date: dateKeyInAppTimezone(),
+      pointsAwarded: task.points,
+    });
+  }
   revalidateAll();
 }
 

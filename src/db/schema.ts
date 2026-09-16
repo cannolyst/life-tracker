@@ -769,3 +769,51 @@ export const paycheckChecklistChecks = pgTable(
     ),
   ],
 ).enableRLS();
+
+// --- Weekly tasks (a checklist on the Points page that resets every week) ---
+
+export const weeklyTasks = pgTable(
+  "weekly_tasks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    points: integer("points").notNull(),
+    archived: boolean("archived").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("weekly_tasks_id_user_id_unique").on(table.id, table.userId)],
+).enableRLS();
+
+// One completion per task per week — checked state is derived from row
+// existence for the current weekKey (see weekKeyInAppTimezone in
+// src/lib/timezone.ts), same trick as paycheckChecklistChecks, so a new
+// week naturally starts unchecked with no reset job. date is the actual
+// day it was checked (for the Points page's today/yesterday stats and
+// chart), separate from weekKey (which week it counts toward).
+export const weeklyTaskCompletions = pgTable(
+  "weekly_task_completions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    taskId: uuid("task_id").notNull(),
+    weekKey: text("week_key").notNull(),
+    date: date("date").notNull().defaultNow(),
+    // Snapshotted so editing a task's point value later doesn't rewrite
+    // history — same reasoning as habitCompletions.pointsAwarded.
+    pointsAwarded: integer("points_awarded").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.taskId, table.userId],
+      foreignColumns: [weeklyTasks.id, weeklyTasks.userId],
+      name: "weekly_task_completions_task_id_user_id_fk",
+    }).onDelete("cascade"),
+    unique("weekly_task_completions_user_task_week_unique").on(
+      table.userId,
+      table.taskId,
+      table.weekKey,
+    ),
+  ],
+).enableRLS();

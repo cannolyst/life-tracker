@@ -38,3 +38,11 @@ export function startOfWeekUtc(d: Date): Date {
   sunday.setUTCDate(sunday.getUTCDate() - d.getUTCDay());
   return sunday;
 }
+
+// The "YYYY-MM-DD" key of the Sunday starting the current calendar week in
+// APP_TIMEZONE. Used to key a weekly-recurring checklist so a new week
+// naturally starts unchecked with no reset job — same trick as
+// dateKeyInAppTimezone for daily tasks.
+export function weekKeyInAppTimezone(date: Date = new Date()): string {
+  return startOfWeekUtc(dateOnlyInAppTimezone(date)).toISOString().slice(0, 10);
+}

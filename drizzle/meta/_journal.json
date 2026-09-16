@@ -127,6 +127,13 @@
       "when": 1789576597300,
       "tag": "0017_gigantic_liz_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1789578750951,
+      "tag": "0018_loving_maelstrom",
+      "breakpoints": true
     }
   ]
 }

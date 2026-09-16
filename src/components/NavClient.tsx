@@ -84,16 +84,12 @@ export function NavClient({
               Settings
             </Link>
           </div>
-          <div className="flex items-center justify-between border-t border-neutral-800 pt-3">
+          <div className="border-t border-neutral-800 pt-3">
             <form action={logout}>
               <button type="submit" className="font-display text-left text-neutral-300">
                 Sign out
               </button>
             </form>
-            <div className="flex items-center gap-2">
-              <span className="font-display text-neutral-300">Appearance</span>
-              <ThemeToggle theme={theme} />
-            </div>
           </div>
         </nav>
       )}

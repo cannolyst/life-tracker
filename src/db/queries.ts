@@ -34,6 +34,8 @@ import {
   paycheckPlan,
   billsLineItems,
   paycheckChecklistChecks,
+  weeklyTasks,
+  weeklyTaskCompletions,
 } from "./schema";
 import {
   projectSavingsDate,
@@ -44,7 +46,12 @@ import {
 } from "@/lib/projections";
 import { computeStreak } from "@/lib/streak";
 import { computeCleaningStatus, classifyByTimeframe } from "@/lib/cleaningStatus";
-import { dateKeyInAppTimezone, dateOnlyInAppTimezone, startOfWeekUtc } from "@/lib/timezone";
+import {
+  dateKeyInAppTimezone,
+  dateOnlyInAppTimezone,
+  startOfWeekUtc,
+  weekKeyInAppTimezone,
+} from "@/lib/timezone";
 import { computeMinimumPaymentStatus, computeExtraPaidOverMinimum } from "@/lib/minimumPayment";
 import {
   compareWeekOverWeek,
@@ -428,7 +435,7 @@ export async function getGamificationStats(userId: string) {
 // --- Points / habit tracker ---
 
 export async function getPointsBalance(userId: string): Promise<number> {
-  const [[{ habitEarned }], [{ cleaningEarned }], [{ spent }]] = await Promise.all([
+  const [[{ habitEarned }], [{ cleaningEarned }], [{ weeklyEarned }], [{ spent }]] = await Promise.all([
     db
       .select({ habitEarned: sum(habitCompletions.pointsAwarded) })
       .from(habitCompletions)
@@ -437,9 +444,18 @@ export async function getPointsBalance(userId: string): Promise<number> {
       .select({ cleaningEarned: sum(cleaningCompletions.pointsAwarded) })
       .from(cleaningCompletions)
       .where(eq(cleaningCompletions.userId, userId)),
+    db
+      .select({ weeklyEarned: sum(weeklyTaskCompletions.pointsAwarded) })
+      .from(weeklyTaskCompletions)
+      .where(eq(weeklyTaskCompletions.userId, userId)),
     db.select({ spent: sum(redemptions.pointsCost) }).from(redemptions).where(eq(redemptions.userId, userId)),
   ]);
-  return Number(habitEarned ?? 0) + Number(cleaningEarned ?? 0) - Number(spent ?? 0);
+  return (
+    Number(habitEarned ?? 0) +
+    Number(cleaningEarned ?? 0) +
+    Number(weeklyEarned ?? 0) -
+    Number(spent ?? 0)
+  );
 }
 
 // dateKey is a "YYYY-MM-DD" string (already UTC-midnight-anchored), so the
@@ -463,6 +479,10 @@ export async function getPointsSummary(userId: string) {
     .select({ date: cleaningCompletions.date, pointsAwarded: cleaningCompletions.pointsAwarded })
     .from(cleaningCompletions)
     .where(eq(cleaningCompletions.userId, userId));
+  const weeklyCompletionsAll = await db
+    .select({ date: weeklyTaskCompletions.date, pointsAwarded: weeklyTaskCompletions.pointsAwarded })
+    .from(weeklyTaskCompletions)
+    .where(eq(weeklyTaskCompletions.userId, userId));
 
   const todayKey = dateKeyInAppTimezone();
   const yesterdayKey = addDaysToDateKey(todayKey, -1);
@@ -470,6 +490,9 @@ export async function getPointsSummary(userId: string) {
   const sumForDate = (dateKey: string) =>
     completions.filter((c) => c.date === dateKey).reduce((s, c) => s + c.pointsAwarded, 0) +
     cleaningCompletionsAll
+      .filter((c) => c.date === dateKey)
+      .reduce((s, c) => s + c.pointsAwarded, 0) +
+    weeklyCompletionsAll
       .filter((c) => c.date === dateKey)
       .reduce((s, c) => s + c.pointsAwarded, 0);
 
@@ -574,6 +597,35 @@ function buildAllPointsCharts(
   };
 }
 
+async function getWeeklyTasksWithStatus(userId: string) {
+  const tasks = await db
+    .select()
+    .from(weeklyTasks)
+    .where(and(eq(weeklyTasks.archived, false), eq(weeklyTasks.userId, userId)))
+    .orderBy(weeklyTasks.createdAt);
+
+  const weekKey = weekKeyInAppTimezone();
+  const completions =
+    tasks.length > 0
+      ? await db
+          .select({ taskId: weeklyTaskCompletions.taskId })
+          .from(weeklyTaskCompletions)
+          .where(
+            and(
+              eq(weeklyTaskCompletions.userId, userId),
+              eq(weeklyTaskCompletions.weekKey, weekKey),
+              inArray(
+                weeklyTaskCompletions.taskId,
+                tasks.map((t) => t.id),
+              ),
+            ),
+          )
+      : [];
+  const doneTaskIds = new Set(completions.map((c) => c.taskId));
+
+  return tasks.map((task) => ({ ...task, doneThisWeek: doneTaskIds.has(task.id) }));
+}
+
 export async function getHabitDashboardData(userId: string) {
   const categories = await db
     .select()
@@ -620,15 +672,25 @@ export async function getHabitDashboardData(userId: string) {
     .select({ date: cleaningCompletions.date, pointsAwarded: cleaningCompletions.pointsAwarded })
     .from(cleaningCompletions)
     .where(eq(cleaningCompletions.userId, userId));
-  const chartData = buildAllPointsCharts([...completions, ...cleaningCompletionsAll]);
+  const weeklyCompletionsAll = await db
+    .select({ date: weeklyTaskCompletions.date, pointsAwarded: weeklyTaskCompletions.pointsAwarded })
+    .from(weeklyTaskCompletions)
+    .where(eq(weeklyTaskCompletions.userId, userId));
+  const chartData = buildAllPointsCharts([
+    ...completions,
+    ...cleaningCompletionsAll,
+    ...weeklyCompletionsAll,
+  ]);
 
   const cleaningTasksWithStatus = await getCleaningTasksWithStatus(userId);
+  const weeklyTasksWithStatus = await getWeeklyTasksWithStatus(userId);
 
   return {
     categories,
     categoriesWithTasks,
     unassignedTasks,
     cleaningTasks: cleaningTasksWithStatus,
+    weeklyTasks: weeklyTasksWithStatus,
     todayCompletionCounts,
     balance,
     pointsToday,
