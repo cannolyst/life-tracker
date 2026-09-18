@@ -30,7 +30,8 @@ export default async function PointsPage() {
     recentRedemptions,
     categories,
     cleaningTasks,
-    weeklyTasks,
+    weeklyCategoriesWithTasks,
+    weeklyUnassignedTasks,
   } = await getHabitDashboardData(await requireUserId());
 
   return (
@@ -123,23 +124,47 @@ export default async function PointsPage() {
             )}
         </section>
 
-        <section className="space-y-3">
+        <section className="space-y-4">
           <h2 className="text-lg font-semibold">
             Weekly tasks <span className="text-sm font-normal text-neutral-500">(resets weekly)</span>
           </h2>
-          <Card>
-            {weeklyTasks.length === 0 ? (
-              <p className="text-sm text-neutral-500">
-                No weekly tasks yet — add one below (toggle to "Weekly").
-              </p>
-            ) : (
+          {weeklyCategoriesWithTasks.map(
+            ({ category, tasks }, i) =>
+              tasks.length > 0 && (
+                <Card key={category.id}>
+                  <h3 className="mb-2 flex items-center gap-2 font-medium">
+                    <Sparkle className="h-3.5 w-3.5" color={jewelFor(i).color} />
+                    {category.name}
+                  </h3>
+                  <ul className="space-y-2">
+                    {tasks.map((task) => (
+                      <WeeklyTaskRow key={task.id} task={task} jewel={jewelFor(i)} />
+                    ))}
+                  </ul>
+                </Card>
+              ),
+          )}
+          {weeklyUnassignedTasks.length > 0 && (
+            <Card>
+              <h3 className="mb-2 flex items-center gap-2 font-medium">
+                <Sparkle className="h-3.5 w-3.5" color={NEUTRAL_JEWEL.color} />
+                Other
+              </h3>
               <ul className="space-y-2">
-                {weeklyTasks.map((task) => (
-                  <WeeklyTaskRow key={task.id} task={task} jewel={jewelFor(1)} />
+                {weeklyUnassignedTasks.map((task) => (
+                  <WeeklyTaskRow key={task.id} task={task} jewel={NEUTRAL_JEWEL} />
                 ))}
               </ul>
+            </Card>
+          )}
+          {weeklyCategoriesWithTasks.every(({ tasks }) => tasks.length === 0) &&
+            weeklyUnassignedTasks.length === 0 && (
+              <Card>
+                <p className="text-sm text-neutral-500">
+                  No weekly tasks yet — add one below (toggle to &quot;Weekly&quot;).
+                </p>
+              </Card>
             )}
-          </Card>
         </section>
 
         <section className="grid gap-6 sm:grid-cols-2">

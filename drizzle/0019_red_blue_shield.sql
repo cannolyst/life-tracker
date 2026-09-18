@@ -1,0 +1,2 @@
+ALTER TABLE "weekly_tasks" ADD COLUMN "category_id" uuid;--> statement-breakpoint
+ALTER TABLE "weekly_tasks" ADD CONSTRAINT "weekly_tasks_category_id_user_id_fk" FOREIGN KEY ("category_id","user_id") REFERENCES "public"."habit_categories"("id","user_id") ON DELETE set null ON UPDATE no action;

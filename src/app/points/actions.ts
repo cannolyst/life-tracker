@@ -38,16 +38,17 @@ export async function addCategory(
 }
 
 // Adds either a daily habit task or a weekly task, depending on the
-// "cadence" field — one form, two different tables under the hood (weekly
-// tasks have no category/repeatable concept, so those fields are ignored
-// for cadence "weekly").
+// "cadence" field — one form, two different tables under the hood. Both
+// support an optional category (from the same habitCategories list);
+// "repeatable" is daily-only.
 export async function addTask(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   const name = formData.get("name");
   const pointsRaw = formData.get("points");
-  const categoryId = formData.get("categoryId");
+  const categoryIdRaw = formData.get("categoryId");
+  const categoryId = typeof categoryIdRaw === "string" && categoryIdRaw ? categoryIdRaw : null;
   const cadence = formData.get("cadence") === "weekly" ? "weekly" : "daily";
 
   if (typeof name !== "string" || !name.trim()) {
@@ -61,13 +62,13 @@ export async function addTask(
   const userId = await requireUserId();
 
   if (cadence === "weekly") {
-    await db.insert(weeklyTasks).values({ userId, name: name.trim(), points });
+    await db.insert(weeklyTasks).values({ userId, name: name.trim(), points, categoryId });
   } else {
     await db.insert(habitTasks).values({
       userId,
       name: name.trim(),
       points,
-      categoryId: typeof categoryId === "string" && categoryId ? categoryId : null,
+      categoryId,
       repeatable: formData.get("repeatable") === "on",
     });
   }

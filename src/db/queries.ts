@@ -719,6 +719,12 @@ export async function getHabitDashboardData(userId: string) {
   }));
   const unassignedTasks = tasks.filter((t) => !t.categoryId);
 
+  const weeklyCategoriesWithTasks = categories.map((category) => ({
+    category,
+    tasks: weeklyTasksWithStatus.filter((t) => t.categoryId === category.id),
+  }));
+  const weeklyUnassignedTasks = weeklyTasksWithStatus.filter((t) => !t.categoryId);
+
   const chartData = buildAllPointsCharts([
     ...completions,
     ...cleaningCompletionsAll,
@@ -731,6 +737,8 @@ export async function getHabitDashboardData(userId: string) {
     unassignedTasks,
     cleaningTasks: cleaningTasksWithStatus,
     weeklyTasks: weeklyTasksWithStatus,
+    weeklyCategoriesWithTasks,
+    weeklyUnassignedTasks,
     todayCompletionCounts,
     balance,
     pointsToday,

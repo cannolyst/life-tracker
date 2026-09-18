@@ -134,6 +134,13 @@
       "when": 1789578750951,
       "tag": "0018_loving_maelstrom",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789581053217,
+      "tag": "0019_red_blue_shield",
+      "breakpoints": true
     }
   ]
 }

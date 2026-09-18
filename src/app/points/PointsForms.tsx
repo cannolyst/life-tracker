@@ -63,24 +63,22 @@ export function AddTaskForm({
           <input name="points" type="number" step="1" min="1" required defaultValue="1" className={inputClass} />
         </div>
       </div>
+      <div className="space-y-1">
+        <label className={labelClass}>Category (optional)</label>
+        <select name="categoryId" defaultValue="" className={inputClass}>
+          <option value="">None</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
       {cadence === "daily" && (
-        <>
-          <div className="space-y-1">
-            <label className={labelClass}>Category (optional)</label>
-            <select name="categoryId" defaultValue="" className={inputClass}>
-              <option value="">None</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <label className="flex items-center gap-2 text-sm text-neutral-400">
-            <input name="repeatable" type="checkbox" className="rounded border-neutral-700 bg-neutral-800" />
-            Repeatable (can be logged more than once per day)
-          </label>
-        </>
+        <label className="flex items-center gap-2 text-sm text-neutral-400">
+          <input name="repeatable" type="checkbox" className="rounded border-neutral-700 bg-neutral-800" />
+          Repeatable (can be logged more than once per day)
+        </label>
       )}
       {state?.error && <p className="text-sm text-red-400">{state.error}</p>}
       <button type="submit" disabled={pending} className={buttonClass}>

@@ -777,12 +777,20 @@ export const weeklyTasks = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     userId: uuid("user_id").notNull(),
+    categoryId: uuid("category_id"),
     name: text("name").notNull(),
     points: integer("points").notNull(),
     archived: boolean("archived").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [unique("weekly_tasks_id_user_id_unique").on(table.id, table.userId)],
+  (table) => [
+    unique("weekly_tasks_id_user_id_unique").on(table.id, table.userId),
+    foreignKey({
+      columns: [table.categoryId, table.userId],
+      foreignColumns: [habitCategories.id, habitCategories.userId],
+      name: "weekly_tasks_category_id_user_id_fk",
+    }).onDelete("set null"),
+  ],
 ).enableRLS();
 
 // One completion per task per week — checked state is derived from row
