@@ -652,6 +652,7 @@ export const moduleSettings = pgTable("module_settings", {
   showTodo: boolean("show_todo").notNull().default(true),
   showYearReview: boolean("show_year_review").notNull().default(true),
   showEmotionCheckin: boolean("show_emotion_check_in").notNull().default(true),
+  showNews: boolean("show_news").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -825,3 +826,35 @@ export const weeklyTaskCompletions = pgTable(
     ),
   ],
 ).enableRLS();
+
+// --- News: daily brief ---
+
+// A story counts as "seen" for 24h after the brief serves it or the user
+// opens/plays it in the app (never just from appearing in the feed). Keyed
+// by a hash of the story URL; one row per user per story, refreshed in
+// place when it's seen again.
+export const briefSeen = pgTable(
+  "brief_seen",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    storyId: text("story_id").notNull(),
+    title: text("title").notNull(),
+    section: text("section").notNull(),
+    seenAt: timestamp("seen_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("brief_seen_user_id_story_id_unique").on(table.userId, table.storyId),
+    check("brief_seen_section_check", sql`${table.section} in ('national','chicago','tech')`),
+  ],
+).enableRLS();
+
+// The secret behind a user's personal ?token= brief link (for the iOS
+// Shortcut, which has no login session). Only a SHA-256 hash is stored, so
+// the link itself is shown once at generation and can't be read back out of
+// the database. One row per user — regenerating replaces it.
+export const briefTokens = pgTable("brief_tokens", {
+  userId: uuid("user_id").primaryKey(),
+  tokenHash: text("token_hash").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();

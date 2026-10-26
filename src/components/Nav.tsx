@@ -13,6 +13,7 @@ const SETTINGS_FIELD = {
   todo: "showTodo",
   yearReview: "showYearReview",
   emotionCheckin: "showEmotionCheckin",
+  news: "showNews",
 } as const;
 
 export async function Nav() {

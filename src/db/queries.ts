@@ -1304,6 +1304,7 @@ export async function getModuleSettings(userId: string) {
       showTodo: true,
       showYearReview: true,
       showEmotionCheckin: true,
+      showNews: true,
     }
   );
 }

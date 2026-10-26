@@ -1,18 +1,24 @@
 import { cookies } from "next/headers";
 import { getModuleSettings } from "@/db/queries";
+import { getBriefTokenCreatedAt } from "@/db/brief";
+import { dateOnlyInAppTimezone } from "@/lib/timezone";
 import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
-import { Card, labelClass } from "@/components/ui";
+import { Card, labelClass, formatDate } from "@/components/ui";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BackgroundColorPicker } from "@/components/BackgroundColorPicker";
 import { BACKGROUND_COLORS, type BackgroundColor } from "@/lib/backgroundColors";
 import { ModulePicker } from "./ModulePicker";
+import { BriefLinkCard } from "./BriefLinkCard";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const userId = await requireUserId();
-  const settings = await getModuleSettings(userId);
+  const [settings, briefCreatedAt] = await Promise.all([
+    getModuleSettings(userId),
+    getBriefTokenCreatedAt(userId),
+  ]);
   const cookieStore = await cookies();
   const theme = cookieStore.get("theme")?.value === "dark" ? "dark" : "light";
   const colorCookie = cookieStore.get("color")?.value;
@@ -43,6 +49,12 @@ export default async function SettingsPage() {
         <Card>
           <h2 className="mb-3 font-medium">Tabs you want to see</h2>
           <ModulePicker initialValues={settings} redirectTo="/settings" submitLabel="Save" />
+        </Card>
+        <Card>
+          <h2 className="mb-3 font-medium">Daily brief link</h2>
+          <BriefLinkCard
+            createdLabel={briefCreatedAt ? formatDate(dateOnlyInAppTimezone(briefCreatedAt)) : null}
+          />
         </Card>
       </main>
     </div>

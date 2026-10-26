@@ -16,6 +16,7 @@ type InitialValues = {
   showTodo: boolean;
   showYearReview: boolean;
   showEmotionCheckin: boolean;
+  showNews: boolean;
 };
 
 const FIELD_BY_KEY: Record<string, keyof InitialValues> = {
@@ -27,6 +28,7 @@ const FIELD_BY_KEY: Record<string, keyof InitialValues> = {
   todo: "showTodo",
   yearReview: "showYearReview",
   emotionCheckin: "showEmotionCheckin",
+  news: "showNews",
 };
 
 export function ModulePicker({
