@@ -1,17 +1,20 @@
-import { getListsData } from "@/db/queries";
+import { getListsData, getTodos } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
 import { AddListCategoryForm, AddListItemForm } from "./ListsForms";
 import { setListItemDone, deleteListItem } from "./actions";
 import { DeleteListButton } from "./DeleteListButton";
+import { ListReorderButtons } from "./ListReorderButtons";
+import { TodoSection } from "../todo/TodoSection";
 import { jewelFor } from "@/lib/jewels";
 import { Sparkle } from "@/components/Sparkle";
 
 export const dynamic = "force-dynamic";
 
 export default async function ListsPage() {
-  const { categoriesWithItems } = await getListsData(await requireUserId());
+  const userId = await requireUserId();
+  const [{ categoriesWithItems }, todos] = await Promise.all([getListsData(userId), getTodos(userId)]);
 
   return (
     <div className="flex min-h-full flex-col">
@@ -19,15 +22,19 @@ export default async function ListsPage() {
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-xl font-semibold">Lists</h1>
 
+        <TodoSection todos={todos} />
+
+        <h2 className="pt-2 text-lg font-semibold">Your lists</h2>
+
         <Card>
-          <h2 className="mb-3 font-medium">Add list</h2>
+          <h3 className="mb-3 font-medium">Add list</h3>
           <AddListCategoryForm />
         </Card>
 
         {categoriesWithItems.length === 0 ? (
           <p className="text-sm text-neutral-500">No lists yet — add one above.</p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-4">
             {categoriesWithItems.map(({ category, items }, i) => {
               const jewel = jewelFor(i);
               const active = items.filter((it) => !it.done);
@@ -41,6 +48,12 @@ export default async function ListsPage() {
                   <summary className="mb-2 flex cursor-pointer items-center gap-2 font-medium">
                     <Sparkle className="h-3.5 w-3.5" color={jewel.color} />
                     {category.name}
+                    <ListReorderButtons
+                      categoryId={category.id}
+                      name={category.name}
+                      isFirst={i === 0}
+                      isLast={i === categoriesWithItems.length - 1}
+                    />
                   </summary>
 
                   <ul className="mb-3 space-y-1">

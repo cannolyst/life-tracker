@@ -340,6 +340,8 @@ export const listCategories = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     userId: uuid("user_id").notNull(),
     name: text("name").notNull(),
+    // Position on the Lists page (0 = first); reordered with the up/down arrows.
+    orderIndex: integer("order_index").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

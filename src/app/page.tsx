@@ -31,7 +31,7 @@ export default async function OverviewPage() {
     settings.showPoints ? getPointsSummary(userId) : Promise.resolve(null),
     settings.showCleaning ? getCleaningDashboardData(userId) : Promise.resolve(null),
     settings.showFinance ? listAccountsSummary(userId) : Promise.resolve(null),
-    settings.showTodo ? getTodos(userId) : Promise.resolve([]),
+    settings.showLists ? getTodos(userId) : Promise.resolve([]),
   ]);
 
   const activeTodos = allTodos.filter((t) => !t.done);
@@ -75,7 +75,7 @@ export default async function OverviewPage() {
     : [];
 
   const nothingEnabled =
-    !settings.showPoints && !settings.showCleaning && !settings.showFinance && !settings.showTodo;
+    !settings.showPoints && !settings.showCleaning && !settings.showFinance && !settings.showLists;
 
   return (
     <div className="flex min-h-full flex-col">
@@ -127,11 +127,11 @@ export default async function OverviewPage() {
           </Link>
         )}
 
-        {settings.showTodo && (
+        {settings.showLists && (
           <section className="space-y-3">
             <div className="flex items-baseline justify-between">
               <h2 className="text-lg font-semibold">To-do</h2>
-              <Link href="/todo" className="text-sm text-neutral-500 hover:text-neutral-100">
+              <Link href="/lists" className="text-sm text-neutral-500 hover:text-neutral-100">
                 View all
               </Link>
             </div>

@@ -4,7 +4,6 @@ export type ModuleKey =
   | "exercise"
   | "finance"
   | "lists"
-  | "todo"
   | "yearReview"
   | "emotionCheckin"
   | "news";
@@ -15,7 +14,6 @@ export const MODULES: { key: ModuleKey; href: string; label: string }[] = [
   { key: "exercise", href: "/exercise", label: "Exercise" },
   { key: "finance", href: "/finance", label: "Finance" },
   { key: "lists", href: "/lists", label: "Lists" },
-  { key: "todo", href: "/todo", label: "To-do" },
   { key: "yearReview", href: "/year-review", label: "Year in review" },
   { key: "emotionCheckin", href: "/emotion-checkin", label: "Emotion Check-In" },
   { key: "news", href: "/news", label: "News" },

@@ -815,7 +815,7 @@ export async function getListsData(userId: string) {
     .select()
     .from(listCategories)
     .where(eq(listCategories.userId, userId))
-    .orderBy(listCategories.createdAt);
+    .orderBy(listCategories.orderIndex, listCategories.createdAt);
   const items = await db
     .select()
     .from(listItems)

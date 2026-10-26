@@ -21,7 +21,13 @@ export async function addListCategory(
     return { error: "Name is required" };
   }
   const userId = await requireUserId();
-  await db.insert(listCategories).values({ userId, name: name.trim() });
+  const existing = await db
+    .select({ id: listCategories.id })
+    .from(listCategories)
+    .where(eq(listCategories.userId, userId));
+  await db
+    .insert(listCategories)
+    .values({ userId, name: name.trim(), orderIndex: existing.length });
   revalidateAll();
   return {};
 }
@@ -62,4 +68,41 @@ export async function deleteListItem(itemId: string) {
   const userId = await requireUserId();
   await db.delete(listItems).where(and(eq(listItems.id, itemId), eq(listItems.userId, userId)));
   revalidateAll();
+}
+
+// Swaps this list's position with its neighbor (same two-row orderIndex swap
+// the Exercise page uses for exercises and days).
+async function swapListOrder(categoryId: string, direction: "up" | "down") {
+  const userId = await requireUserId();
+  const lists = await db
+    .select()
+    .from(listCategories)
+    .where(eq(listCategories.userId, userId))
+    .orderBy(listCategories.orderIndex, listCategories.createdAt);
+
+  const index = lists.findIndex((l) => l.id === categoryId);
+  const swapIndex = direction === "up" ? index - 1 : index + 1;
+  if (index === -1 || swapIndex < 0 || swapIndex >= lists.length) return;
+
+  // Rewrite positions as 0..n-1 with the two swapped, so lists that share an
+  // orderIndex (or were never numbered) still end up with a stable order.
+  const reordered = lists.map((l) => l.id);
+  [reordered[index], reordered[swapIndex]] = [reordered[swapIndex], reordered[index]];
+  await Promise.all(
+    reordered.map((id, position) =>
+      db
+        .update(listCategories)
+        .set({ orderIndex: position })
+        .where(and(eq(listCategories.id, id), eq(listCategories.userId, userId))),
+    ),
+  );
+  revalidateAll();
+}
+
+export async function moveListUp(categoryId: string) {
+  await swapListOrder(categoryId, "up");
+}
+
+export async function moveListDown(categoryId: string) {
+  await swapListOrder(categoryId, "down");
 }

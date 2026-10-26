@@ -25,7 +25,6 @@ const FIELD_BY_KEY: Record<string, keyof InitialValues> = {
   exercise: "showExercise",
   finance: "showFinance",
   lists: "showLists",
-  todo: "showTodo",
   yearReview: "showYearReview",
   emotionCheckin: "showEmotionCheckin",
   news: "showNews",

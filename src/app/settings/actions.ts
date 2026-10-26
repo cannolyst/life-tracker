@@ -22,7 +22,6 @@ export async function saveModuleSettings(
     showExercise: formData.get("exercise") === "on",
     showFinance: formData.get("finance") === "on",
     showLists: formData.get("lists") === "on",
-    showTodo: formData.get("todo") === "on",
     showYearReview: formData.get("yearReview") === "on",
     showEmotionCheckin: formData.get("emotionCheckin") === "on",
     showNews: formData.get("news") === "on",

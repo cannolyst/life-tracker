@@ -148,6 +148,13 @@
       "when": 1792782614598,
       "tag": "0020_fantastic_pride",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793052553544,
+      "tag": "0021_early_swordsman",
+      "breakpoints": true
     }
   ]
 }

@@ -10,7 +10,6 @@ const SETTINGS_FIELD = {
   exercise: "showExercise",
   finance: "showFinance",
   lists: "showLists",
-  todo: "showTodo",
   yearReview: "showYearReview",
   emotionCheckin: "showEmotionCheckin",
   news: "showNews",

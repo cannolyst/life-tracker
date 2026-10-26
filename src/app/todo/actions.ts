@@ -9,7 +9,8 @@ import { requireUserId } from "@/lib/session";
 export type ActionState = { error?: string };
 
 function revalidateAll() {
-  revalidatePath("/todo");
+  revalidatePath("/lists");
+  revalidatePath("/");
 }
 
 export async function addTodo(
