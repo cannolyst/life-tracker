@@ -116,12 +116,7 @@ export function parseCalendarEvents(
       } catch {
         continue;
       }
-      for (let i = 0; i < MAX_OCCURRENCES_PER_EVENT; i++) {
-        const next = iterator.next();
-        if (!next) break;
-        // Stop once occurrences begin after the window (all-day compare by local day).
-        const nextInstant = next.isDate ? allDayBoundary(next, tz) : toInstant(next, tz);
-        if (nextInstant >= rangeEnd) break;
+      for (const next of collectOccurrences(master, iterator, tz, rangeEnd)) {
         let details: ReturnType<ICAL.Event["getOccurrenceDetails"]>;
         try {
           details = master.getOccurrenceDetails(next);
@@ -139,6 +134,68 @@ export function parseCalendarEvents(
   } finally {
     ICAL.TimezoneService.reset();
   }
+}
+
+// ical.js only honors BYSETPOS ("the last", "the 2nd" …) when the rule also
+// has BYDAY. A rule like FREQ=MONTHLY;BYMONTHDAY=28,29,30;BYSETPOS=-1 ("the
+// last of those days") comes back with every candidate day instead. For those
+// rules the position filter is applied here, per month (or year).
+function manualSetPositions(
+  master: ICAL.Event,
+): { positions: number[]; keyOf: (t: ICAL.Time) => string } | null {
+  const rule = master.component.getFirstPropertyValue("rrule") as ICAL.Recur | null;
+  if (!rule || typeof rule !== "object" || !("parts" in rule)) return null;
+  const positions = rule.parts.BYSETPOS as number[] | undefined;
+  const byDay = rule.parts.BYDAY as string[] | undefined;
+  if (!positions?.length || byDay?.length) return null;
+  if (rule.freq === "MONTHLY") return { positions, keyOf: (t) => `${t.year}-${t.month}` };
+  if (rule.freq === "YEARLY") return { positions, keyOf: (t) => String(t.year) };
+  return null;
+}
+
+function pickPositions<T>(bucket: T[], positions: number[]): T[] {
+  const indexes = new Set<number>();
+  for (const p of positions) {
+    const i = p > 0 ? p - 1 : bucket.length + p;
+    if (i >= 0 && i < bucket.length) indexes.add(i);
+  }
+  return [...indexes].sort((a, b) => a - b).map((i) => bucket[i]);
+}
+
+/** Occurrence start times of a recurring event up to the end of the window, with BYSETPOS applied. */
+function collectOccurrences(
+  master: ICAL.Event,
+  iterator: ReturnType<ICAL.Event["iterator"]>,
+  tz: string,
+  rangeEnd: Date,
+): ICAL.Time[] {
+  const manual = manualSetPositions(master);
+  const out: ICAL.Time[] = [];
+  let bucket: ICAL.Time[] = [];
+  let bucketKey: string | null = null;
+
+  for (let i = 0; i < MAX_OCCURRENCES_PER_EVENT; i++) {
+    const next = iterator.next();
+    if (!next) break;
+    const instant = next.isDate ? allDayBoundary(next, tz) : toInstant(next, tz);
+    if (!manual) {
+      // Stop once occurrences begin after the window (all-day compare by local day).
+      if (instant >= rangeEnd) break;
+      out.push(next);
+      continue;
+    }
+    const key = manual.keyOf(next);
+    if (key !== bucketKey) {
+      out.push(...pickPositions(bucket, manual.positions));
+      bucket = [];
+      bucketKey = key;
+      // A new period that starts after the window can't contribute anything.
+      if (instant >= rangeEnd) return out;
+    }
+    bucket.push(next);
+  }
+  out.push(...pickPositions(bucket, manual?.positions ?? []));
+  return out;
 }
 
 /** Local calendar day (YYYY-MM-DD) an event starts on — handy for grouping. */

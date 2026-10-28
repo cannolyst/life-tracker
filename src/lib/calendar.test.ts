@@ -90,6 +90,58 @@ describe("parseCalendarEvents", () => {
     expect(events[1].start).toBe("2026-01-13T16:00:00.000Z");
   });
 
+  it("applies BYSETPOS to BYMONTHDAY rules (the last of the 28th–30th), which ical.js ignores", () => {
+    const payday = ics(
+      "BEGIN:VEVENT\r\nUID:pay\r\nDTSTART;VALUE=DATE:20260830\r\nDTEND;VALUE=DATE:20260831\r\nRRULE:FREQ=MONTHLY;BYMONTHDAY=28,29,30;BYSETPOS=-1\r\nSUMMARY:Payday\r\nEND:VEVENT",
+    );
+    // Window Oct 26 – Nov 2 (Chicago): the rule means Oct 30 only, not the 28th and 29th too.
+    const wide = parseCalendarEvents(
+      payday,
+      TZ,
+      EVENING,
+      new Date(Date.UTC(2026, 9, 26, 5)),
+      new Date(Date.UTC(2026, 10, 2, 6)),
+    );
+    expect(wide.map((e) => e.start)).toEqual(["2026-10-30T05:00:00.000Z"]);
+
+    // A window that ends before the month's last candidate day must not leak the earlier ones.
+    const early = parseCalendarEvents(
+      payday,
+      TZ,
+      EVENING,
+      new Date(Date.UTC(2026, 9, 26, 5)),
+      new Date(Date.UTC(2026, 9, 30, 5)),
+    );
+    expect(early).toEqual([]);
+
+    // February: the last of 28/29/30 is the 28th.
+    const feb = parseCalendarEvents(
+      payday,
+      TZ,
+      EVENING,
+      new Date(Date.UTC(2027, 1, 20, 6)),
+      new Date(Date.UTC(2027, 2, 2, 6)),
+    );
+    expect(feb.map((e) => e.start)).toEqual(["2027-02-28T06:00:00.000Z"]);
+  });
+
+  it("leaves BYDAY + BYSETPOS rules to ical.js (second Tuesday, last weekday)", () => {
+    const events = parseCalendarEvents(
+      ics(
+        "BEGIN:VEVENT\r\nUID:t2\r\nDTSTART:20260113T150000Z\r\nDTEND:20260113T160000Z\r\nRRULE:FREQ=MONTHLY;BYDAY=TU;BYSETPOS=2\r\nSUMMARY:Second Tuesday\r\nEND:VEVENT",
+        "BEGIN:VEVENT\r\nUID:lw\r\nDTSTART:20260130T150000Z\r\nDTEND:20260130T160000Z\r\nRRULE:FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1\r\nSUMMARY:Last weekday\r\nEND:VEVENT",
+      ),
+      TZ,
+      EVENING,
+      new Date(Date.UTC(2026, 1, 1, 6)),
+      new Date(Date.UTC(2026, 2, 1, 6)),
+    );
+    expect(events.map((e) => [e.title, e.start.slice(0, 10)])).toEqual([
+      ["Second Tuesday", "2026-02-10"],
+      ["Last weekday", "2026-02-27"],
+    ]);
+  });
+
   it("excludes events outside the window", () => {
     const events = parse(
       ics(
