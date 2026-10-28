@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { userSettings } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
+import { calendarLinks, userSettings } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { isValidTimezone } from "@/lib/timezone";
 import {
@@ -12,11 +13,10 @@ import {
   type NotificationPrefs,
 } from "@/lib/userSettingsDefaults";
 import { FEATURES } from "@/lib/features";
-import { calendarUrlHint, normalizeCalendarUrl } from "@/lib/calendarUrl";
+import { PROVIDER_LABEL, calendarUrlHint, normalizeCalendarUrl } from "@/lib/calendarUrl";
 import { encryptSecret, isEncryptionConfigured } from "@/lib/calendarCrypto";
-import { getCalendarEvents } from "@/lib/calendarService";
+import { getCalendarEvents, type MergedCalendarEvent } from "@/lib/calendarService";
 import { getUserSettings } from "@/db/userSettings";
-import type { CalendarEvent } from "@/lib/calendarParse";
 
 export type SettingsActionState = { error?: string; saved?: boolean };
 
@@ -62,7 +62,9 @@ export async function saveDaySettings(
   return { saved: true };
 }
 
-export async function saveCalendarLink(
+const MAX_CALENDAR_LINKS = 5;
+
+export async function addCalendarLink(
   _prev: SettingsActionState,
   formData: FormData,
 ): Promise<SettingsActionState> {
@@ -71,22 +73,41 @@ export async function saveCalendarLink(
   if (!isEncryptionConfigured()) {
     return { error: "Calendar needs a one-time server setup before links can be saved. Ask Cody." };
   }
+  const label = text(formData, "label").trim() || PROVIDER_LABEL[result.provider];
+  if (label.length > 40) return { error: "That name is too long (40 characters at most)." };
 
   const userId = await requireUserId();
-  await saveSettings(userId, {
-    calendarUrlEncrypted: encryptSecret(result.url),
-    calendarUrlHint: calendarUrlHint(result.url),
+  const existing = await db
+    .select({ id: calendarLinks.id })
+    .from(calendarLinks)
+    .where(eq(calendarLinks.userId, userId));
+  if (existing.length >= MAX_CALENDAR_LINKS) {
+    return { error: `You can link up to ${MAX_CALENDAR_LINKS} calendars. Remove one first.` };
+  }
+
+  await db.insert(calendarLinks).values({
+    userId,
+    provider: result.provider,
+    label,
+    urlEncrypted: encryptSecret(result.url),
+    hint: calendarUrlHint(result.url),
   });
+  revalidatePath("/settings");
+  revalidatePath("/");
   return { saved: true };
 }
 
-export async function removeCalendarLink(): Promise<void> {
+export async function removeCalendarLink(linkId: string): Promise<void> {
   const userId = await requireUserId();
-  await saveSettings(userId, { calendarUrlEncrypted: null, calendarUrlHint: null });
+  await db
+    .delete(calendarLinks)
+    .where(and(eq(calendarLinks.id, linkId), eq(calendarLinks.userId, userId)));
+  revalidatePath("/settings");
+  revalidatePath("/");
 }
 
 export type CalendarPreview =
-  | { ok: true; events: CalendarEvent[]; timezone: string }
+  | { ok: true; events: MergedCalendarEvent[]; warnings: string[]; timezone: string }
   | { ok: false; error: string };
 
 // Always fetches fresh and works even while the Calendar feature switch is
@@ -96,7 +117,7 @@ export async function previewCalendar(): Promise<CalendarPreview> {
   const result = await getCalendarEvents(userId, { days: 7, fresh: true, ignoreFeatureSwitch: true });
   if (result.status !== "ok") return { ok: false, error: result.message };
   const { timezone } = await getUserSettings(userId);
-  return { ok: true, events: result.events, timezone };
+  return { ok: true, events: result.events, warnings: result.warnings, timezone };
 }
 
 export async function saveBriefCity(

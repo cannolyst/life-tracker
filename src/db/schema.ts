@@ -904,3 +904,23 @@ export const userSettings = pgTable(
     ),
   ],
 ).enableRLS();
+
+// A user's calendar feeds (iCloud public links, Google "secret address in
+// iCal format"). Several per user — the app merges their events. The link is
+// AES-256-GCM encrypted: the server has to read it back to fetch the feed,
+// and it is never sent to the browser. The hint is a short non-secret
+// fragment for the "link saved" UI. This replaces the single link that used
+// to live on user_settings (those columns are left in place, now unused).
+export const calendarLinks = pgTable(
+  "calendar_links",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    provider: text("provider").notNull(), // "icloud" | "google"
+    label: text("label").notNull(),
+    urlEncrypted: text("url_encrypted").notNull(),
+    hint: text("hint").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check("calendar_links_provider_check", sql`${table.provider} in ('icloud', 'google')`)],
+).enableRLS();

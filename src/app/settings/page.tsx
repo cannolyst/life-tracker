@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { getModuleSettings } from "@/db/queries";
 import { getBriefTokenCreatedAt } from "@/db/brief";
 import { dateOnlyIn } from "@/lib/timezone";
-import { getUserSettings } from "@/db/userSettings";
+import { getCalendarLinkSummaries, getUserSettings } from "@/db/userSettings";
 import { isEncryptionConfigured } from "@/lib/calendarCrypto";
 import { listTimezones } from "@/lib/timezoneOptions";
 import { requireUserId } from "@/lib/session";
@@ -25,10 +25,11 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const userId = await requireUserId();
-  const [settings, briefCreatedAt, userSettings] = await Promise.all([
+  const [settings, briefCreatedAt, userSettings, calendarLinks] = await Promise.all([
     getModuleSettings(userId),
     getBriefTokenCreatedAt(userId),
     getUserSettings(userId),
+    getCalendarLinkSummaries(userId),
   ]);
   const tz = userSettings.timezone;
   const cookieStore = await cookies();
@@ -69,8 +70,7 @@ export default async function SettingsPage() {
         <Card>
           <h2 className="mb-3 font-medium">Calendar</h2>
           <CalendarCard
-            hasLink={userSettings.hasCalendarLink}
-            hint={userSettings.calendarUrlHint}
+            links={calendarLinks}
             encryptionReady={isEncryptionConfigured()}
           />
         </Card>

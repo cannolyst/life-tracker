@@ -6,8 +6,13 @@ export type WhatsNewEntry = { date: string; title: string; body: string };
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
     date: "2026-10-28",
+    title: "Link Google calendars too",
+    body: "Settings > Calendar now takes more than one link. Add your iCloud calendar and any Google calendars (using Google’s “secret address in iCal format”) and they’re shown together.",
+  },
+  {
+    date: "2026-10-28",
     title: "Settings foundation, calendar link, and phone-friendly sizing",
-    body: "Settings now has Your day (time zone and the times your day shifts gears), a place to paste your iCloud calendar link, your Daily brief city, notification choices, and a New features list where everything starts switched off. Buttons and fields are bigger on phones, and screens respect the notch and home bar.",
+    body: "Settings now has Your day (time zone and the times your day shifts gears), a place to link your calendar, your Daily brief city, notification choices, and a New features list where everything starts switched off. Buttons and fields are bigger on phones, and screens respect the notch and home bar.",
   },
 ];
 
@@ -108,7 +113,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     points: [
       "Appearance: light or dark, and the background color.",
       "Your day: your time zone and the times your day shifts gears. Everything in the app uses this time zone to decide what “today” means.",
-      "Calendar: paste an iCloud public-calendar link (stored encrypted, read-only) and preview your next 7 days.",
+      "Calendar: link iCloud and Google calendars (stored encrypted, read-only), name them, and preview your next 7 days with everything merged.",
       "New features start switched off for everyone — turn them on here when you want them.",
     ],
   },

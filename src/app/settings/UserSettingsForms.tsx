@@ -10,11 +10,13 @@ import {
 } from "@/lib/userSettingsDefaults";
 import { timezoneLabel } from "@/lib/timezoneOptions";
 import type { CalendarEvent } from "@/lib/calendarParse";
+import { PROVIDER_LABEL } from "@/lib/calendarUrl";
+import type { CalendarLinkSummary } from "@/db/userSettings";
 import {
   previewCalendar,
   removeCalendarLink,
   saveBriefCity,
-  saveCalendarLink,
+  addCalendarLink,
   saveDaySettings,
   saveFeatures,
   saveNotificationPrefs,
@@ -112,36 +114,35 @@ function formatEventTime(event: CalendarEvent, timezone: string): string {
 }
 
 export function CalendarCard({
-  hasLink,
-  hint,
+  links,
   encryptionReady,
 }: {
-  hasLink: boolean;
-  hint: string | null;
+  links: CalendarLinkSummary[];
   encryptionReady: boolean;
 }) {
-  const [state, action, pending] = useActionState(saveCalendarLink, initial);
-  const [preview, setPreview] = useState<CalendarPreview | null>(null);
+  const [state, action, pending] = useActionState(addCalendarLink, initial);
+  const [previewState, setPreview] = useState<{ key: string; value: CalendarPreview } | null>(null);
+  const linksKey = links.map((l) => l.id).join(",");
+  // A preview only counts while the set of links is the one it was loaded for.
+  const preview = previewState?.key === linksKey ? previewState.value : null;
   const [busy, startTransition] = useTransition();
-  const linked = hasLink || state.saved === true;
 
   function runPreview() {
-    startTransition(async () => setPreview(await previewCalendar()));
+    startTransition(async () => setPreview({ key: linksKey, value: await previewCalendar() }));
   }
 
-  function remove() {
-    if (!confirm("Remove your calendar link?")) return;
+  function remove(link: CalendarLinkSummary) {
+    if (!confirm(`Remove the “${link.label}” calendar link?`)) return;
     startTransition(async () => {
-      await removeCalendarLink();
-      setPreview(null);
+      await removeCalendarLink(link.id);
     });
   }
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-neutral-400">
-        Paste the public link for your iCloud calendar. Your link is stored encrypted and only used to
-        read your events — nothing is ever written to your calendar.
+        Link the calendars you use — iCloud, Google, or both — and they’ll be shown together. Links are
+        stored encrypted and only used to read your events; nothing is ever written to your calendars.
       </p>
 
       {!encryptionReady && (
@@ -150,15 +151,36 @@ export function CalendarCard({
         </p>
       )}
 
-      {linked && (
-        <p className="text-sm text-neutral-300">
-          Link saved{hint ? ` (${hint})` : ""}. To replace it, paste a new one below.
-        </p>
+      {links.length > 0 && (
+        <ul className="space-y-2">
+          {links.map((link) => (
+            <li
+              key={link.id}
+              className="flex items-center justify-between gap-3 rounded-md border border-neutral-800 px-3 py-2 text-sm"
+            >
+              <span className="min-w-0">
+                <span className="block truncate text-neutral-200">{link.label}</span>
+                <span className="block truncate text-xs text-neutral-500">
+                  {PROVIDER_LABEL[link.provider]} · {link.hint}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => remove(link)}
+                disabled={busy}
+                className="shrink-0 rounded-md border border-neutral-700 px-3 py-1.5 text-neutral-300 disabled:opacity-60"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
 
       <form action={action} className="space-y-3">
+        <p className={labelClass}>{links.length > 0 ? "Add another calendar" : "Add a calendar"}</p>
         <label className="block space-y-1">
-          <span className={labelClass}>iCloud calendar link</span>
+          <span className={labelClass}>Link (iCloud or Google)</span>
           <input
             name="calendarUrl"
             type="url"
@@ -166,59 +188,84 @@ export function CalendarCard({
             autoComplete="off"
             autoCapitalize="none"
             spellCheck={false}
-            placeholder="webcal://p12-caldav.icloud.com/published/…"
+            required
+            placeholder="webcal://… or https://calendar.google.com/calendar/ical/…"
             className={inputClass}
           />
         </label>
+        <label className="block space-y-1">
+          <span className={labelClass}>Name (optional)</span>
+          <input name="label" maxLength={40} placeholder="Gmail, Work, Family…" className={inputClass} />
+        </label>
         <Status state={state} />
-        <SubmitButton pending={pending}>{linked ? "Replace link" : "Save link"}</SubmitButton>
+        <SubmitButton pending={pending}>Add calendar</SubmitButton>
       </form>
 
-      {linked && (
+      {links.length > 0 && (
         <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={runPreview} disabled={busy} className={buttonClass}>
-              {busy ? "Loading..." : "Preview next 7 days"}
-            </button>
-            <button
-              type="button"
-              onClick={remove}
-              disabled={busy}
-              className="rounded-md border border-neutral-700 px-3 py-2 text-neutral-300 disabled:opacity-60"
-            >
-              Remove link
-            </button>
-          </div>
+          <button type="button" onClick={runPreview} disabled={busy} className={buttonClass}>
+            {busy ? "Loading..." : "Preview next 7 days"}
+          </button>
 
           {preview && !preview.ok && <p className="text-sm text-red-400">{preview.error}</p>}
-          {preview?.ok &&
-            (preview.events.length === 0 ? (
-              <p className="text-sm text-neutral-500">Nothing on your calendar for the next 7 days.</p>
-            ) : (
-              <ul className="space-y-1.5">
-                {preview.events.map((event, i) => (
-                  <li key={i} className="flex flex-col text-sm sm:flex-row sm:gap-3">
-                    <span className="shrink-0 text-neutral-500 sm:w-44">
-                      {formatEventTime(event, preview.timezone)}
-                    </span>
-                    <span className="text-neutral-200">{event.title}</span>
-                  </li>
-                ))}
-              </ul>
-            ))}
+          {preview?.ok && (
+            <>
+              {preview.warnings.map((warning) => (
+                <p key={warning} className="text-sm text-red-400">
+                  {warning}
+                </p>
+              ))}
+              {preview.events.length === 0 ? (
+                <p className="text-sm text-neutral-500">Nothing on your calendars for the next 7 days.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {preview.events.map((event, i) => (
+                    <li key={i} className="flex flex-col text-sm sm:flex-row sm:gap-3">
+                      <span className="shrink-0 text-neutral-500 sm:w-44">
+                        {formatEventTime(event, preview.timezone)}
+                      </span>
+                      <span className="text-neutral-200">
+                        {event.title}
+                        {links.length > 1 && (
+                          <span className="ml-2 text-xs text-neutral-500">{event.calendar}</span>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
         </div>
       )}
 
       <details className="text-sm text-neutral-400">
-        <summary className="cursor-pointer py-1 text-neutral-300">How to get the link</summary>
+        <summary className="cursor-pointer py-1 text-neutral-300">How to get an iCloud link</summary>
         <ol className="mt-2 list-decimal space-y-1 pl-5">
           <li>On iCloud.com, open Calendar.</li>
           <li>Tap the share icon next to the calendar you want.</li>
           <li>Turn on “Public Calendar”, then copy the link.</li>
           <li>Paste it above.</li>
         </ol>
-        <p className="mt-2">Anyone with that link can see the calendar, so don’t share it.</p>
       </details>
+
+      <details className="text-sm text-neutral-400">
+        <summary className="cursor-pointer py-1 text-neutral-300">How to get a Google link</summary>
+        <ol className="mt-2 list-decimal space-y-1 pl-5">
+          <li>
+            Open calendar.google.com in a browser. On a phone, choose “Desktop site” — the Google
+            Calendar app doesn’t have this setting.
+          </li>
+          <li>Next to the calendar you want, open its menu and choose Settings and sharing.</li>
+          <li>Scroll to “Integrate calendar” and copy the “Secret address in iCal format”.</li>
+          <li>Paste it above. Do this once for each Google calendar you want shown.</li>
+        </ol>
+      </details>
+
+      <p className="text-sm text-neutral-500">
+        Anyone with one of these links can see that calendar, so don’t share them. If one leaks, reset it in
+        iCloud or Google and paste the new one here.
+      </p>
     </div>
   );
 }

@@ -32,8 +32,6 @@ export const DEFAULT_DAY_STRUCTURE: DayStructure = {
 
 export type UserSettings = DayStructure & {
   timezone: string;
-  hasCalendarLink: boolean;
-  calendarUrlHint: string | null;
   briefCity: string;
   notificationPrefs: NotificationPrefs;
   features: Record<string, boolean>;
@@ -42,8 +40,6 @@ export type UserSettings = DayStructure & {
 export const DEFAULT_USER_SETTINGS: UserSettings = {
   ...DEFAULT_DAY_STRUCTURE,
   timezone: DEFAULT_TIMEZONE,
-  hasCalendarLink: false,
-  calendarUrlHint: null,
   briefCity: "Chicago",
   notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
   features: {},

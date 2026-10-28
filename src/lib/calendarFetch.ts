@@ -32,8 +32,8 @@ async function readCapped(response: Response): Promise<string> {
 }
 
 /**
- * Fetches the .ics feed for an iCloud link. Redirects are followed by hand so
- * every hop is re-checked against the iCloud-only rule (iCloud answers
+ * Fetches the .ics feed for a calendar link (iCloud or Google). Redirects are followed by hand so
+ * every hop is re-checked against the allowed-hosts rule (iCloud answers
  * webcal links with a redirect to a numbered pXX-caldav host).
  */
 export async function fetchCalendarIcs(link: string, fresh = false): Promise<string> {
@@ -55,23 +55,23 @@ export async function fetchCalendarIcs(link: string, fresh = false): Promise<str
         headers: { accept: "text/calendar, text/plain;q=0.9, */*;q=0.1" },
       });
     } catch {
-      throw new CalendarFetchError("Couldn't reach iCloud just now. Try again in a minute.");
+      throw new CalendarFetchError("Couldn't reach the calendar just now. Try again in a minute.");
     }
 
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get("location");
-      if (!location) throw new CalendarFetchError("iCloud sent an unexpected response.");
+      if (!location) throw new CalendarFetchError("The calendar sent an unexpected response.");
       try {
         current = new URL(location, current);
       } catch {
-        throw new CalendarFetchError("iCloud sent an unexpected response.");
+        throw new CalendarFetchError("The calendar sent an unexpected response.");
       }
       continue;
     }
     if (response.status === 404 || response.status === 410) {
-      throw new CalendarFetchError("iCloud says that calendar link doesn't exist anymore. Make a fresh public link and paste it again.");
+      throw new CalendarFetchError("That calendar link doesn't work anymore. Make a fresh link (public link for iCloud, secret address for Google) and paste it again.");
     }
-    if (!response.ok) throw new CalendarFetchError("iCloud wouldn't give us the calendar right now.");
+    if (!response.ok) throw new CalendarFetchError("The calendar service wouldn't give us the calendar right now.");
 
     const body = await readCapped(response);
     if (!body.includes("BEGIN:VCALENDAR")) {
@@ -81,5 +81,5 @@ export async function fetchCalendarIcs(link: string, fresh = false): Promise<str
     if (cache.size > 200) cache.delete(cache.keys().next().value as string);
     return body;
   }
-  throw new CalendarFetchError("iCloud redirected too many times.");
+  throw new CalendarFetchError("The calendar redirected too many times.");
 }

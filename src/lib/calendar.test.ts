@@ -108,7 +108,11 @@ describe("parseCalendarEvents", () => {
 describe("normalizeCalendarUrl", () => {
   it("turns webcal into https", () => {
     const result = normalizeCalendarUrl("webcal://p12-caldav.icloud.com/published/2/abcdef");
-    expect(result).toEqual({ ok: true, url: "https://p12-caldav.icloud.com/published/2/abcdef" });
+    expect(result).toEqual({
+      ok: true,
+      url: "https://p12-caldav.icloud.com/published/2/abcdef",
+      provider: "icloud",
+    });
   });
 
   it("rejects non-iCloud hosts, plain http, credentials and odd ports", () => {
@@ -128,10 +132,33 @@ describe("normalizeCalendarUrl", () => {
     }
   });
 
+  it("accepts a Google secret iCal address", () => {
+    const link = "https://calendar.google.com/calendar/ical/me%40gmail.com/private-abc123def456/basic.ics";
+    expect(normalizeCalendarUrl(link)).toEqual({ ok: true, url: link, provider: "google" });
+  });
+
+  it("rejects Google links that aren't the private iCal feed, and lookalike hosts", () => {
+    for (const bad of [
+      "https://calendar.google.com/calendar/u/0/r",
+      "https://calendar.google.com.evil.com/calendar/ical/x/basic.ics",
+      "https://www.google.com/calendar/ical/x/basic.ics",
+      "https://evilcalendar.google.com/calendar/ical/x/basic.ics",
+      "http://calendar.google.com/calendar/ical/x/basic.ics",
+    ]) {
+      expect(normalizeCalendarUrl(bad).ok, bad).toBe(false);
+    }
+  });
+
   it("only allows icloud.com and its subdomains", () => {
     expect(isAllowedCalendarHost("icloud.com")).toBe(true);
     expect(isAllowedCalendarHost("P12-CalDAV.iCloud.com")).toBe(true);
     expect(isAllowedCalendarHost("notificloud.com")).toBe(false);
+  });
+
+  it("hints on the token for Google links, not the basic.ics tail", () => {
+    expect(calendarUrlHint("https://calendar.google.com/calendar/ical/me%40gmail.com/private-abc123def456/basic.ics")).toBe(
+      "calendar.google.com …f456",
+    );
   });
 
   it("builds a hint that doesn't reveal the whole link", () => {

@@ -1,7 +1,8 @@
 import { cache } from "react";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db } from "./index";
-import { userSettings } from "./schema";
+import { calendarLinks, userSettings } from "./schema";
+import type { CalendarProvider } from "@/lib/calendarUrl";
 import {
   DEFAULT_NOTIFICATION_PREFS,
   DEFAULT_USER_SETTINGS,
@@ -21,8 +22,6 @@ export const getUserSettings = cache(async (userId: string): Promise<UserSetting
     workEndMinutes: row.workEndMinutes,
     eveningStartMinutes: row.eveningStartMinutes,
     shutdownStartMinutes: row.shutdownStartMinutes,
-    hasCalendarLink: row.calendarUrlEncrypted !== null,
-    calendarUrlHint: row.calendarUrlHint,
     briefCity: row.briefCity,
     notificationPrefs: {
       ...DEFAULT_NOTIFICATION_PREFS,
@@ -36,12 +35,37 @@ export async function getUserTimezone(userId: string): Promise<string> {
   return (await getUserSettings(userId)).timezone;
 }
 
-// The encrypted calendar link is deliberately NOT part of UserSettings, so
-// it can't leak into props that reach the browser by accident.
-export async function getEncryptedCalendarUrl(userId: string): Promise<string | null> {
-  const [row] = await db
-    .select({ value: userSettings.calendarUrlEncrypted })
-    .from(userSettings)
-    .where(eq(userSettings.userId, userId));
-  return row?.value ?? null;
+export type CalendarLinkSummary = {
+  id: string;
+  provider: CalendarProvider;
+  label: string;
+  hint: string;
+};
+
+// What the Settings UI may see about a user's calendar links: never the
+// encrypted (or plain) URL itself.
+export async function getCalendarLinkSummaries(userId: string): Promise<CalendarLinkSummary[]> {
+  const rows = await db
+    .select({
+      id: calendarLinks.id,
+      provider: calendarLinks.provider,
+      label: calendarLinks.label,
+      hint: calendarLinks.hint,
+    })
+    .from(calendarLinks)
+    .where(eq(calendarLinks.userId, userId))
+    .orderBy(asc(calendarLinks.createdAt));
+  return rows as CalendarLinkSummary[];
+}
+
+// Server-only: the encrypted links, for fetching feeds. Deliberately not part
+// of UserSettings or any summary, so they can't reach browser props by accident.
+export async function getEncryptedCalendarLinks(
+  userId: string,
+): Promise<{ id: string; label: string; urlEncrypted: string }[]> {
+  return db
+    .select({ id: calendarLinks.id, label: calendarLinks.label, urlEncrypted: calendarLinks.urlEncrypted })
+    .from(calendarLinks)
+    .where(eq(calendarLinks.userId, userId))
+    .orderBy(asc(calendarLinks.createdAt));
 }
