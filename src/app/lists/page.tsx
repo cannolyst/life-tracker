@@ -1,11 +1,15 @@
 import { getListsData, getTodos } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
+import { getUserSettings } from "@/db/userSettings";
+import { isFeatureOn } from "@/lib/features";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
 import { AddListCategoryForm, AddListItemForm } from "./ListsForms";
 import { setListItemDone, deleteListItem } from "./actions";
 import { DeleteListButton } from "./DeleteListButton";
 import { ListReorderButtons } from "./ListReorderButtons";
+import { ListContextSelect } from "./ListContextSelect";
+import type { ListContext } from "@/lib/planning";
 import { TodoSection } from "../todo/TodoSection";
 import { jewelFor } from "@/lib/jewels";
 import { Sparkle } from "@/components/Sparkle";
@@ -14,7 +18,13 @@ export const dynamic = "force-dynamic";
 
 export default async function ListsPage() {
   const userId = await requireUserId();
-  const [{ categoriesWithItems }, todos] = await Promise.all([getListsData(userId), getTodos(userId)]);
+  const [{ categoriesWithItems }, todos, settings] = await Promise.all([
+    getListsData(userId),
+    getTodos(userId),
+    getUserSettings(userId),
+  ]);
+  // Collections-in-context belongs to the home dashboard; without it this page is unchanged.
+  const dashboardOn = isFeatureOn(settings.features, "dashboard");
 
   return (
     <div className="flex min-h-full flex-col">
@@ -24,7 +34,12 @@ export default async function ListsPage() {
 
         <TodoSection todos={todos} />
 
-        <h2 className="pt-2 text-lg font-semibold">Your lists</h2>
+        <h2 className="pt-2 text-lg font-semibold">{dashboardOn ? "Collections" : "Your lists"}</h2>
+        {dashboardOn && (
+          <p className="-mt-3 text-sm text-neutral-500">
+            Lists you keep for reference — groceries, movies, books, gift ideas. Things to do live on the Plan page.
+          </p>
+        )}
 
         <Card>
           <h3 className="mb-3 font-medium">Add list</h3>
@@ -55,6 +70,10 @@ export default async function ListsPage() {
                       isLast={i === categoriesWithItems.length - 1}
                     />
                   </summary>
+
+                  {dashboardOn && (
+                    <ListContextSelect categoryId={category.id} context={category.context as ListContext | null} />
+                  )}
 
                   <ul className="mb-3 space-y-1">
                     {active.length === 0 && (

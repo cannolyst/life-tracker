@@ -1,8 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
   BUCKETS,
+  DEFAULT_FIRST_STEP,
   REST_SECONDS,
   capacityCap,
+  composeTitle,
+  dealCard,
+  firstStepFor,
   formatCountdown,
   groupOpenByBucket,
   inLunchWindow,
@@ -153,5 +157,78 @@ describe("evening buckets", () => {
     expect(grouped.body).toEqual([]);
     expect(grouped.inbox).toEqual([]);
     expect(Object.keys(grouped)).toEqual([...BUCKETS]);
+  });
+});
+
+describe("composeTitle", () => {
+  it("puts the verb first, once", () => {
+    expect(composeTitle("call", "the dentist")).toBe("Call the dentist");
+    expect(composeTitle("Email", "Priya about the lease")).toBe("Email priya about the lease");
+    expect(composeTitle("Call", "call the dentist")).toBe("call the dentist");
+    expect(composeTitle("", "Laundry")).toBe("Laundry");
+    expect(composeTitle(null, "  Laundry  ")).toBe("Laundry");
+  });
+});
+
+describe("firstStepFor", () => {
+  it("uses the written first step, or a gentle default", () => {
+    expect(firstStepFor({ firstStep: "Open the lease PDF" })).toBe("Open the lease PDF");
+    expect(firstStepFor({ firstStep: "  " })).toBe(DEFAULT_FIRST_STEP);
+    expect(firstStepFor({})).toBe(DEFAULT_FIRST_STEP);
+  });
+});
+
+describe("dealCard", () => {
+  const ctx = { todayKey: "2026-10-30", energy: null, blockId: "evening" } as const;
+  const act = (over: Partial<PlanTaskLike> & { id: string; bucket?: PlanTaskLike["bucket"] }) =>
+    ({ ...task({ bucket: "home", ...over }), energy: null, block: null, skippedDate: null, ...over }) as PlanTaskLike & {
+      energy: "high" | "low" | null;
+      block: string | null;
+      skippedDate: string | null;
+    };
+
+  it("never deals an Inbox item or a finished one", () => {
+    const tasks = [act({ id: "a", bucket: "inbox" }), act({ id: "b", status: "done" }), act({ id: "c", status: "someday" })];
+    expect(dealCard(tasks, ctx)).toBeNull();
+  });
+
+  it("leads with what's planned for today, then the block's own tasks", () => {
+    const tasks = [act({ id: "any" }), act({ id: "mine", block: "evening" }), act({ id: "today", plannedFor: "2026-10-30" })];
+    expect(dealCard(tasks, ctx)?.id).toBe("today");
+    expect(dealCard(tasks.filter((t) => t.id !== "today"), ctx)?.id).toBe("mine");
+  });
+
+  it("holds back tasks that belong to another block", () => {
+    const tasks = [act({ id: "morning", block: "launch" }), act({ id: "free" })];
+    expect(dealCard(tasks, ctx)?.id).toBe("free");
+  });
+
+  it("favors easy tasks on a low-energy evening and demanding ones on a high-energy one", () => {
+    const tasks = [act({ id: "hard", energy: "high" }), act({ id: "easy", energy: "low" }), act({ id: "plain" })];
+    expect(dealCard(tasks, { ...ctx, energy: "low" })?.id).toBe("easy");
+    expect(dealCard(tasks, { ...ctx, energy: "high" })?.id).toBe("hard");
+  });
+
+  it("deals a smaller task after “Not this one”, and doesn't bring the passed-over one back", () => {
+    const tasks = [
+      act({ id: "big", minutes: 60, skippedDate: "2026-10-30" }),
+      act({ id: "medium", minutes: 30 }),
+      act({ id: "small", minutes: 10 }),
+      act({ id: "unsized" }),
+    ];
+    const first = dealCard(tasks, ctx);
+    expect(first?.id).not.toBe("big");
+    expect(first?.minutes).not.toBeNull();
+    expect((first?.minutes ?? 99) < 60).toBe(true);
+    // Passing over the 30-minute one too narrows it to the 10-minute one.
+    const second = dealCard(tasks.map((t) => (t.id === "medium" ? { ...t, skippedDate: "2026-10-30" } : t)), ctx);
+    expect(second?.id).toBe("small");
+  });
+
+  it("falls back to anything left, and only forgets yesterday's swaps", () => {
+    const tasks = [act({ id: "only", minutes: 20, skippedDate: "2026-10-30" }), act({ id: "unsized" })];
+    expect(dealCard(tasks, ctx)?.id).toBe("unsized");
+    expect(dealCard([act({ id: "yesterday", skippedDate: "2026-10-29" })], ctx)?.id).toBe("yesterday");
+    expect(dealCard([act({ id: "gone", skippedDate: "2026-10-30" })], ctx)).toBeNull();
   });
 });

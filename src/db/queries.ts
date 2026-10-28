@@ -1,4 +1,4 @@
-import { eq, and, inArray, gte, lte, sum, desc, sql } from "drizzle-orm";
+import { eq, and, inArray, isNull, gte, lte, sum, desc, sql } from "drizzle-orm";
 import { db } from "./index";
 import { getProtectedDates } from "./planning";
 import {
@@ -862,7 +862,12 @@ export async function getListsData(userId: string) {
 // --- To-do ---
 
 export async function getTodos(userId: string) {
-  return db.select().from(todos).where(eq(todos.userId, userId)).orderBy(desc(todos.createdAt));
+  // To-dos that were moved into the Inbox are hidden here (kept, never deleted).
+  return db
+    .select()
+    .from(todos)
+    .where(and(eq(todos.userId, userId), isNull(todos.movedAt)))
+    .orderBy(desc(todos.createdAt));
 }
 
 // --- Year in review ---

@@ -1,15 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { dayFlags, dayLogs, energyCheckins, planTasks } from "@/db/schema";
+import { dayFlags, dayLogs, energyCheckins, listCategories, listItems, planTasks } from "@/db/schema";
 import { getUserSettings } from "@/db/userSettings";
 import { getFinishedCount, getPlanTasks } from "@/db/planning";
 import { requireUserId } from "@/lib/session";
 import { addDays } from "@/lib/dashboard";
 import { dateKeyIn } from "@/lib/timezone";
-import { capacityCap, isBucket, isEnergy, roomLeft, type Bucket } from "@/lib/planning";
+import { capacityCap, composeTitle, isBucket, isEnergy, isTaskBlock, roomLeft, type Bucket } from "@/lib/planning";
 
 export type TaskResult = { ok: true; note?: string } | { ok: false; error: string };
 
@@ -29,23 +29,109 @@ function cleanText(value: string | null | undefined, max: number): string {
 
 /* ---------- tasks ---------- */
 
-export async function addPlanTask(input: {
-  title: string;
+export type TaskDetails = {
+  verb?: string;
   lowTitle?: string;
+  firstStep?: string;
   bucket?: string;
   minutes?: number | null;
-}): Promise<TaskResult> {
-  const title = cleanText(input.title, 200);
+  energy?: string | null;
+  block?: string | null;
+};
+
+function parseMinutes(value: number | null | undefined): number | null {
+  return value && Number.isInteger(value) && value >= 1 && value <= 600 ? value : null;
+}
+
+function parseDetails(input: TaskDetails) {
+  return {
+    verb: cleanText(input.verb, 30) || null,
+    lowTitle: cleanText(input.lowTitle, 200) || null,
+    firstStep: cleanText(input.firstStep, 300) || null,
+    minutes: parseMinutes(input.minutes),
+    energy: input.energy && isEnergy(input.energy) ? input.energy : null,
+    block: input.block && isTaskBlock(input.block) ? input.block : null,
+  };
+}
+
+// A bare capture (just a title) lands in the Inbox. Adding with a verb and a
+// time — the Plan page asks for both — makes it a ready-to-start task.
+export async function addPlanTask(input: { title: string } & TaskDetails): Promise<TaskResult> {
+  const details = parseDetails(input);
+  const title = composeTitle(details.verb, cleanText(input.title, 200));
   if (!title) return { ok: false, error: "Give the task a name." };
-  const lowTitle = cleanText(input.lowTitle, 200) || null;
   const bucket: Bucket = input.bucket && isBucket(input.bucket) ? input.bucket : "inbox";
-  const minutes =
-    input.minutes && Number.isInteger(input.minutes) && input.minutes >= 1 && input.minutes <= 600
-      ? input.minutes
-      : null;
 
   const userId = await requireUserId();
-  await db.insert(planTasks).values({ userId, title, lowTitle, bucket, minutes });
+  await db.insert(planTasks).values({ userId, title, bucket, ...details });
+  refresh();
+  return { ok: true };
+}
+
+/** Turns an Inbox item into a task: a verb, a time, an area, and optionally energy, block and first step. */
+export async function refineTask(taskId: string, input: TaskDetails): Promise<TaskResult> {
+  const details = parseDetails(input);
+  if (!details.verb) return { ok: false, error: "Pick a verb to start the task with." };
+  if (!details.minutes) return { ok: false, error: "About how many minutes will it take?" };
+  const bucket = input.bucket && isBucket(input.bucket) ? input.bucket : null;
+  if (!bucket || bucket === "inbox") return { ok: false, error: "Pick an area for it." };
+
+  const userId = await requireUserId();
+  const [task] = await db
+    .select({ title: planTasks.title })
+    .from(planTasks)
+    .where(and(eq(planTasks.id, taskId), eq(planTasks.userId, userId)));
+  if (!task) return { ok: false, error: "That task is gone." };
+
+  await db
+    .update(planTasks)
+    .set({ ...details, bucket, title: composeTitle(details.verb, task.title) })
+    .where(and(eq(planTasks.id, taskId), eq(planTasks.userId, userId)));
+  refresh();
+  return { ok: true };
+}
+
+/** Files an Inbox item into one of the user's collections, as a list item, and clears it from the Inbox. */
+export async function fileIntoCollection(taskId: string, categoryId: string): Promise<TaskResult> {
+  const userId = await requireUserId();
+  const [[task], [list]] = await Promise.all([
+    db
+      .select({ title: planTasks.title })
+      .from(planTasks)
+      .where(and(eq(planTasks.id, taskId), eq(planTasks.userId, userId))),
+    db
+      .select({ id: listCategories.id, name: listCategories.name })
+      .from(listCategories)
+      .where(and(eq(listCategories.id, categoryId), eq(listCategories.userId, userId))),
+  ]);
+  if (!task || !list) return { ok: false, error: "Couldn't find that list." };
+
+  await db.insert(listItems).values({ userId, categoryId: list.id, text: task.title });
+  await db.delete(planTasks).where(and(eq(planTasks.id, taskId), eq(planTasks.userId, userId)));
+  revalidatePath("/lists");
+  refresh();
+  return { ok: true, note: `Filed into ${list.name}.` };
+}
+
+/** The 5-minute Start. It only records that you began; finishing is still a separate tap. */
+export async function startTask(taskId: string): Promise<TaskResult> {
+  const userId = await requireUserId();
+  await db
+    .update(planTasks)
+    .set({ startedAt: new Date() })
+    .where(and(eq(planTasks.id, taskId), eq(planTasks.userId, userId)));
+  refresh();
+  return { ok: true };
+}
+
+/** "Not this one": set it aside for today; the next card dealt is a smaller task. */
+export async function skipTask(taskId: string): Promise<TaskResult> {
+  const userId = await requireUserId();
+  const dateKey = await today(userId);
+  await db
+    .update(planTasks)
+    .set({ skippedDate: dateKey, skipCount: sql`${planTasks.skipCount} + 1`, startedAt: null })
+    .where(and(eq(planTasks.id, taskId), eq(planTasks.userId, userId)));
   refresh();
   return { ok: true };
 }

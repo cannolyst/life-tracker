@@ -91,7 +91,16 @@ export function greetingHighlights(opts: {
 
 /* ---------- Now card ---------- */
 
-export type TaskPick = { id: string; title: string; easier?: boolean };
+export type TaskPick = {
+  id: string;
+  title: string;
+  easier?: boolean;
+  /** The first step, spelled out, for the 5-minute Start. */
+  firstStep?: string;
+  minutes?: number | null;
+  /** Seconds since Start was tapped, if it was. */
+  startedElapsedSec?: number | null;
+};
 
 export type ShutdownProgress = { logged: boolean; inboxCount: number; plannedCount: number };
 
@@ -124,8 +133,13 @@ export type NowCard = {
   detail?: string;
   href?: string;
   cta?: string;
-  /** A plan task this card is about, so the card can offer a one-tap Done. */
+  /** A plan task this card is about, so the card can offer Start and Done. */
   taskId?: string;
+  firstStep?: string;
+  minutes?: number | null;
+  startedElapsedSec?: number | null;
+  /** Offer "Not this one" (afternoon and evening cards). */
+  swap?: boolean;
 };
 
 type Kind = "workout" | "habit" | "cleaning" | "weekly";
@@ -182,6 +196,15 @@ function shutdownCard(eyebrow: string, progress: ShutdownProgress | undefined, d
   };
 }
 
+function taskFields(task: TaskPick) {
+  return {
+    taskId: task.id,
+    firstStep: task.firstStep,
+    minutes: task.minutes,
+    startedElapsedSec: task.startedElapsedSec,
+  };
+}
+
 /** The single next action for the current part of the day. */
 export function buildNowCard(input: NowInput): NowCard {
   const block = currentBlock(input.structure, input.minutes);
@@ -203,7 +226,7 @@ export function buildNowCard(input: NowInput): NowCard {
           eyebrow,
           title: input.priorityTask.title,
           detail: "Your one priority, set last night.",
-          taskId: input.priorityTask.id,
+          ...taskFields(input.priorityTask),
         };
       }
       return (
@@ -219,7 +242,7 @@ export function buildNowCard(input: NowInput): NowCard {
           eyebrow: "Now · Lunch",
           title: input.lunchTask.title,
           detail: "Optional — ten minutes, just for you.",
-          taskId: input.lunchTask.id,
+          ...taskFields(input.lunchTask),
         };
       }
       return {
@@ -251,7 +274,8 @@ export function buildNowCard(input: NowInput): NowCard {
           eyebrow,
           title: input.plannedTask.title,
           detail: input.plannedTask.easier ? "The easier version, for a lower-energy evening." : "Next up for this evening.",
-          taskId: input.plannedTask.id,
+          ...taskFields(input.plannedTask),
+          swap: true,
         };
       }
       return (

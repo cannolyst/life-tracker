@@ -34,6 +34,12 @@ export type PlanTaskLike = {
   status: PlanStatus;
   plannedFor: string | null;
   isPriority: boolean;
+  // Phase 4 fields; optional so older callers and tests need not supply them.
+  verb?: string | null;
+  energy?: Energy | null;
+  block?: string | null;
+  firstStep?: string | null;
+  skippedDate?: string | null;
 };
 
 /** A low-energy check-in swaps in a task's easier version, when it has one. */
@@ -135,4 +141,108 @@ export function groupOpenByBucket<T extends PlanTaskLike>(tasks: T[], todayKey: 
     grouped[bucket].sort((a, b) => Number(b.plannedFor === todayKey) - Number(a.plannedFor === todayKey));
   }
   return grouped;
+}
+
+/* ---------- Phase 4: actions, one card at a time ---------- */
+
+export const START_SECONDS = 5 * 60;
+
+// Offered when adding a task: starting with a verb is what makes a task easy to begin.
+export const VERB_SUGGESTIONS = [
+  "Call",
+  "Email",
+  "Write",
+  "Read",
+  "Clean",
+  "Buy",
+  "Plan",
+  "Fix",
+  "Practice",
+  "Sort",
+  "Book",
+  "Make",
+] as const;
+
+export const LIST_CONTEXTS = ["groceries", "movies", "books"] as const;
+export type ListContext = (typeof LIST_CONTEXTS)[number];
+
+export const LIST_CONTEXT_LABEL: Record<ListContext, string> = {
+  groceries: "Groceries",
+  movies: "Movies & shows",
+  books: "Books",
+};
+
+export function isListContext(value: string): value is ListContext {
+  return (LIST_CONTEXTS as readonly string[]).includes(value);
+}
+
+export const BLOCK_IDS = ["launch", "work", "transition", "evening", "shutdown"] as const;
+export type TaskBlock = (typeof BLOCK_IDS)[number];
+
+export function isTaskBlock(value: string): value is TaskBlock {
+  return (BLOCK_IDS as readonly string[]).includes(value);
+}
+
+/** "Call" + "the dentist" → "Call the dentist"; a title that already starts with the verb is left alone. */
+export function composeTitle(verb: string | null | undefined, what: string): string {
+  const object = what.trim();
+  const v = (verb ?? "").trim();
+  if (!v) return object;
+  if (!object) return v;
+  const first = object.split(/\s+/)[0].toLowerCase();
+  if (first === v.toLowerCase()) return object;
+  return `${v.charAt(0).toUpperCase()}${v.slice(1)} ${object.charAt(0).toLowerCase()}${object.slice(1)}`;
+}
+
+export const DEFAULT_FIRST_STEP = "Set a five-minute timer and begin with just the very first small piece.";
+
+export function firstStepFor(task: { firstStep?: string | null }): string {
+  return task.firstStep?.trim() || DEFAULT_FIRST_STEP;
+}
+
+type Dealable = PlanTaskLike;
+
+// Lower is dealt sooner. Planned-for-today and the priority lead; a task that
+// belongs to this block beats one that belongs to another; a low-energy
+// check-in favors easy tasks, a high one favors the demanding ones.
+function dealRank(task: Dealable, ctx: { todayKey: string; energy: Energy | null; blockId: string }): number {
+  let rank = 0;
+  if (task.plannedFor === ctx.todayKey) rank -= 4;
+  if (task.isPriority) rank -= 1;
+  if (task.block === ctx.blockId) rank -= 2;
+  else if (task.block) rank += 3;
+  if (ctx.energy === "low") {
+    if (task.energy === "low") rank -= 2;
+    else if (task.lowTitle) rank -= 1;
+    else if (task.energy === "high") rank += 2;
+  } else if (ctx.energy === "high" && task.energy === "high") {
+    rank -= 1;
+  }
+  return rank;
+}
+
+/**
+ * The one card to show now. Inbox items aren't dealt until they've been turned
+ * into tasks. Anything swapped away today ("Not this one") stays away, and after
+ * a swap the next card is smaller than the smallest one passed over.
+ */
+export function dealCard<T extends Dealable>(
+  tasks: T[],
+  ctx: { todayKey: string; energy: Energy | null; blockId: string },
+): T | null {
+  const dealable = tasks.filter((t) => t.status === "open" && t.bucket !== "inbox");
+  const passedOver = dealable.filter((t) => t.skippedDate === ctx.todayKey);
+  const remaining = dealable.filter((t) => t.skippedDate !== ctx.todayKey);
+
+  const ceiling = passedOver.reduce<number | null>(
+    (smallest, t) => (t.minutes === null ? smallest : smallest === null ? t.minutes : Math.min(smallest, t.minutes)),
+    null,
+  );
+  const byRank = (a: T, b: T) => dealRank(a, ctx) - dealRank(b, ctx);
+
+  if (ceiling !== null) {
+    const smaller = remaining.filter((t) => t.minutes !== null && t.minutes < ceiling).sort(byRank);
+    if (smaller.length > 0) return smaller[0];
+  }
+  return [...remaining].sort(byRank)[0] ?? null;
 }

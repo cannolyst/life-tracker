@@ -8,6 +8,8 @@ import {
   getDayFlag,
   getDayLog,
   getEnergyToday,
+  getCollectionChoices,
+  getContextItems,
   getFinishedCount,
   getPlanTasks,
   recordAutoOutTonight,
@@ -24,10 +26,11 @@ import {
   BUCKETS,
   BUCKET_LABEL,
   capacityCap,
+  dealCard,
+  firstStepFor,
   groupOpenByBucket,
   outTonightState,
   pickLunchTask,
-  pickStarter,
   versionFor,
   type Bucket,
   type Energy,
@@ -54,7 +57,7 @@ import { DashboardBrief } from "./DashboardBrief";
 import { NowShell } from "./NowShell";
 import { TransitionFlow } from "./TransitionFlow";
 import { ShutdownSteps } from "./ShutdownSteps";
-import { EnergyChips, OutTonightCard, OutTonightToggle, QuickAdd, TaskDoneRow } from "./PlanControls";
+import { ContextItems, EnergyChips, OutTonightCard, OutTonightToggle, QuickAdd, TaskDoneRow } from "./PlanControls";
 
 const COMING_UP_DAYS = 4;
 
@@ -323,14 +326,24 @@ async function NowArea({
   const plannedToday = open.filter((t) => t.plannedFor === todayKey);
   const priority = plannedToday.find((t) => t.isPriority) ?? null;
   const grouped = groupOpenByBucket(open, todayKey);
-  const eveningPick = plannedToday[0] ?? BUCKETS.flatMap((b) => grouped[b])[0] ?? null;
+  const dealt = (blockId: string) => dealCard(open, { todayKey, energy: level, blockId });
+  const eveningPick = dealt("evening");
   const lunch = pickLunchTask(open);
   const plannedTomorrow = open.filter((t) => t.plannedFor === tomorrowKey);
 
   const pickOf = (task: (typeof open)[number] | null) => {
     if (!task) return null;
     const version = versionFor(task, level);
-    return { id: task.id, title: version.title, easier: version.easier };
+    const elapsed = task.startedAt ? Math.floor((nowMs - task.startedAt.getTime()) / 1000) : null;
+    return {
+      id: task.id,
+      title: version.title,
+      easier: version.easier,
+      firstStep: firstStepFor(task),
+      minutes: task.minutes,
+      // A Start from hours ago is stale; treat it as not started.
+      startedElapsedSec: elapsed !== null && elapsed >= 0 && elapsed < 6 * 3600 ? elapsed : null,
+    };
   };
 
   const card = buildNowCard({
@@ -341,9 +354,9 @@ async function NowArea({
     weekly: agenda.weekly,
     workout: agenda.workout,
     doneToday: finishedToday,
-    priorityTask: priority ? { id: priority.id, title: priority.title } : null,
+    priorityTask: pickOf(priority),
     plannedTask: pickOf(eveningPick),
-    lunchTask: lunch ? { id: lunch.id, title: lunch.title } : null,
+    lunchTask: pickOf(lunch),
     outTonight: out.on,
     shutdown: {
       logged: log !== null,
@@ -354,15 +367,35 @@ async function NowArea({
 
   const inEveningOrLater = block?.id === "evening" || block?.id === "shutdown";
 
+  // Collections surface where they belong: a film or show for a low-energy evening,
+  // the next book at Shutdown, and the list picker for filing Inbox items.
+  const [movies, books, collections] = await Promise.all([
+    block?.id === "evening" && !out.on && level === "low" ? getContextItems(userId, "movies", 2) : null,
+    block?.id === "shutdown" && !out.on ? getContextItems(userId, "books", 1) : null,
+    block?.id === "shutdown" && !out.on ? getCollectionChoices(userId) : [],
+  ]);
+
   if (block?.id === "transition" && !out.on) {
-    const starter = pickStarter(open);
+    const starterTask = dealt("transition");
+    const starter = pickOf(starterTask);
     return (
       <>
         <TransitionFlow
           initialEnergy={level}
           restStartedAtMs={energy?.restStartedAt ? energy.restStartedAt.getTime() : null}
           restDone={energy?.restDone ?? false}
-          starter={starter ? { id: starter.id, title: starter.title, lowTitle: starter.lowTitle } : null}
+          starter={
+            starterTask && starter
+              ? {
+                  id: starter.id,
+                  title: starterTask.title,
+                  lowTitle: starterTask.lowTitle,
+                  firstStep: starter.firstStep,
+                  minutes: starter.minutes,
+                  startedElapsedSec: starter.startedElapsedSec,
+                }
+              : null
+          }
           serverNowMs={nowMs}
         />
         <OutTonightToggle />
@@ -385,6 +418,14 @@ async function NowArea({
             workoutName={showExercise ? (agenda.workout?.dayName ?? null) : null}
             cleaningNames={showCleaning ? agenda.cleaningDueNames : []}
           />
+          {movies && movies.items.length > 0 && (
+            <ContextItems
+              heading="Something easy to watch"
+              note={`From ${movies.listName} — a gentle option for a low-energy evening.`}
+              items={movies.items}
+              doneLabel="Watched"
+            />
+          )}
           <OutTonightToggle />
         </>
       )}
@@ -396,6 +437,7 @@ async function NowArea({
           finishedToday={finishedToday}
           tomorrowKey={tomorrowKey}
           cap={capacityCap(finishedToday)}
+          collections={collections}
           tasks={open.map((t) => ({
             id: t.id,
             title: t.title,
@@ -403,6 +445,15 @@ async function NowArea({
             plannedFor: t.plannedFor,
             isPriority: t.isPriority,
           }))}
+        />
+      )}
+
+      {block?.id === "shutdown" && !out.on && books && books.items.length > 0 && (
+        <ContextItems
+          heading="Tonight's read"
+          note={`Next up in ${books.listName}.`}
+          items={books.items}
+          doneLabel="Finished"
         />
       )}
 
@@ -428,9 +479,13 @@ function EveningSection({
     BUCKETS.some((b) => grouped[b].length > 0) || workoutName !== null || cleaningNames.length > 0;
 
   return (
-    <section aria-label="Evening build" className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-4">
+    <details aria-label="Evening build" className="rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-2">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-medium text-neutral-200">
+        Everything on your list
+        <span className="text-xs font-normal text-neutral-500">Learning · Body · Home · Inbox</span>
+      </summary>
+      <div className="space-y-4 pb-3 pt-2">
       <div className="space-y-2">
-        <h2 className="text-sm font-medium text-neutral-200">Evening build</h2>
         <EnergyChips level={level} />
         {level === "low" && (
           <p className="text-xs text-neutral-500">Showing the easier versions where there are any.</p>
@@ -490,7 +545,8 @@ function EveningSection({
           </div>
         );
       })}
-    </section>
+      </div>
+    </details>
   );
 }
 

@@ -5,6 +5,11 @@ export type WhatsNewEntry = { date: string; title: string; body: string };
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    date: "2026-10-31",
+    title: "Tasks, collections, and one card at a time",
+    body: "Capture anything in one box and sort it later. Things to do become tasks that start with a verb and have a size; things to keep (groceries, movies, books, gift ideas) go into collections. In the afternoon and evening you see one card at a time, with the first step spelled out and a 5-minute Start. Not feeling it? “Not this one” deals you a smaller task. Collections show up where they help: a film on a low-energy evening, your next book at Shutdown. Any open to-dos you had were moved into your Inbox. (Home dashboard only.)",
+  },
+  {
     date: "2026-10-30",
     title: "Your day now has real time blocks",
     body: "With the home dashboard on, each part of your day gets its own screen. Launch leads with the one priority you set the night before. Work stays quiet, with an optional ten-minute lunch task. Transition is a one-tap energy check-in, a twenty-minute rest, and one easy way to start. Evening shows Learning, Body, Home and Inbox, with easier versions on low-energy days. Shutdown is three small steps: log the day, tidy the Inbox, plan tomorrow. Tomorrow holds about as many tasks as you finished today; extras wait in Someday. And “Out tonight” collapses the evening and protects your streak. There’s a new Plan page for your tasks.",
@@ -66,6 +71,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "Tomorrow’s plan holds about as many tasks as you finished today — never fewer than one. Anything more is saved in Someday instead of piling up. Tap ★ Lead to choose the one that starts tomorrow.",
       "Out tonight: switches on by itself when your calendar has an evening event, or tap it yourself. The evening shrinks to a one-line log, and the day counts toward your streak either way.",
       "Capture: the box at the bottom of the home page adds anything to your Inbox in one line.",
+      "One card at a time: in the afternoon and evening the Now card shows a single task, its first step, and a 5-minute Start. Tap Start for a five-minute timer — finishing is a separate tap. “Not this one” sets it aside for today and deals a smaller task. The full list is tucked under “Everything on your list”.",
+      "Collections in context: on a low-energy evening you may be offered the next film or show from your movies list, and at Shutdown the next book from your books list.",
     ],
   },
   {
@@ -73,7 +80,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     title: "Plan",
     summary: "Where your tasks live (home dashboard only).",
     points: [
-      "Add a task with a name, an optional easier version for low-energy days, a bucket, and optionally how many minutes it takes.",
+      "Capture anything in the Inbox first, then sort it: “Make it a task” (pick a verb, a time and an area), file it into one of your collections, save it for Someday, or remove it.",
+      "A task starts with a verb (Call, Write, Clean…) and has a time estimate and an area. Optionally add the energy it needs, the best part of the day for it, a first step, and an easier version for low-energy days.",
       "Tomorrow shows what’s planned and how much room is left. Someday holds anything you want to keep but not do soon.",
       "Use More… on a task to move it, plan it for tomorrow, make it tomorrow’s lead, save it for Someday, or remove it.",
       "Your habits, cleaning, weekly tasks and workouts stay in their own tabs; due ones also show in the Body and Home buckets.",
@@ -123,10 +131,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: "lists",
     title: "Lists",
-    summary: "Your to-do list at the top, then any other lists you keep.",
+    summary: "Your to-do list at the top, then any other lists you keep. With the home dashboard on, these are your Collections.",
     points: [
       "Create lists, give them categories, and drag them into the order you like.",
       "Check items off; finished items stay out of the way.",
+      "With the home dashboard on, tell each list what it’s for — Groceries, Movies & shows, or Books — so it appears at the right moment. Things to do live on the Plan page instead.",
     ],
   },
   {

@@ -5,7 +5,14 @@ import { formatCountdown, restRemainingSeconds, versionFor, type Energy } from "
 import { finishRest, setEnergy, startRest } from "../plan/actions";
 import { NowShell } from "./NowShell";
 
-type Starter = { id: string; title: string; lowTitle: string | null };
+type Starter = {
+  id: string;
+  title: string;
+  lowTitle: string | null;
+  firstStep: string;
+  minutes: number | null;
+  startedElapsedSec: number | null;
+};
 
 const choiceClass =
   "min-h-12 rounded-md border border-accent bg-neutral-900 px-4 text-base font-medium text-neutral-100 disabled:opacity-60";
@@ -130,6 +137,10 @@ export function TransitionFlow({
         title={version.title}
         detail={version.easier ? "One easy start — the lighter version, since energy is low." : "One easy start, from the couch if you like."}
         taskId={starter.id}
+        firstStep={starter.firstStep}
+        minutes={starter.minutes}
+        startedElapsedSec={starter.startedElapsedSec}
+        swap
       />
     );
   }

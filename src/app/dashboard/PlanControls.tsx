@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import type { Energy } from "@/lib/planning";
 import { addPlanTask, completePlanTask, logDay, setEnergy, setOutTonight } from "../plan/actions";
+import { setListItemDone } from "../lists/actions";
 
 const inputClass =
   "min-h-11 w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 text-neutral-100 outline-none focus:border-neutral-500";
@@ -173,5 +174,51 @@ export function TaskDoneRow({ taskId, title, hint }: { taskId: string; title: st
         {done ? "✓" : "Done"}
       </button>
     </li>
+  );
+}
+
+/** Items from a collection offered in context (a film for a low-energy evening, tonight's read). */
+export function ContextItems({
+  heading,
+  note,
+  items,
+  doneLabel,
+}: {
+  heading: string;
+  note: string;
+  items: { id: string; text: string }[];
+  doneLabel: string;
+}) {
+  const [finished, setFinished] = useState<Set<string>>(() => new Set());
+  const [pending, startTransition] = useTransition();
+
+  return (
+    <section aria-label={heading} className="rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-4">
+      <h2 className="text-sm font-medium text-neutral-200">{heading}</h2>
+      <p className="text-xs text-neutral-500">{note}</p>
+      <ul className="mt-2 divide-y divide-neutral-800">
+        {items.map((item) => (
+          <li
+            key={item.id}
+            className={`flex items-center justify-between gap-3 py-1 transition-opacity ${finished.has(item.id) ? "opacity-40" : ""}`}
+          >
+            <span className="min-w-0 text-sm text-neutral-200">{item.text}</span>
+            <button
+              type="button"
+              disabled={pending || finished.has(item.id)}
+              onClick={() =>
+                startTransition(async () => {
+                  setFinished((prev) => new Set(prev).add(item.id));
+                  await setListItemDone(item.id, true);
+                })
+              }
+              className="min-h-11 shrink-0 rounded-md border border-neutral-700 px-3 text-sm text-neutral-300 disabled:opacity-70"
+            >
+              {finished.has(item.id) ? "✓" : doneLabel}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

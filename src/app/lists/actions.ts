@@ -5,6 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { listCategories, listItems } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
+import { isListContext } from "@/lib/planning";
 
 export type ActionState = { error?: string };
 
@@ -53,6 +54,16 @@ export async function addListItem(
   await db.insert(listItems).values({ userId, categoryId, text: text.trim() });
   revalidateAll();
   return {};
+}
+
+export async function setListContext(categoryId: string, context: string | null) {
+  if (context !== null && !isListContext(context)) return;
+  const userId = await requireUserId();
+  await db
+    .update(listCategories)
+    .set({ context })
+    .where(and(eq(listCategories.id, categoryId), eq(listCategories.userId, userId)));
+  revalidateAll();
 }
 
 export async function setListItemDone(itemId: string, done: boolean) {

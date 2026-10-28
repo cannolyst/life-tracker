@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUserId } from "@/lib/session";
 import { getUserSettings } from "@/db/userSettings";
-import { getFinishedCount, getPlanTasks } from "@/db/planning";
+import { getCollectionChoices, getFinishedCount, getPlanTasks } from "@/db/planning";
 import { isFeatureOn } from "@/lib/features";
 import { addDays } from "@/lib/dashboard";
 import { dateKeyIn } from "@/lib/timezone";
@@ -9,6 +9,7 @@ import { BUCKETS, BUCKET_LABEL, capacityCap, groupOpenByBucket } from "@/lib/pla
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
 import { AddTaskForm, PlanRow, type PlanRowTask } from "./PlanClient";
+import { InboxItem } from "./InboxItem";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,11 @@ export default async function PlanPage() {
   const todayKey = dateKeyIn(settings.timezone);
   const tomorrowKey = addDays(todayKey, 1);
 
-  const [tasks, finished] = await Promise.all([getPlanTasks(userId), getFinishedCount(userId, todayKey)]);
+  const [tasks, finished, collections] = await Promise.all([
+    getPlanTasks(userId),
+    getFinishedCount(userId, todayKey),
+    getCollectionChoices(userId),
+  ]);
 
   const toRow = (t: (typeof tasks)[number]): PlanRowTask => ({
     id: t.id,
@@ -85,9 +90,13 @@ export default async function PlanPage() {
               <p className="text-sm text-neutral-500">Nothing here.</p>
             ) : (
               <ul className="divide-y divide-neutral-800">
-                {grouped[bucket].map((t) => (
-                  <PlanRow key={t.id} task={toRow(t)} />
-                ))}
+                {grouped[bucket].map((t) =>
+                  bucket === "inbox" && t.plannedFor === null ? (
+                    <InboxItem key={t.id} taskId={t.id} title={t.title} collections={collections} />
+                  ) : (
+                    <PlanRow key={t.id} task={toRow(t)} />
+                  ),
+                )}
               </ul>
             )}
           </Card>

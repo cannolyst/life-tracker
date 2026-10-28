@@ -6,12 +6,21 @@ import {
   dayLogs,
   energyCheckins,
   habitCompletions,
+  listCategories,
+  listItems,
   planTasks,
   weeklyTaskCompletions,
 } from "./schema";
-import type { Bucket, Energy, PlanStatus, PlanTaskLike } from "@/lib/planning";
+import type { Bucket, Energy, ListContext, PlanStatus, PlanTaskLike } from "@/lib/planning";
 
 export type PlanTask = PlanTaskLike & {
+  verb: string | null;
+  energy: Energy | null;
+  block: string | null;
+  firstStep: string | null;
+  startedAt: Date | null;
+  skipCount: number;
+  skippedDate: string | null;
   doneDate: string | null;
   createdAt: Date;
 };
@@ -28,6 +37,13 @@ function toPlanTask(row: PlanTaskRow): PlanTask {
     status: row.status as PlanStatus,
     plannedFor: row.plannedFor,
     isPriority: row.isPriority,
+    verb: row.verb,
+    energy: row.energy as Energy | null,
+    block: row.block,
+    firstStep: row.firstStep,
+    startedAt: row.startedAt,
+    skipCount: row.skipCount,
+    skippedDate: row.skippedDate,
     doneDate: row.doneDate,
     createdAt: row.createdAt,
   };
@@ -116,4 +132,46 @@ export async function getProtectedDates(userId: string): Promise<string[]> {
     .from(dayFlags)
     .where(and(eq(dayFlags.userId, userId), eq(dayFlags.outTonight, true)));
   return rows.map((r) => r.date);
+}
+
+export type ContextItem = { id: string; text: string };
+
+/**
+ * The first few unfinished items from the user's lists tagged for a context
+ * (movies for a low-energy evening, books at Shutdown, groceries for the
+ * Sunday reset). Oldest first, so the list is worked through in order.
+ */
+export async function getContextItems(
+  userId: string,
+  context: ListContext,
+  limit = 3,
+): Promise<{ listName: string; items: ContextItem[] } | null> {
+  const lists = await db
+    .select({ id: listCategories.id, name: listCategories.name })
+    .from(listCategories)
+    .where(and(eq(listCategories.userId, userId), eq(listCategories.context, context)))
+    .orderBy(asc(listCategories.orderIndex));
+  if (lists.length === 0) return null;
+
+  const items: ContextItem[] = [];
+  for (const list of lists) {
+    if (items.length >= limit) break;
+    const rows = await db
+      .select({ id: listItems.id, text: listItems.text })
+      .from(listItems)
+      .where(and(eq(listItems.userId, userId), eq(listItems.categoryId, list.id), eq(listItems.done, false)))
+      .orderBy(asc(listItems.createdAt))
+      .limit(limit - items.length);
+    items.push(...rows);
+  }
+  return { listName: lists[0].name, items };
+}
+
+/** The user's lists, for filing an Inbox item into one. */
+export async function getCollectionChoices(userId: string): Promise<{ id: string; name: string }[]> {
+  return db
+    .select({ id: listCategories.id, name: listCategories.name })
+    .from(listCategories)
+    .where(eq(listCategories.userId, userId))
+    .orderBy(asc(listCategories.orderIndex));
 }

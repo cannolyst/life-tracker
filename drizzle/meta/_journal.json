@@ -183,6 +183,13 @@
       "when": 1793202745762,
       "tag": "0025_time_blocks_planning",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793209133516,
+      "tag": "0026_tasks_and_collections",
+      "breakpoints": true
     }
   ]
 }

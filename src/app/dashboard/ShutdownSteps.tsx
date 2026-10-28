@@ -1,16 +1,9 @@
 "use client";
 
 import { useState, useTransition, type ReactNode } from "react";
-import { BUCKETS, BUCKET_LABEL, type Bucket } from "@/lib/planning";
-import {
-  deletePlanTask,
-  logDay,
-  movePlanTask,
-  planForTomorrow,
-  sendToSomeday,
-  setPriorityTask,
-  unplanTask,
-} from "../plan/actions";
+import { BUCKET_LABEL, type Bucket } from "@/lib/planning";
+import { logDay, planForTomorrow, setPriorityTask, unplanTask } from "../plan/actions";
+import { InboxItem } from "../plan/InboxItem";
 
 export type ShutdownTask = {
   id: string;
@@ -60,6 +53,7 @@ export function ShutdownSteps({
   tasks,
   tomorrowKey,
   cap,
+  collections,
 }: {
   logged: boolean;
   initialNote: string;
@@ -67,6 +61,7 @@ export function ShutdownSteps({
   tasks: ShutdownTask[];
   tomorrowKey: string;
   cap: number;
+  collections: { id: string; name: string }[];
 }) {
   const [note, setNote] = useState(initialNote);
   const [savedLog, setSavedLog] = useState(logged);
@@ -132,35 +127,9 @@ export function ShutdownSteps({
         {inbox.length === 0 ? (
           <p className="text-sm text-neutral-500">Nothing in your Inbox.</p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="divide-y divide-neutral-800">
             {inbox.map((task) => (
-              <li key={task.id} className="space-y-2">
-                <p className="text-sm text-neutral-200">{task.title}</p>
-                <div className="flex flex-wrap gap-2">
-                  <select
-                    aria-label={`Sort “${task.title}” into a bucket`}
-                    defaultValue=""
-                    disabled={pending}
-                    onChange={(e) => e.target.value && run(() => movePlanTask(task.id, e.target.value))}
-                    className="min-h-11 rounded-md border border-neutral-700 bg-neutral-800 px-3 text-sm text-neutral-200"
-                  >
-                    <option value="" disabled>
-                      Move to…
-                    </option>
-                    {BUCKETS.filter((b) => b !== "inbox").map((b) => (
-                      <option key={b} value={b}>
-                        {BUCKET_LABEL[b]}
-                      </option>
-                    ))}
-                  </select>
-                  <button type="button" disabled={pending} onClick={() => run(() => sendToSomeday(task.id))} className={smallButton}>
-                    Someday
-                  </button>
-                  <button type="button" disabled={pending} onClick={() => run(() => deletePlanTask(task.id))} className={smallButton}>
-                    Remove
-                  </button>
-                </div>
-              </li>
+              <InboxItem key={task.id} taskId={task.id} title={task.title} collections={collections} />
             ))}
           </ul>
         )}

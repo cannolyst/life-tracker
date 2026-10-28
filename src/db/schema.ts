@@ -343,11 +343,20 @@ export const listCategories = pgTable(
     name: text("name").notNull(),
     // Position on the Lists page (0 = first); reordered with the up/down arrows.
     orderIndex: integer("order_index").notNull().default(0),
+    // What the list is for, so it can appear in context: groceries (Sunday reset),
+    // movies (low-energy evenings), books (Shutdown). Null = a plain collection.
+    context: text("context"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (table) => [unique("list_categories_id_user_id_unique").on(table.id, table.userId)],
+  (table) => [
+    unique("list_categories_id_user_id_unique").on(table.id, table.userId),
+    check(
+      "list_categories_context_check",
+      sql`${table.context} is null or ${table.context} in ('groceries','movies','books')`,
+    ),
+  ],
 ).enableRLS();
 
 export const listItems = pgTable(
@@ -378,6 +387,8 @@ export const todos = pgTable("todos", {
   userId: uuid("user_id").notNull(),
   text: text("text").notNull(),
   done: boolean("done").notNull().default(false),
+  // Set when an open to-do was moved into the Inbox (Phase 4); moved ones are hidden, never deleted.
+  movedAt: timestamp("moved_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -972,6 +983,18 @@ export const planTasks = pgTable(
     lowTitle: text("low_title"),
     bucket: text("bucket").notNull().default("inbox"), // learning | body | home | inbox
     minutes: integer("minutes"),
+    // Phase 4: an action has a verb, a size, an energy tag, an area (bucket) and a block.
+    verb: text("verb"),
+    energy: text("energy"), // high | low | null (any)
+    block: text("block"), // launch | work | transition | evening | shutdown | null (any)
+    // The first step, spelled out, shown on the card under the 5-minute Start.
+    firstStep: text("first_step"),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    // "Not this one" swaps: how often, and the last local day it happened.
+    skipCount: integer("skip_count").notNull().default(0),
+    skippedDate: text("skipped_date"),
+    // Set when this task was copied over from the old To-do list (so a re-run never duplicates).
+    sourceTodoId: uuid("source_todo_id"),
     status: text("status").notNull().default("open"), // open | done | someday
     // Local day (YYYY-MM-DD) this task is planned for; null = not planned.
     plannedFor: text("planned_for"),
@@ -985,6 +1008,12 @@ export const planTasks = pgTable(
   (table) => [
     check("plan_tasks_bucket_check", sql`${table.bucket} in ('learning','body','home','inbox')`),
     check("plan_tasks_status_check", sql`${table.status} in ('open','done','someday')`),
+    check("plan_tasks_energy_check", sql`${table.energy} is null or ${table.energy} in ('high','low')`),
+    check(
+      "plan_tasks_block_check",
+      sql`${table.block} is null or ${table.block} in ('launch','work','transition','evening','shutdown')`,
+    ),
+    unique("plan_tasks_user_source_todo_unique").on(table.userId, table.sourceTodoId),
     check("plan_tasks_minutes_check", sql`${table.minutes} is null or (${table.minutes} between 1 and 600)`),
   ],
 ).enableRLS();
