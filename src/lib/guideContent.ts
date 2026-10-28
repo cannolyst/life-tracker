@@ -5,6 +5,11 @@ export type WhatsNewEntry = { date: string; title: string; body: string };
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    date: "2026-11-01",
+    title: "Points for starting, and a welcome back",
+    body: "Starting counts now, not just finishing. Tap Start 5 minutes on a task for +1 point (up to three different tasks a day). Finishing a task pays by its size: +2 for ten minutes or less, +3 up to 30, +5 up to an hour, +8 beyond that; the easier low-energy version earns the full amount. If you’ve had two or more days with no points at all, your first start or finish earns a one-time +5 welcome back. Rest, the energy check-in, Out tonight and the journal never earn or cost points. Each habit can now belong to a part of the day, so it’s suggested at the right time. Your existing points and history are untouched.",
+  },
+  {
     date: "2026-10-31",
     title: "Tasks, collections, and one card at a time",
     body: "Capture anything in one line and sort it later — no verb, time or area required. A time at the end (like “call the dentist 10m”) is picked up for you. Things to keep (groceries, movies, books, gift ideas) go into collections. In the afternoon and evening you see one card at a time, with the first step spelled out and a 5-minute Start. Not feeling it? “Not this one” deals you a smaller task. Collections show up where they help: a film on a low-energy evening, your next book at Shutdown. Any open to-dos you had were moved into your Inbox. (Home dashboard only.)",
@@ -93,6 +98,10 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     title: "Points",
     summary: "Daily habits and weekly tasks earn points you can spend on rewards.",
     points: [
+      "With the home dashboard on, tasks earn points too: +1 for starting one (up to three a day), and +2 / +3 / +5 / +8 for finishing, by size (10 min or less / up to 30 / up to 60 / longer, and +2 with no time). Each task pays once.",
+      "Welcome back: after two or more days with no points, your first start or finish earns a one-time +5.",
+      "Never worth points: rest, the energy check-in, Out tonight (it protects your streak), and the journal.",
+      "With the dashboard on, each habit has a Part of the day (edit it on this page). A habit is suggested on the Now card in its own part of the day; Anytime habits stay out of the way.",
       "Check off a daily habit once a day, or log a repeatable one as many times as you like.",
       "Weekly tasks reset each week and can have a category.",
       "Keep a streak going by completing at least one daily habit each day.",

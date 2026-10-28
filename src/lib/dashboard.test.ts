@@ -8,6 +8,7 @@ import {
   buildTimeline,
   eventOnDay,
   greetingHighlights,
+  habitForBlock,
   type NowInput,
 } from "./dashboard";
 import { currentBlock, dayBlocks, formatMinutes, isEveningTone } from "./dayBlocks";
@@ -322,5 +323,34 @@ describe("flags", () => {
   it("uses calm wording", () => {
     const text = JSON.stringify(buildFlags({ ...base, bills: [{ name: "Rent", daysUntil: 0 }] }));
     expect(text).not.toMatch(/overdue|urgent|late|!/i);
+  });
+});
+
+describe("habitForBlock", () => {
+  const habits = [
+    { name: "Water", points: 1, block: null, repeatable: true },
+    { name: "Take magnesium", points: 2, block: "shutdown", repeatable: false },
+    { name: "Workout", points: 3, block: "launch", repeatable: true },
+    { name: "Check Monarch", points: 1, block: "launch", repeatable: false },
+    { name: "No spend day", points: 5, block: null, repeatable: false },
+  ];
+
+  it("suggests a habit assigned to the current block, first one first", () => {
+    expect(habitForBlock(habits, "launch")).toEqual({ name: "Workout", points: 3 });
+    expect(habitForBlock(habits, "shutdown")).toEqual({ name: "Take magnesium", points: 2 });
+  });
+
+  it("falls back to an unassigned once-a-day habit, never to another block's or an anytime repeatable", () => {
+    expect(habitForBlock(habits, "evening")).toEqual({ name: "No spend day", points: 5 });
+    expect(habitForBlock(habits.filter((h) => h.name !== "No spend day"), "evening")).toBeNull();
+  });
+
+  it("behaves as before for someone who hasn't assigned any blocks", () => {
+    const plain = [
+      { name: "Floss", points: 2, block: null, repeatable: true },
+      { name: "Vitamins", points: 1, block: null, repeatable: false },
+    ];
+    expect(habitForBlock(plain, "launch")).toEqual({ name: "Vitamins", points: 1 });
+    expect(habitForBlock(plain, null)).toEqual({ name: "Vitamins", points: 1 });
   });
 });

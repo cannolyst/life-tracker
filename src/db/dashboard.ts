@@ -11,7 +11,7 @@ import {
   getWorkoutWeekProgress,
 } from "./queries";
 import { computeStreak } from "@/lib/streak";
-import type { UpcomingBill, UpcomingCleaning } from "@/lib/dashboard";
+import type { HabitCandidate, UpcomingBill, UpcomingCleaning } from "@/lib/dashboard";
 import { dateKeyIn, zonedParts, zonedTimeToUtc } from "@/lib/timezone";
 
 export type DashboardModules = {
@@ -23,6 +23,7 @@ export type DashboardModules = {
 
 export type DayAgenda = {
   habit: { name: string; points: number } | null;
+  habitCandidates: HabitCandidate[];
   habitsLeft: number;
   habitDoneToday: boolean;
   streak: number;
@@ -40,6 +41,7 @@ export type DayAgenda = {
 
 const EMPTY: DayAgenda = {
   habit: null,
+  habitCandidates: [],
   habitsLeft: 0,
   habitDoneToday: false,
   streak: 0,
@@ -58,7 +60,13 @@ const EMPTY: DayAgenda = {
 async function loadHabits(userId: string, tz: string, todayKey: string) {
   const [tasks, completions, protectedDates] = await Promise.all([
     db
-      .select({ id: habitTasks.id, name: habitTasks.name, points: habitTasks.points, repeatable: habitTasks.repeatable })
+      .select({
+        id: habitTasks.id,
+        name: habitTasks.name,
+        points: habitTasks.points,
+        repeatable: habitTasks.repeatable,
+        block: habitTasks.block,
+      })
       .from(habitTasks)
       .where(and(eq(habitTasks.userId, userId), eq(habitTasks.archived, false)))
       .orderBy(habitTasks.createdAt),
@@ -71,7 +79,12 @@ async function loadHabits(userId: string, tz: string, todayKey: string) {
   const doneTodayIds = new Set(completions.filter((c) => c.date === todayKey).map((c) => c.taskId));
   // Repeatable tasks can be logged any number of times, so they're never "left".
   const left = tasks.filter((t) => !t.repeatable && !doneTodayIds.has(t.id));
+  // Anything not yet done today can be suggested in its own block (repeatable ones too).
+  const candidates = tasks
+    .filter((t) => !doneTodayIds.has(t.id))
+    .map((t) => ({ name: t.name, points: t.points, block: t.block, repeatable: t.repeatable }));
   return {
+    candidates,
     habit: left[0] ? { name: left[0].name, points: left[0].points } : null,
     habitsLeft: left.length,
     habitDoneToday: doneTodayIds.size > 0,
@@ -142,6 +155,7 @@ export async function getDayAgenda(userId: string, tz: string, modules: Dashboar
   return {
     ...EMPTY,
     habit: habits?.habit ?? null,
+    habitCandidates: habits?.candidates ?? [],
     habitsLeft: habits?.habitsLeft ?? 0,
     habitDoneToday: habits?.habitDoneToday ?? false,
     streak: habits?.streak ?? 0,

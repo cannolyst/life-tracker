@@ -1,4 +1,6 @@
 import { getHabitDashboardData } from "@/db/queries";
+import { getUserSettings } from "@/db/userSettings";
+import { isFeatureOn } from "@/lib/features";
 import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
 import { Card, buttonClass, formatCurrency, formatDate } from "@/components/ui";
@@ -14,9 +16,17 @@ import { TaskList as CleaningTaskList } from "@/app/cleaning/TaskList";
 
 export const dynamic = "force-dynamic";
 
-type Task = { id: string; name: string; points: number; repeatable: boolean; categoryId: string | null };
+type Task = {
+  id: string;
+  name: string;
+  points: number;
+  repeatable: boolean;
+  categoryId: string | null;
+  block: string | null;
+};
 
 export default async function PointsPage() {
+  const userId = await requireUserId();
   const {
     categoriesWithTasks,
     unassignedTasks,
@@ -32,7 +42,9 @@ export default async function PointsPage() {
     cleaningTasks,
     weeklyCategoriesWithTasks,
     weeklyUnassignedTasks,
-  } = await getHabitDashboardData(await requireUserId());
+  } = await getHabitDashboardData(userId);
+  // The part-of-the-day setting on each habit belongs to the home dashboard.
+  const showBlocks = isFeatureOn((await getUserSettings(userId)).features, "dashboard");
 
   return (
     <div className="flex min-h-full flex-col">
@@ -83,6 +95,7 @@ export default async function PointsPage() {
                     counts={todayCompletionCounts}
                     jewel={jewelFor(i)}
                     categories={categories}
+                    showBlocks={showBlocks}
                   />
                 </Card>
               ),
@@ -98,6 +111,7 @@ export default async function PointsPage() {
                 counts={todayCompletionCounts}
                 jewel={NEUTRAL_JEWEL}
                 categories={categories}
+                showBlocks={showBlocks}
               />
             </Card>
           )}
@@ -268,11 +282,13 @@ function TaskList({
   counts,
   jewel,
   categories,
+  showBlocks,
 }: {
   tasks: Task[];
   counts: Map<string, number>;
   jewel: { color: string; soft: string };
   categories: { id: string; name: string }[];
+  showBlocks: boolean;
 }) {
   return (
     <ul className="space-y-2">
@@ -283,6 +299,7 @@ function TaskList({
           count={counts.get(task.id) ?? 0}
           jewel={jewel}
           categories={categories}
+          showBlocks={showBlocks}
         />
       ))}
     </ul>

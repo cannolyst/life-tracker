@@ -89,6 +89,25 @@ export function greetingHighlights(opts: {
   return out;
 }
 
+/* ---------- habits by block ---------- */
+
+export type HabitCandidate = { name: string; points: number; block: string | null; repeatable: boolean };
+
+/**
+ * The habit to suggest for the current block: one assigned to this block comes
+ * first; otherwise an unassigned once-a-day habit (as before blocks existed).
+ * A habit assigned to a different block, or an unassigned repeatable one like
+ * "drink water", is never pushed on the Now card.
+ */
+export function habitForBlock(
+  candidates: HabitCandidate[],
+  blockId: string | null,
+): { name: string; points: number } | null {
+  const mine = blockId ? candidates.find((h) => h.block === blockId) : undefined;
+  const pick = mine ?? candidates.find((h) => h.block === null && !h.repeatable);
+  return pick ? { name: pick.name, points: pick.points } : null;
+}
+
 /* ---------- Now card ---------- */
 
 export type TaskPick = {

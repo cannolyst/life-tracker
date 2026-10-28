@@ -1,6 +1,7 @@
 import { eq, and, inArray, isNull, gte, lte, sum, desc, sql } from "drizzle-orm";
 import { db } from "./index";
 import { getProtectedDates } from "./planning";
+import { getTaskPointRows, getTaskPointTotal } from "./taskPoints";
 import {
   accounts,
   savingsDetails,
@@ -484,7 +485,7 @@ export async function getGamificationStats(userId: string) {
 // --- Points / habit tracker ---
 
 export async function getPointsBalance(userId: string): Promise<number> {
-  const [[{ habitEarned }], [{ cleaningEarned }], [{ weeklyEarned }], [{ spent }]] = await Promise.all([
+  const [[{ habitEarned }], [{ cleaningEarned }], [{ weeklyEarned }], [{ spent }], taskEarned] = await Promise.all([
     db
       .select({ habitEarned: sum(habitCompletions.pointsAwarded) })
       .from(habitCompletions)
@@ -498,11 +499,13 @@ export async function getPointsBalance(userId: string): Promise<number> {
       .from(weeklyTaskCompletions)
       .where(eq(weeklyTaskCompletions.userId, userId)),
     db.select({ spent: sum(redemptions.pointsCost) }).from(redemptions).where(eq(redemptions.userId, userId)),
+    getTaskPointTotal(userId),
   ]);
   return (
     Number(habitEarned ?? 0) +
     Number(cleaningEarned ?? 0) +
-    Number(weeklyEarned ?? 0) -
+    Number(weeklyEarned ?? 0) +
+    taskEarned -
     Number(spent ?? 0)
   );
 }
@@ -521,7 +524,8 @@ function addDaysToDateKey(dateKey: string, days: number): string {
 // match. Reflects the whole shared economy (habit + cleaning completions).
 export async function getPointsSummary(userId: string) {
   const tz = await getUserTimezone(userId);
-  const [completions, cleaningCompletionsAll, weeklyCompletionsAll, [{ spent }], protectedDates] = await Promise.all([
+  const [completions, cleaningCompletionsAll, weeklyCompletionsAll, [{ spent }], protectedDates, taskPointRows] =
+    await Promise.all([
     db
       .select({ date: habitCompletions.date, pointsAwarded: habitCompletions.pointsAwarded })
       .from(habitCompletions)
@@ -536,6 +540,7 @@ export async function getPointsSummary(userId: string) {
       .where(eq(weeklyTaskCompletions.userId, userId)),
     db.select({ spent: sum(redemptions.pointsCost) }).from(redemptions).where(eq(redemptions.userId, userId)),
     getProtectedDates(userId),
+    getTaskPointRows(userId),
   ]);
 
   const todayKey = dateKeyIn(tz);
@@ -548,14 +553,15 @@ export async function getPointsSummary(userId: string) {
       .reduce((s, c) => s + c.pointsAwarded, 0) +
     weeklyCompletionsAll
       .filter((c) => c.date === dateKey)
-      .reduce((s, c) => s + c.pointsAwarded, 0);
+      .reduce((s, c) => s + c.pointsAwarded, 0) +
+    taskPointRows.filter((c) => c.date === dateKey).reduce((s, c) => s + c.pointsAwarded, 0);
 
   // Days marked "out tonight" keep the streak alive even with no habit logged.
   const distinctDays = Array.from(new Set([...completions.map((c) => c.date), ...protectedDates]));
 
   // Computed from the same rows already fetched above instead of calling
   // getPointsBalance (which would re-query these same three tables again).
-  const earned = [...completions, ...cleaningCompletionsAll, ...weeklyCompletionsAll].reduce(
+  const earned = [...completions, ...cleaningCompletionsAll, ...weeklyCompletionsAll, ...taskPointRows].reduce(
     (s, c) => s + c.pointsAwarded,
     0,
   );
@@ -726,6 +732,7 @@ export async function getHabitDashboardData(userId: string) {
     weeklyCompletionsAll,
     cleaningTasksWithStatus,
     weeklyTasksWithStatus,
+    taskPointRowsAll,
   ] = await Promise.all([
     getPointsSummary(userId),
     db
@@ -738,6 +745,7 @@ export async function getHabitDashboardData(userId: string) {
       .where(eq(weeklyTaskCompletions.userId, userId)),
     getCleaningTasksWithStatus(userId),
     getWeeklyTasksWithStatus(userId),
+    getTaskPointRows(userId),
   ]);
 
   const categoriesWithTasks = categories.map((category) => ({
@@ -756,6 +764,7 @@ export async function getHabitDashboardData(userId: string) {
     ...completions,
     ...cleaningCompletionsAll,
     ...weeklyCompletionsAll,
+    ...taskPointRowsAll,
   ], tz);
 
   return {

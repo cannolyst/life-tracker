@@ -6,6 +6,8 @@ import { db } from "@/db";
 import { dayFlags, dayLogs, energyCheckins, listCategories, listItems, planTasks } from "@/db/schema";
 import { getUserSettings } from "@/db/userSettings";
 import { getFinishedCount, getPlanTasks } from "@/db/planning";
+import { awardForFinish, awardForStart } from "@/db/taskPoints";
+import { describeAward } from "@/lib/taskPoints";
 import { requireUserId } from "@/lib/session";
 import { addDays } from "@/lib/dashboard";
 import { dateKeyIn } from "@/lib/timezone";
@@ -20,7 +22,7 @@ import {
   type Bucket,
 } from "@/lib/planning";
 
-export type TaskResult = { ok: true; note?: string } | { ok: false; error: string };
+export type TaskResult = { ok: true; note?: string; points?: number } | { ok: false; error: string };
 
 function refresh() {
   revalidatePath("/");
@@ -128,15 +130,21 @@ export async function fileIntoCollection(taskId: string, categoryId: string): Pr
   return { ok: true, note: `Filed into ${list.name}.` };
 }
 
-/** The 5-minute Start. It only records that you began; finishing is still a separate tap. */
+/** The 5-minute Start: records that you began and earns the start point. Finishing is a separate tap. */
 export async function startTask(taskId: string): Promise<TaskResult> {
   const userId = await requireUserId();
-  await db
+  const dateKey = await today(userId);
+  const [task] = await db
     .update(planTasks)
     .set({ startedAt: new Date() })
-    .where(and(eq(planTasks.id, taskId), eq(planTasks.userId, userId)));
+    .where(and(eq(planTasks.id, taskId), eq(planTasks.userId, userId)))
+    .returning({ id: planTasks.id });
+  const award = task ? await awardForStart(userId, task.id, dateKey) : { points: 0, welcomeBack: false };
   refresh();
-  return { ok: true };
+  revalidatePath("/points");
+  return award.points > 0
+    ? { ok: true, points: award.points, note: describeAward(award.points, award.welcomeBack) }
+    : { ok: true };
 }
 
 /** "Not this one": set it aside for today; the next card dealt is a smaller task. */
@@ -154,12 +162,18 @@ export async function skipTask(taskId: string): Promise<TaskResult> {
 export async function completePlanTask(taskId: string): Promise<TaskResult> {
   const userId = await requireUserId();
   const dateKey = await today(userId);
-  await db
+  const [task] = await db
     .update(planTasks)
     .set({ status: "done", doneAt: new Date(), doneDate: dateKey })
-    .where(and(eq(planTasks.id, taskId), eq(planTasks.userId, userId)));
+    .where(and(eq(planTasks.id, taskId), eq(planTasks.userId, userId)))
+    .returning({ id: planTasks.id, minutes: planTasks.minutes });
+  // Points by size, once per task ever — finishing it again after a reopen earns nothing more.
+  const award = task ? await awardForFinish(userId, task, dateKey) : { points: 0, welcomeBack: false };
   refresh();
-  return { ok: true };
+  revalidatePath("/points");
+  return award.points > 0
+    ? { ok: true, points: award.points, note: describeAward(award.points, award.welcomeBack) }
+    : { ok: true };
 }
 
 export async function reopenPlanTask(taskId: string): Promise<TaskResult> {

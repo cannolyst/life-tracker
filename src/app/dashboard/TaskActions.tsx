@@ -24,6 +24,7 @@ export function TaskActions({
 }) {
   const [elapsed, setElapsed] = useState<number | null>(startedElapsedSec ?? null);
   const [done, setDone] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const started = elapsed !== null;
 
@@ -37,12 +38,18 @@ export function TaskActions({
 
   function begin() {
     setElapsed(0);
-    startTransition(async () => void (await startTask(taskId)));
+    startTransition(async () => {
+      const result = await startTask(taskId);
+      if (result.ok && result.note) setNote(result.note);
+    });
   }
 
   function finish() {
     setDone(true);
-    startTransition(async () => void (await completePlanTask(taskId)));
+    startTransition(async () => {
+      const result = await completePlanTask(taskId);
+      if (result.ok && result.note) setNote(result.note);
+    });
   }
 
   return (
@@ -55,8 +62,10 @@ export function TaskActions({
       )}
       {minutes ? <p className="text-xs text-neutral-500">About {minutes} minutes in all</p> : null}
 
+      {done && note && !started && <p className="text-sm font-medium text-accent">{note}</p>}
       {started ? (
         <div className="space-y-3">
+          {note && <p className="text-sm font-medium text-accent">{note}</p>}
           <p className="text-sm text-neutral-300">
             {left > 0 ? `${formatCountdown(left)} left — just this much.` : "Five minutes in. Keep going, or call it done."}
           </p>

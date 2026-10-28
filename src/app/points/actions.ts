@@ -15,6 +15,7 @@ import {
 import { getPointsBalance } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
 import { dateKeyIn, weekKeyIn } from "@/lib/timezone";
+import { isTaskBlock } from "@/lib/planning";
 import { getUserTimezone } from "@/db/userSettings";
 
 export type ActionState = { error?: string };
@@ -94,6 +95,7 @@ export async function updateTask(
   const name = formData.get("name");
   const pointsRaw = formData.get("points");
   const categoryId = formData.get("categoryId");
+  const block = formData.get("block");
 
   if (typeof name !== "string" || !name.trim()) {
     return { error: "Name is required" };
@@ -111,6 +113,10 @@ export async function updateTask(
       points,
       categoryId: typeof categoryId === "string" && categoryId ? categoryId : null,
       repeatable: formData.get("repeatable") === "on",
+      // Only touched when the form offers it (home dashboard on); "" means anytime.
+      ...(formData.has("block")
+        ? { block: typeof block === "string" && isTaskBlock(block) ? block : null }
+        : {}),
     })
     .where(and(eq(habitTasks.id, taskId), eq(habitTasks.userId, userId)));
   revalidateAll();

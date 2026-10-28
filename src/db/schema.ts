@@ -11,6 +11,7 @@ import {
   primaryKey,
   foreignKey,
   unique,
+  uniqueIndex,
   jsonb,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
@@ -196,6 +197,9 @@ export const habitTasks = pgTable(
     // Repeatable tasks (e.g. "drink 8oz of water") can be logged more than
     // once per day; non-repeatable tasks are a once-a-day checkbox.
     repeatable: boolean("repeatable").notNull().default(false),
+    // The part of the day this habit belongs to (home dashboard): launch | work |
+    // transition | evening | shutdown. Null = anytime.
+    block: text("block"),
     archived: boolean("archived").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -203,6 +207,10 @@ export const habitTasks = pgTable(
   },
   (table) => [
     unique("habit_tasks_id_user_id_unique").on(table.id, table.userId),
+    check(
+      "habit_tasks_block_check",
+      sql`${table.block} is null or ${table.block} in ('launch','work','transition','evening','shutdown')`,
+    ),
     foreignKey({
       columns: [table.categoryId, table.userId],
       foreignColumns: [habitCategories.id, habitCategories.userId],
@@ -1063,4 +1071,37 @@ export const dayLogs = pgTable(
     loggedAt: timestamp("logged_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.userId, table.date] })],
+).enableRLS();
+
+// --- Points for plan tasks (Phase 5) ---
+
+// Points earned by starting and finishing plan tasks, and the one-time
+// "welcome back" after drifting. A separate table so every existing habit,
+// cleaning and weekly completion (and all totals) stay exactly as they were;
+// balance and charts add these rows in. One row per award, never edited.
+export const taskPointEvents = pgTable(
+  "task_point_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    taskId: uuid("task_id"),
+    kind: text("kind").notNull(), // start | finish | reentry
+    points: integer("points").notNull(),
+    date: text("date").notNull(), // local day YYYY-MM-DD
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("task_point_events_kind_check", sql`${table.kind} in ('start','finish','reentry')`),
+    // A task earns its start points once a day, its finish points once ever,
+    // and a user's welcome-back once a day — so repeats can't farm points.
+    uniqueIndex("task_point_events_start_unique")
+      .on(table.userId, table.taskId, table.date)
+      .where(sql`${table.kind} = 'start'`),
+    uniqueIndex("task_point_events_finish_unique")
+      .on(table.userId, table.taskId)
+      .where(sql`${table.kind} = 'finish'`),
+    uniqueIndex("task_point_events_reentry_unique")
+      .on(table.userId, table.date)
+      .where(sql`${table.kind} = 'reentry'`),
+  ],
 ).enableRLS();

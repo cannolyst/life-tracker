@@ -42,6 +42,7 @@ import {
   buildGreeting,
   buildNowCard,
   buildTimeline,
+  habitForBlock,
   eventOnDay,
   greetingHighlights,
   onDeckCount,
@@ -106,7 +107,7 @@ export async function Dashboard({ userId }: { userId: string }) {
   const basicNowCard = buildNowCard({
     structure,
     minutes: nowMinutes,
-    habit: agenda.habit,
+    habit: habitForBlock(agenda.habitCandidates, currentBlock(structure, nowMinutes)?.id ?? null),
     cleaning: agenda.cleaning,
     weekly: agenda.weekly,
     workout: agenda.workout,
@@ -349,7 +350,7 @@ async function NowArea({
   const card = buildNowCard({
     structure,
     minutes: nowMinutes,
-    habit: agenda.habit,
+    habit: habitForBlock(agenda.habitCandidates, block?.id ?? null),
     cleaning: agenda.cleaning,
     weekly: agenda.weekly,
     workout: agenda.workout,

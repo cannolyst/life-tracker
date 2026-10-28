@@ -11,6 +11,7 @@ import {
 } from "./actions";
 import { inputClass, labelClass, buttonClass } from "@/components/ui";
 import { jewelChipStyle } from "@/lib/jewels";
+import { BLOCK_IDS } from "@/lib/planning";
 
 type Task = {
   id: string;
@@ -18,6 +19,7 @@ type Task = {
   points: number;
   repeatable: boolean;
   categoryId: string | null;
+  block?: string | null;
 };
 
 const initialState: ActionState = {};
@@ -27,11 +29,13 @@ export function TaskRow({
   count,
   jewel,
   categories,
+  showBlocks = false,
 }: {
   task: Task;
   count: number;
   jewel: { color: string; soft: string };
   categories: { id: string; name: string }[];
+  showBlocks?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const action = updateTask.bind(null, task.id);
@@ -78,6 +82,19 @@ export function TaskRow({
               ))}
             </select>
           </div>
+          {showBlocks && (
+            <div className="space-y-1">
+              <label className={labelClass}>Part of the day</label>
+              <select name="block" defaultValue={task.block ?? ""} className={inputClass}>
+                <option value="">Anytime</option>
+                {BLOCK_IDS.map((b) => (
+                  <option key={b} value={b}>
+                    {b.charAt(0).toUpperCase() + b.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <label className="flex items-center gap-2 text-sm text-neutral-400">
             <input
               name="repeatable"
