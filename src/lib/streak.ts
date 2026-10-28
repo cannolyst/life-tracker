@@ -1,4 +1,4 @@
-import { dateOnlyInAppTimezone } from "./timezone";
+import { dateOnlyIn } from "./timezone";
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -16,12 +16,12 @@ function utcDateKey(date: Date): string {
  * yesterday if today hasn't been logged yet so an in-progress day doesn't
  * break the streak) that have at least one entry in `dates`.
  */
-export function computeStreak(dates: (Date | string)[], today: Date = new Date()): number {
+export function computeStreak(dates: (Date | string)[], tz: string, today: Date = new Date()): number {
   const dateKeys = new Set(
     dates.map((d) => utcDateKey(typeof d === "string" ? new Date(d) : d)),
   );
 
-  let cursor = dateOnlyInAppTimezone(today);
+  let cursor = dateOnlyIn(tz, today);
   if (!dateKeys.has(utcDateKey(cursor))) {
     cursor = new Date(cursor.getTime() - MS_PER_DAY);
   }

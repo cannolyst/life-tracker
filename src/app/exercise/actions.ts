@@ -5,7 +5,8 @@ import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { workoutSessions, workoutSets, workoutExercises } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
-import { dateKeyInAppTimezone } from "@/lib/timezone";
+import { dateKeyIn } from "@/lib/timezone";
+import { getUserTimezone } from "@/db/userSettings";
 import { MUSCLE_GROUPS } from "@/lib/muscleGroups";
 
 function parseMuscleGroups(formData: FormData): string[] {
@@ -21,7 +22,7 @@ function revalidateAll() {
 }
 
 async function getOrCreateTodaySession(dayId: string, userId: string) {
-  const todayKey = dateKeyInAppTimezone();
+  const todayKey = dateKeyIn(await getUserTimezone(userId));
   const [existing] = await db
     .select()
     .from(workoutSessions)

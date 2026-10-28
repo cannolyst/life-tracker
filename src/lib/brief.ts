@@ -1,4 +1,4 @@
-import { dayOfMonthInAppTimezone, APP_TIMEZONE } from "./timezone";
+import { dayOfMonthIn } from "./timezone";
 import { SECTIONS, type Brief, type BriefStory, type Section, type Story } from "./newsTypes";
 
 export const STORIES_PER_SECTION = 3;
@@ -49,15 +49,15 @@ function ordinal(day: number): string {
 }
 
 // "Friday, October 23rd" in the app's timezone.
-export function formatBriefDate(now: Date = new Date()): string {
+export function formatBriefDate(tz: string, now: Date = new Date()): string {
   const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: APP_TIMEZONE,
+    timeZone: tz,
     weekday: "long",
     month: "long",
   }).formatToParts(now);
   const weekday = parts.find((p) => p.type === "weekday")?.value ?? "";
   const month = parts.find((p) => p.type === "month")?.value ?? "";
-  return `${weekday}, ${month} ${ordinal(dayOfMonthInAppTimezone(now))}`;
+  return `${weekday}, ${month} ${ordinal(dayOfMonthIn(tz, now))}`;
 }
 
 // Strips everything a speech engine would stumble over: URLs, symbols,
@@ -124,8 +124,8 @@ const SECTION_INTRO: Record<Section, { lead: string; empty: string }> = {
 // One entry per natural pause: intro, then each section's lead-in plus its
 // stories. The in-app player speaks these one at a time (long single
 // utterances get cut off in some browsers); the Shortcut gets them joined.
-export function briefToSpeechParts(brief: Brief, now: Date = new Date()): string[] {
-  const parts = [`Here's your brief for ${formatBriefDate(now)}.`];
+export function briefToSpeechParts(brief: Brief, tz: string, now: Date = new Date()): string[] {
+  const parts = [`Here's your brief for ${formatBriefDate(tz, now)}.`];
   for (const section of SECTIONS) {
     const stories = brief[section];
     if (stories.length === 0) {
@@ -139,8 +139,8 @@ export function briefToSpeechParts(brief: Brief, now: Date = new Date()): string
   return parts;
 }
 
-export function briefToSpeech(brief: Brief, now: Date = new Date()): string {
-  return briefToSpeechParts(brief, now).join(" ");
+export function briefToSpeech(brief: Brief, tz: string, now: Date = new Date()): string {
+  return briefToSpeechParts(brief, tz, now).join(" ");
 }
 
 // Browsers cut off long utterances (notably Chrome with network voices), so

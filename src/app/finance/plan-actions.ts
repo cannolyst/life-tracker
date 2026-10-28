@@ -12,7 +12,8 @@ import {
 } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { getBillsLineItems, getPaycheckPlan } from "@/db/queries";
-import { dateKeyInAppTimezone } from "@/lib/timezone";
+import { dateKeyIn } from "@/lib/timezone";
+import { getUserTimezone } from "@/db/userSettings";
 
 function revalidateFinance() {
   revalidatePath("/finance");
@@ -197,7 +198,7 @@ export async function markBillPaid(billId: string, periodKey: string, checked: b
         accountId: bill.accountId,
         amount: (-Number(bill.monthlyAmount)).toFixed(2),
         category: "minimum_payment",
-        date: dateKeyInAppTimezone(),
+        date: dateKeyIn(await getUserTimezone(userId)),
         note: `Paycheck plan: ${bill.name}`,
       });
       revalidatePath(`/debt/${bill.accountId}`);

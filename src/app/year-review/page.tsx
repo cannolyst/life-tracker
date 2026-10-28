@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getYearReviewData } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
+import { dateKeyIn } from "@/lib/timezone";
+import { getUserTimezone } from "@/db/userSettings";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
 import { AddYearReviewCategoryForm, AddYearReviewItemForm } from "./YearReviewForms";
@@ -18,8 +20,10 @@ export default async function YearReviewPage({
 }) {
   const { year: yearParam } = await searchParams;
   const selectedYear = yearParam ? Number(yearParam) : undefined;
+  const userId = await requireUserId();
+  const today = dateKeyIn(await getUserTimezone(userId));
   const { years, year, categoriesWithItems, allPeople, allPlaces } =
-    await getYearReviewData(await requireUserId(), selectedYear);
+    await getYearReviewData(userId, selectedYear);
 
   return (
     <div className="flex min-h-full flex-col">
@@ -32,7 +36,7 @@ export default async function YearReviewPage({
               <Link
                 key={y}
                 href={`/year-review?year=${y}`}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+                className={`tap rounded-md px-3 py-1.5 text-sm font-medium ${
                   y === year
                     ? "bg-neutral-100 text-neutral-900"
                     : "text-neutral-400 hover:text-neutral-100"
@@ -89,6 +93,7 @@ export default async function YearReviewPage({
                     categoryId={category.id}
                     people={allPeople}
                     places={allPlaces}
+                    today={today}
                   />
 
                   {items.length === 0 ? (

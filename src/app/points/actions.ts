@@ -14,7 +14,8 @@ import {
 } from "@/db/schema";
 import { getPointsBalance } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
-import { dateKeyInAppTimezone, weekKeyInAppTimezone } from "@/lib/timezone";
+import { dateKeyIn, weekKeyIn } from "@/lib/timezone";
+import { getUserTimezone } from "@/db/userSettings";
 
 export type ActionState = { error?: string };
 
@@ -120,7 +121,7 @@ export async function updateTask(
 // completion for today on/off.
 export async function toggleTaskCompletion(taskId: string) {
   const userId = await requireUserId();
-  const todayKey = dateKeyInAppTimezone();
+  const todayKey = dateKeyIn(await getUserTimezone(userId));
   const [existing] = await db
     .select()
     .from(habitCompletions)
@@ -163,7 +164,7 @@ export async function logRepeatableCompletion(taskId: string) {
   await db.insert(habitCompletions).values({
     userId,
     taskId,
-    date: dateKeyInAppTimezone(),
+    date: dateKeyIn(await getUserTimezone(userId)),
     pointsAwarded: task.points,
   });
   revalidateAll();
@@ -171,7 +172,7 @@ export async function logRepeatableCompletion(taskId: string) {
 
 export async function undoRepeatableCompletion(taskId: string) {
   const userId = await requireUserId();
-  const todayKey = dateKeyInAppTimezone();
+  const todayKey = dateKeyIn(await getUserTimezone(userId));
   const [mostRecent] = await db
     .select()
     .from(habitCompletions)
@@ -204,7 +205,7 @@ export async function archiveWeeklyTask(taskId: string) {
 // week on/off, same shape as toggleTaskCompletion's daily version.
 export async function toggleWeeklyTaskCompletion(taskId: string) {
   const userId = await requireUserId();
-  const weekKey = weekKeyInAppTimezone();
+  const weekKey = weekKeyIn(await getUserTimezone(userId));
   const [existing] = await db
     .select()
     .from(weeklyTaskCompletions)
@@ -232,7 +233,7 @@ export async function toggleWeeklyTaskCompletion(taskId: string) {
       userId,
       taskId,
       weekKey,
-      date: dateKeyInAppTimezone(),
+      date: dateKeyIn(await getUserTimezone(userId)),
       pointsAwarded: task.points,
     });
   }
@@ -302,7 +303,7 @@ export async function redeemReward(rewardId: string) {
     rewardId: reward.id,
     rewardName: reward.name,
     pointsCost: reward.cost,
-    date: dateKeyInAppTimezone(),
+    date: dateKeyIn(await getUserTimezone(userId)),
   });
   // Redeeming is one-time: archive it so it drops off the active list and
   // can't be redeemed again.

@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUserId } from "@/lib/session";
+import { getUserTimezone } from "@/db/userSettings";
 import { fetchAllStories } from "@/lib/news";
 import { getSeenStoryIds, recordSeen } from "@/db/brief";
 import { allBriefStories, briefToSpeechParts, buildBrief } from "@/lib/brief";
@@ -43,5 +44,5 @@ export async function playBrief(
     userId,
     allBriefStories(brief).map((s) => ({ storyId: s.id, title: s.title, section: s.section })),
   );
-  return { parts: briefToSpeechParts(brief) };
+  return { parts: briefToSpeechParts(brief, await getUserTimezone(userId)) };
 }

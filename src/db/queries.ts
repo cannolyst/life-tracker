@@ -47,11 +47,12 @@ import {
 import { computeStreak } from "@/lib/streak";
 import { computeCleaningStatus, classifyByTimeframe } from "@/lib/cleaningStatus";
 import {
-  dateKeyInAppTimezone,
-  dateOnlyInAppTimezone,
+  dateKeyIn,
+  dateOnlyIn,
   startOfWeekUtc,
-  weekKeyInAppTimezone,
+  weekKeyIn,
 } from "@/lib/timezone";
+import { getUserTimezone } from "./userSettings";
 import { computeMinimumPaymentStatus, computeExtraPaidOverMinimum } from "@/lib/minimumPayment";
 import {
   compareWeekOverWeek,
@@ -70,8 +71,11 @@ async function getBalance(accountId: string, userId: string, startingBalance: nu
   return startingBalance + Number(row?.total ?? 0);
 }
 
-function streakFromTransactions(txns: { date: Date | string; category: string }[]) {
-  return computeStreak(txns.filter((t) => t.category === "recurring_goal").map((t) => t.date));
+function streakFromTransactions(txns: { date: Date | string; category: string }[], tz: string) {
+  return computeStreak(
+    txns.filter((t) => t.category === "recurring_goal").map((t) => t.date),
+    tz,
+  );
 }
 
 // Batch-fetches every account's details/goals/statements/transactions in a
@@ -80,6 +84,7 @@ function streakFromTransactions(txns: { date: Date | string; category: string }[
 // same result, but the number of queries no longer scales with the number
 // of accounts.
 export async function listAccountsSummary(userId: string) {
+  const tz = await getUserTimezone(userId);
   const allAccounts = await db
     .select()
     .from(accounts)
@@ -156,6 +161,7 @@ export async function listAccountsSummary(userId: string) {
           Number(goal.targetAmount),
           txns.map((t) => ({ date: new Date(t.date), amount: Number(t.amount) })),
           new Date(account.createdAt),
+          tz,
         )
       : null;
 
@@ -166,7 +172,7 @@ export async function listAccountsSummary(userId: string) {
       goal,
       projectedDate,
       pace: isOnTrack(projectedDate, goal?.targetDate),
-      streak: streakFromTransactions(txns),
+      streak: streakFromTransactions(txns, tz),
     };
   });
 
@@ -186,6 +192,7 @@ export async function listAccountsSummary(userId: string) {
           Number(details.dailyMicropaymentGoal),
           minimumPaymentDue,
           details.statementDay,
+          tz,
         )
       : null;
 
@@ -197,6 +204,7 @@ export async function listAccountsSummary(userId: string) {
             minimumPaymentDue,
             details.statementDay,
             new Date(goal.targetDate),
+            tz,
           )
         : null;
 
@@ -211,7 +219,7 @@ export async function listAccountsSummary(userId: string) {
       goal,
       requiredDaily,
       pace: isOnTrack(projectedDate, goal?.targetDate),
-      streak: streakFromTransactions(txns),
+      streak: streakFromTransactions(txns, tz),
       minimumPaymentStatus: computeMinimumPaymentStatus(txns, latestStatement),
       interestSaved: details
         ? estimateInterestSaved(
@@ -220,6 +228,7 @@ export async function listAccountsSummary(userId: string) {
             Number(details.dailyMicropaymentGoal),
             minimumPaymentDue,
             details.statementDay,
+            tz,
           )
         : 0,
       extraPaidOverMinimum: computeExtraPaidOverMinimum(txns, statements),
@@ -230,6 +239,7 @@ export async function listAccountsSummary(userId: string) {
 }
 
 export async function getSavingsAccountDetail(accountId: string, userId: string) {
+  const tz = await getUserTimezone(userId);
   const [account] = await db
     .select()
     .from(accounts)
@@ -257,6 +267,7 @@ export async function getSavingsAccountDetail(accountId: string, userId: string)
         Number(goal.targetAmount),
         txns.map((t) => ({ date: new Date(t.date), amount: Number(t.amount) })),
         new Date(account.createdAt),
+        tz,
       )
     : null;
 
@@ -268,11 +279,12 @@ export async function getSavingsAccountDetail(accountId: string, userId: string)
     balance,
     projectedDate,
     pace: isOnTrack(projectedDate, goal?.targetDate),
-    streak: streakFromTransactions(txns),
+    streak: streakFromTransactions(txns, tz),
   };
 }
 
 export async function getDebtAccountDetail(accountId: string, userId: string) {
+  const tz = await getUserTimezone(userId);
   const [account] = await db
     .select()
     .from(accounts)
@@ -308,6 +320,7 @@ export async function getDebtAccountDetail(accountId: string, userId: string) {
         Number(details.dailyMicropaymentGoal),
         minimumPaymentDue,
         details.statementDay,
+        tz,
       )
     : null;
 
@@ -319,6 +332,7 @@ export async function getDebtAccountDetail(accountId: string, userId: string) {
           minimumPaymentDue,
           details.statementDay,
           new Date(goal.targetDate),
+          tz,
         )
       : null;
 
@@ -332,7 +346,7 @@ export async function getDebtAccountDetail(accountId: string, userId: string) {
     projectedDate,
     requiredDaily,
     pace: isOnTrack(projectedDate, goal?.targetDate),
-    streak: streakFromTransactions(txns),
+    streak: streakFromTransactions(txns, tz),
     minimumPaymentStatus: computeMinimumPaymentStatus(txns, latestStatement),
     interestSaved: details
       ? estimateInterestSaved(
@@ -341,6 +355,7 @@ export async function getDebtAccountDetail(accountId: string, userId: string) {
           Number(details.dailyMicropaymentGoal),
           minimumPaymentDue,
           details.statementDay,
+          tz,
         )
       : 0,
     extraPaidOverMinimum: computeExtraPaidOverMinimum(txns, statements),
@@ -353,6 +368,7 @@ export type FinanceChartPoint = { dateKey: string; label: string; saved: number;
 function buildFinanceChart(
   rows: { date: string; amount: number; accountType: string }[],
   granularity: FinanceChartGranularity,
+  tz: string,
 ): FinanceChartPoint[] {
   const savedSums = new Map<string, number>();
   const paidDebtSums = new Map<string, number>();
@@ -367,7 +383,7 @@ function buildFinanceChart(
     }
   }
 
-  const todayOnly = dateOnlyInAppTimezone();
+  const todayOnly = dateOnlyIn(tz);
   const count = CHART_BUCKET_COUNT[granularity];
   const points: FinanceChartPoint[] = [];
 
@@ -390,14 +406,16 @@ function buildFinanceChart(
 
 function buildAllFinanceCharts(
   rows: { date: string; amount: number; accountType: string }[],
+  tz: string,
 ): Record<FinanceChartGranularity, FinanceChartPoint[]> {
   return {
-    week: buildFinanceChart(rows, "week"),
-    month: buildFinanceChart(rows, "month"),
+    week: buildFinanceChart(rows, "week", tz),
+    month: buildFinanceChart(rows, "month", tz),
   };
 }
 
 export async function getGamificationStats(userId: string) {
+  const tz = await getUserTimezone(userId);
   const rows = await db
     .select({
       amount: transactions.amount,
@@ -409,10 +427,10 @@ export async function getGamificationStats(userId: string) {
     .innerJoin(accounts, eq(transactions.accountId, accounts.id))
     .where(eq(transactions.userId, userId));
 
-  const todayKey = dateKeyInAppTimezone();
+  const todayKey = dateKeyIn(tz);
   const monthPrefix = todayKey.slice(0, 7); // "YYYY-MM"
   const monthStart = new Date(`${monthPrefix}-01T00:00:00Z`);
-  const today = dateOnlyInAppTimezone();
+  const today = dateOnlyIn(tz);
   const daysInMonthSoFar = Math.round((today.getTime() - monthStart.getTime()) / MS_PER_DAY) + 1;
 
   let lifetimeSaved = 0;
@@ -447,6 +465,7 @@ export async function getGamificationStats(userId: string) {
 
   const chartData = buildAllFinanceCharts(
     rows.map((r) => ({ date: r.date, amount: Number(r.amount), accountType: r.accountType })),
+    tz,
   );
 
   return {
@@ -500,6 +519,7 @@ function addDaysToDateKey(dateKey: string, days: number): string {
 // shared by the Points page itself and the overview page so they always
 // match. Reflects the whole shared economy (habit + cleaning completions).
 export async function getPointsSummary(userId: string) {
+  const tz = await getUserTimezone(userId);
   const [completions, cleaningCompletionsAll, weeklyCompletionsAll, [{ spent }]] = await Promise.all([
     db
       .select({ date: habitCompletions.date, pointsAwarded: habitCompletions.pointsAwarded })
@@ -516,7 +536,7 @@ export async function getPointsSummary(userId: string) {
     db.select({ spent: sum(redemptions.pointsCost) }).from(redemptions).where(eq(redemptions.userId, userId)),
   ]);
 
-  const todayKey = dateKeyInAppTimezone();
+  const todayKey = dateKeyIn(tz);
   const yesterdayKey = addDaysToDateKey(todayKey, -1);
 
   const sumForDate = (dateKey: string) =>
@@ -542,7 +562,7 @@ export async function getPointsSummary(userId: string) {
     balance,
     pointsToday: sumForDate(todayKey),
     pointsYesterday: sumForDate(yesterdayKey),
-    streak: computeStreak(distinctDays),
+    streak: computeStreak(distinctDays, tz),
   };
 }
 
@@ -594,6 +614,7 @@ function chartBucketLabel(granularity: ChartGranularity, d: Date): string {
 function buildPointsChart(
   rows: { date: string; pointsAwarded: number }[],
   granularity: ChartGranularity,
+  tz: string,
 ): ChartPoint[] {
   const sums = new Map<string, number>();
   for (const row of rows) {
@@ -602,7 +623,7 @@ function buildPointsChart(
     sums.set(key, (sums.get(key) ?? 0) + row.pointsAwarded);
   }
 
-  const todayOnly = dateOnlyInAppTimezone();
+  const todayOnly = dateOnlyIn(tz);
   const count = CHART_BUCKET_COUNT[granularity];
   const points: ChartPoint[] = [];
 
@@ -626,23 +647,25 @@ function buildPointsChart(
 
 function buildAllPointsCharts(
   rows: { date: string; pointsAwarded: number }[],
+  tz: string,
 ): Record<ChartGranularity, ChartPoint[]> {
   return {
-    day: buildPointsChart(rows, "day"),
-    week: buildPointsChart(rows, "week"),
-    month: buildPointsChart(rows, "month"),
-    year: buildPointsChart(rows, "year"),
+    day: buildPointsChart(rows, "day", tz),
+    week: buildPointsChart(rows, "week", tz),
+    month: buildPointsChart(rows, "month", tz),
+    year: buildPointsChart(rows, "year", tz),
   };
 }
 
 async function getWeeklyTasksWithStatus(userId: string) {
+  const tz = await getUserTimezone(userId);
   const tasks = await db
     .select()
     .from(weeklyTasks)
     .where(and(eq(weeklyTasks.archived, false), eq(weeklyTasks.userId, userId)))
     .orderBy(weeklyTasks.createdAt);
 
-  const weekKey = weekKeyInAppTimezone();
+  const weekKey = weekKeyIn(tz);
   const completions =
     tasks.length > 0
       ? await db
@@ -665,6 +688,7 @@ async function getWeeklyTasksWithStatus(userId: string) {
 }
 
 export async function getHabitDashboardData(userId: string) {
+  const tz = await getUserTimezone(userId);
   const [categories, tasks, completions, activeRewards, recentRedemptions] = await Promise.all([
     db
       .select()
@@ -685,7 +709,7 @@ export async function getHabitDashboardData(userId: string) {
     db.select().from(redemptions).where(eq(redemptions.userId, userId)).orderBy(redemptions.date),
   ]);
 
-  const todayKey = dateKeyInAppTimezone();
+  const todayKey = dateKeyIn(tz);
   const todayCompletionCounts = new Map<string, number>();
   for (const c of completions) {
     if (c.date === todayKey) {
@@ -729,7 +753,7 @@ export async function getHabitDashboardData(userId: string) {
     ...completions,
     ...cleaningCompletionsAll,
     ...weeklyCompletionsAll,
-  ]);
+  ], tz);
 
   return {
     categories,
@@ -753,6 +777,7 @@ export async function getHabitDashboardData(userId: string) {
 // --- Cleaning tracker ---
 
 async function getCleaningTasksWithStatus(userId: string) {
+  const tz = await getUserTimezone(userId);
   const [areas, tasks, allCompletions] = await Promise.all([
     db.select().from(cleaningAreas).where(eq(cleaningAreas.userId, userId)),
     db
@@ -764,7 +789,7 @@ async function getCleaningTasksWithStatus(userId: string) {
   ]);
   const areaNameById = new Map(areas.map((a) => [a.id, a.name]));
 
-  const todayKey = dateKeyInAppTimezone();
+  const todayKey = dateKeyIn(tz);
 
   return tasks.map((task) => {
     const taskCompletions = allCompletions.filter((c) => c.taskId === task.id);
@@ -776,6 +801,7 @@ async function getCleaningTasksWithStatus(userId: string) {
       lastCompletedDate,
       task.frequencyDays,
       task.createdAt,
+      tz,
     );
     return {
       ...task,
@@ -783,7 +809,7 @@ async function getCleaningTasksWithStatus(userId: string) {
       lastCompletedDate,
       status,
       dueDate,
-      timeframe: classifyByTimeframe(status, dueDate),
+      timeframe: classifyByTimeframe(status, dueDate, tz),
       doneToday: taskCompletions.some((c) => c.date === todayKey),
     };
   });
@@ -848,6 +874,7 @@ function yearReviewItemSortKey(item: { year: number; month: number | null; date:
 }
 
 export async function getYearReviewData(userId: string, selectedYear?: number) {
+  const tz = await getUserTimezone(userId);
   const categories = await db
     .select()
     .from(yearReviewCategories)
@@ -889,7 +916,7 @@ export async function getYearReviewData(userId: string, selectedYear?: number) {
     placesByItemId.set(link.itemId, list);
   }
 
-  const currentYear = Number(dateKeyInAppTimezone().slice(0, 4));
+  const currentYear = Number(dateKeyIn(tz).slice(0, 4));
   const years = Array.from(new Set([currentYear, ...allItems.map((i) => i.year)])).sort(
     (a, b) => b - a,
   );
@@ -996,6 +1023,7 @@ export async function getWorkoutDays(userId: string, programId: string) {
 // calendar week, so the page can show progress at a glance (e.g. "Leg day
 // done").
 export async function getWorkoutWeekProgress(userId: string, programId: string) {
+  const tz = await getUserTimezone(userId);
   const days = await db
     .select()
     .from(workoutDays)
@@ -1008,7 +1036,7 @@ export async function getWorkoutWeekProgress(userId: string, programId: string) 
     )
     .orderBy(workoutDays.orderIndex);
 
-  const todayOnly = dateOnlyInAppTimezone();
+  const todayOnly = dateOnlyIn(tz);
   const weekStart = startOfWeekUtc(todayOnly);
   const weekEnd = new Date(weekStart.getTime() + 6 * MS_PER_DAY);
   const weekStartKey = weekStart.toISOString().slice(0, 10);
@@ -1048,6 +1076,7 @@ export async function getWorkoutWeekProgress(userId: string, programId: string) 
 // week's. Scoped to the selected program's days — mixing volume/readiness
 // numbers across differently-purposed programs wouldn't mean anything.
 export async function getWorkoutDashboardStats(userId: string, programId: string) {
+  const tz = await getUserTimezone(userId);
   const programDays = await db
     .select({ id: workoutDays.id })
     .from(workoutDays)
@@ -1109,7 +1138,7 @@ export async function getWorkoutDashboardStats(userId: string, programId: string
     }
   }
 
-  const todayOnly = dateOnlyInAppTimezone();
+  const todayOnly = dateOnlyIn(tz);
   const thisWeekStart = startOfWeekUtc(todayOnly);
   const thisWeekEnd = new Date(thisWeekStart.getTime() + 6 * MS_PER_DAY);
   const lastWeekStart = new Date(thisWeekStart.getTime() - 7 * MS_PER_DAY);
@@ -1146,6 +1175,7 @@ export async function getWorkoutDashboardStats(userId: string, programId: string
 }
 
 export async function getWorkoutDayData(dayId: string, userId: string) {
+  const tz = await getUserTimezone(userId);
   const [day] = await db
     .select()
     .from(workoutDays)
@@ -1178,10 +1208,10 @@ export async function getWorkoutDayData(dayId: string, userId: string) {
           .where(and(inArray(workoutSets.sessionId, sessionIds), eq(workoutSets.userId, userId)))
       : [];
 
-  const todayKey = dateKeyInAppTimezone();
+  const todayKey = dateKeyIn(tz);
   const todaySession = sessions.find((s) => s.date === todayKey) ?? null;
 
-  const todayOnly = dateOnlyInAppTimezone();
+  const todayOnly = dateOnlyIn(tz);
   const thisWeekStart = startOfWeekUtc(todayOnly);
   const thisWeekEnd = new Date(thisWeekStart.getTime() + 6 * MS_PER_DAY);
   const lastWeekStart = new Date(thisWeekStart.getTime() - 7 * MS_PER_DAY);
@@ -1312,7 +1342,8 @@ export async function getModuleSettings(userId: string) {
 // --- Emotion check-in ---
 
 export async function getTodaysEmotionEntries(userId: string) {
-  const todayKey = dateKeyInAppTimezone();
+  const tz = await getUserTimezone(userId);
+  const todayKey = dateKeyIn(tz);
   return db
     .select()
     .from(emotionEntries)

@@ -3,7 +3,6 @@
 import { useActionState } from "react";
 import { addYearReviewCategory, addYearReviewItem, type ActionState } from "./actions";
 import { inputClass, labelClass, buttonClass } from "@/components/ui";
-import { dateKeyInAppTimezone } from "@/lib/timezone";
 import { YearMonthDayFields } from "./YearMonthDayFields";
 
 const initialState: ActionState = {};
@@ -29,10 +28,12 @@ export function AddYearReviewItemForm({
   categoryId,
   people,
   places,
+  today,
 }: {
   categoryId: string;
   people: { id: string; name: string }[];
   places: { id: string; name: string }[];
+  today: string;
 }) {
   const action = addYearReviewItem.bind(null, categoryId);
   const [state, formAction, pending] = useActionState(action, initialState);
@@ -72,7 +73,7 @@ export function AddYearReviewItemForm({
       </div>
       <div className="w-full sm:w-auto">
         <YearMonthDayFields
-          defaultYear={dateKeyInAppTimezone().slice(0, 4)}
+          defaultYear={today.slice(0, 4)}
           defaultMonth=""
           defaultDay=""
         />

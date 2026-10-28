@@ -21,7 +21,7 @@ export function NavClient({
       <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
         <Link
           href="/"
-          className="font-display flex items-center gap-1.5 text-lg font-semibold text-neutral-100"
+          className="font-display flex min-h-11 items-center gap-1.5 text-lg font-semibold text-neutral-100"
           onClick={() => setOpen(false)}
         >
           <Sparkle className="h-4 w-4" color={JEWELS[0].color} />
@@ -38,6 +38,9 @@ export function NavClient({
               {link.label}
             </Link>
           ))}
+          <Link href="/guide" className="text-neutral-400 hover:text-neutral-100">
+            Guide
+          </Link>
           <Link href="/settings" className="text-neutral-400 hover:text-neutral-100">
             Settings
           </Link>
@@ -57,7 +60,7 @@ export function NavClient({
           onClick={() => setOpen((o) => !o)}
           aria-label="Toggle menu"
           aria-expanded={open}
-          className="flex h-9 w-9 items-center justify-center rounded-md text-xl text-neutral-400 hover:text-neutral-100 sm:hidden"
+          className="flex h-11 w-11 items-center justify-center rounded-md text-xl text-neutral-400 hover:text-neutral-100 sm:hidden"
         >
           {open ? "✕" : "☰"}
         </button>
@@ -76,6 +79,13 @@ export function NavClient({
                 {link.label}
               </Link>
             ))}
+            <Link
+              href="/guide"
+              onClick={() => setOpen(false)}
+              className="rounded-full border border-neutral-700 px-3 py-1.5 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
+            >
+              Guide
+            </Link>
             <Link
               href="/settings"
               onClick={() => setOpen(false)}

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, League_Spartan } from "next/font/google";
 import { cookies } from "next/headers";
 import { BACKGROUND_COLORS } from "@/lib/backgroundColors";
@@ -23,6 +23,14 @@ const leagueSpartan = League_Spartan({
 export const metadata: Metadata = {
   title: "Life Tracker",
   description: "Points, cleaning, and finance tracking in one place",
+};
+
+// viewport-fit=cover lets the page extend under the iPhone notch and home
+// indicator; globals.css pads the edges back in with env(safe-area-inset-*).
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

@@ -1,4 +1,4 @@
-import { dateOnlyInAppTimezone, startOfWeekUtc } from "./timezone";
+import { dateOnlyIn, startOfWeekUtc } from "./timezone";
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -22,13 +22,14 @@ export function computeCleaningStatus(
   lastCompletedDate: Date | string | null,
   frequencyDays: number,
   createdAt: Date | string,
+  tz: string,
   today: Date = new Date(),
 ): { status: CleaningStatus; dueDate: Date } {
   const anchor = lastCompletedDate
     ? utcDateOnly(lastCompletedDate)
-    : dateOnlyInAppTimezone(typeof createdAt === "string" ? new Date(createdAt) : createdAt);
+    : dateOnlyIn(tz, typeof createdAt === "string" ? new Date(createdAt) : createdAt);
   const dueDate = new Date(anchor.getTime() + frequencyDays * MS_PER_DAY);
-  const todayOnly = dateOnlyInAppTimezone(today);
+  const todayOnly = dateOnlyIn(tz, today);
 
   const diff = dueDate.getTime() - todayOnly.getTime();
   const status: CleaningStatus = diff < 0 ? "overdue" : diff === 0 ? "due-today" : "upcoming";
@@ -54,8 +55,8 @@ export type CleaningTimeframeBoundaries = {
 // The date ranges behind each timeframe bucket, exposed so the UI can
 // label a bucket with its actual dates (e.g. "This week (Sep 6-12)")
 // instead of just the bucket name. Weeks run Sunday-Saturday.
-export function getTimeframeBoundaries(today: Date = new Date()): CleaningTimeframeBoundaries {
-  const todayOnly = dateOnlyInAppTimezone(today);
+export function getTimeframeBoundaries(tz: string, today: Date = new Date()): CleaningTimeframeBoundaries {
+  const todayOnly = dateOnlyIn(tz, today);
   const thisWeekStart = startOfWeekUtc(todayOnly);
   const thisWeekEnd = new Date(thisWeekStart.getTime() + 6 * MS_PER_DAY);
   const nextWeekStart = new Date(thisWeekEnd.getTime() + MS_PER_DAY);
@@ -76,11 +77,12 @@ export function getTimeframeBoundaries(today: Date = new Date()): CleaningTimefr
 export function classifyByTimeframe(
   status: CleaningStatus,
   dueDate: Date,
+  tz: string,
   today: Date = new Date(),
 ): CleaningTimeframeBucket {
   if (status === "overdue") return "overdue";
 
-  const { thisWeekEnd, nextWeekEnd, monthEnd } = getTimeframeBoundaries(today);
+  const { thisWeekEnd, nextWeekEnd, monthEnd } = getTimeframeBoundaries(tz, today);
 
   const due = dueDate.getTime();
   if (due <= thisWeekEnd.getTime()) return "week";

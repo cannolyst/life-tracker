@@ -1,5 +1,6 @@
 import { getCleaningDashboardData } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
+import { getUserTimezone } from "@/db/userSettings";
 import { getTimeframeBoundaries, type CleaningTimeframeBucket } from "@/lib/cleaningStatus";
 import { Nav } from "@/components/Nav";
 import { Card, formatDateRange, formatMonthName } from "@/components/ui";
@@ -11,9 +12,9 @@ import type { Task } from "./TaskList";
 export const dynamic = "force-dynamic";
 
 export default async function CleaningPage() {
-  const { areasWithTasks, unassignedTasks, areas } = await getCleaningDashboardData(
-    await requireUserId(),
-  );
+  const userId = await requireUserId();
+  const tz = await getUserTimezone(userId);
+  const { areasWithTasks, unassignedTasks, areas } = await getCleaningDashboardData(userId);
 
   const categoryGroups: TaskGroup[] = [
     ...areasWithTasks
@@ -48,7 +49,7 @@ export default async function CleaningPage() {
   }
   for (const tasks of Object.values(buckets)) tasks.sort(byDueDate);
 
-  const boundaries = getTimeframeBoundaries();
+  const boundaries = getTimeframeBoundaries(tz);
   const timeframeGroups: TaskGroup[] = [
     { key: "overdue", name: "Overdue", tasks: buckets.overdue },
     {

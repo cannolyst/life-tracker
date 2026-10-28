@@ -7,6 +7,7 @@ import {
   getModuleSettings,
 } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
+import { getUserTimezone } from "@/db/userSettings";
 import { Nav } from "@/components/Nav";
 import { Card, formatCurrency, formatDate, formatDateRange, formatMonthName } from "@/components/ui";
 import { MinimumPaymentBadge } from "@/components/MinimumPaymentBadge";
@@ -25,6 +26,7 @@ type CleaningTask = {
 
 export default async function OverviewPage() {
   const userId = await requireUserId();
+  const tz = await getUserTimezone(userId);
   const settings = await getModuleSettings(userId);
 
   const [pointsSummary, cleaning, accountsSummary, allTodos] = await Promise.all([
@@ -66,7 +68,7 @@ export default async function OverviewPage() {
   // /cleaning — so they're folded in alongside the rest of the month here.
   const dueThisMonth = [...buckets.month, ...buckets.later].sort(byDueDate);
 
-  const boundaries = getTimeframeBoundaries();
+  const boundaries = getTimeframeBoundaries(tz);
 
   const paymentsDue = accountsSummary
     ? accountsSummary.debtSummaries.filter(
@@ -131,7 +133,7 @@ export default async function OverviewPage() {
           <section className="space-y-3">
             <div className="flex items-baseline justify-between">
               <h2 className="text-lg font-semibold">To-do</h2>
-              <Link href="/lists" className="text-sm text-neutral-500 hover:text-neutral-100">
+              <Link href="/lists" className="tap text-sm text-neutral-500 hover:text-neutral-100">
                 View all
               </Link>
             </div>
@@ -157,7 +159,7 @@ export default async function OverviewPage() {
           <section className="space-y-3">
             <div className="flex items-baseline justify-between">
               <h2 className="text-lg font-semibold">Cleaning</h2>
-              <Link href="/cleaning" className="text-sm text-neutral-500 hover:text-neutral-100">
+              <Link href="/cleaning" className="tap text-sm text-neutral-500 hover:text-neutral-100">
                 View all
               </Link>
             </div>
@@ -189,7 +191,7 @@ export default async function OverviewPage() {
           <section className="space-y-3">
             <div className="flex items-baseline justify-between">
               <h2 className="text-lg font-semibold">Payments due</h2>
-              <Link href="/finance" className="text-sm text-neutral-500 hover:text-neutral-100">
+              <Link href="/finance" className="tap text-sm text-neutral-500 hover:text-neutral-100">
                 View all
               </Link>
             </div>

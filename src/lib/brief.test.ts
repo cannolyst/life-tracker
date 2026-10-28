@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { buildBrief, briefToSpeech, briefToSpeechParts, cleanForSpeech, formatBriefDate, allBriefStories, chunkForSpeech } from "./brief";
 import type { Section, Story } from "./newsTypes";
 
+const TZ = "America/Chicago";
+
 function story(id: string, section: Section, minutesAgo: number, extra: Partial<Story> = {}): Story {
   return {
     id,
@@ -88,7 +90,7 @@ describe("speech polish", () => {
       ],
       new Set(),
     );
-    const text = briefToSpeech(b);
+    const text = briefToSpeech(b, TZ);
     expect(text).toContain("A talk by J. Smith in the U.S. Capitol went long.");
     expect(text).not.toContain("Next sentence");
   });
@@ -98,20 +100,20 @@ describe("speech polish", () => {
       [story("y", "tech", 1, { summary: `${long("alpha beta,")} gamma delta epsilon ${"zeta ".repeat(20)}end.` })],
       new Set(),
     );
-    const cut = briefToSpeech(withClause);
+    const cut = briefToSpeech(withClause, TZ);
     expect(cut).not.toMatch(/,\./);
     expect(cut).not.toContain("end.");
 
     const noClause = buildBrief([story("z", "tech", 1, { summary: "word ".repeat(80) + "end." })], new Set());
-    expect(briefToSpeech(noClause)).toContain("Headline z. That's your brief.");
+    expect(briefToSpeech(noClause, TZ)).toContain("Headline z. That's your brief.");
   });
 });
 
 describe("formatBriefDate", () => {
   it("formats weekday, month and ordinal day in Chicago time", () => {
-    expect(formatBriefDate(new Date("2026-10-23T15:00:00Z"))).toBe("Friday, October 23rd");
-    expect(formatBriefDate(new Date("2026-10-01T15:00:00Z"))).toBe("Thursday, October 1st");
-    expect(formatBriefDate(new Date("2026-10-12T15:00:00Z"))).toBe("Monday, October 12th");
+    expect(formatBriefDate(TZ, new Date("2026-10-23T15:00:00Z"))).toBe("Friday, October 23rd");
+    expect(formatBriefDate(TZ, new Date("2026-10-01T15:00:00Z"))).toBe("Thursday, October 1st");
+    expect(formatBriefDate(TZ, new Date("2026-10-12T15:00:00Z"))).toBe("Monday, October 12th");
   });
 });
 
@@ -119,7 +121,7 @@ describe("briefToSpeech", () => {
   const now = new Date("2026-10-23T15:00:00Z");
 
   it("reads intro, sections, headlines and a first-sentence summary", () => {
-    const text = briefToSpeech(buildBrief(stories, new Set()), now);
+    const text = briefToSpeech(buildBrief(stories, new Set()), TZ, now);
     expect(text.startsWith("Here's your brief for Friday, October 23rd. In national news,")).toBe(true);
     expect(text).toContain("Headline n1. Summary for n1.");
     expect(text).not.toContain("Second sentence");
@@ -134,13 +136,13 @@ describe("briefToSpeech", () => {
       stories.filter((s) => s.section !== "tech"),
       new Set(["n1", "n2", "n3"]),
     );
-    const text = briefToSpeech(brief, now);
+    const text = briefToSpeech(brief, TZ, now);
     expect(text).toContain("Headline n4. Summary for n4. From earlier: Headline n1.");
     expect(text).toContain("There are no tech stories right now.");
   });
 
   it("splits into parts: intro, then lead-in and one part per story", () => {
-    const parts = briefToSpeechParts(buildBrief(stories, new Set()), now);
+    const parts = briefToSpeechParts(buildBrief(stories, new Set()), TZ, now);
     expect(parts[0]).toBe("Here's your brief for Friday, October 23rd.");
     expect(parts[1]).toBe("In national news,");
     expect(parts[parts.length - 1]).toBe("That's your brief.");

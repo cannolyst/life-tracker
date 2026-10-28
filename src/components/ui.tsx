@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { dateOnlyInAppTimezone } from "@/lib/timezone";
+import { dateOnlyIn } from "@/lib/timezone";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
@@ -28,9 +28,9 @@ export function formatCurrency(amount: number) {
 }
 
 // Formats a calendar-day value (a date-only DB column, or a Date built by
-// dateOnlyInAppTimezone) — these are all anchored to UTC midnight, so we
+// dateOnlyIn) — these are all anchored to UTC midnight, so we
 // format in UTC to recover the exact stored day. Never pass a genuine
-// instant/timestamp here directly — convert it with dateOnlyInAppTimezone
+// instant/timestamp here directly — convert it with dateOnlyIn
 // first, otherwise the displayed day can shift by one depending on viewer
 // timezone.
 export function formatDate(date: Date | string | null) {
@@ -66,17 +66,19 @@ export const inputClass =
 export const labelClass = "text-sm text-neutral-400";
 
 export const buttonClass =
-  "rounded-md bg-neutral-100 px-3 py-2 font-medium text-neutral-900 disabled:opacity-60";
+  "tap rounded-md bg-neutral-100 px-3 py-2 font-medium text-neutral-900 disabled:opacity-60";
 
 export function buildBalancePoints(
   startingBalance: number,
   startDate: Date | string,
   txns: { date: Date | string; amount: number | string }[],
+  tz: string,
 ) {
   // startDate is a genuine timestamp (account.createdAt) — convert to its
-  // Chicago calendar day first so it's on equal footing with the date-only
+  // calendar day (in the user's zone) first so it's on equal footing with the date-only
   // transaction values before formatting.
-  const startDateOnly = dateOnlyInAppTimezone(
+  const startDateOnly = dateOnlyIn(
+    tz,
     typeof startDate === "string" ? new Date(startDate) : startDate,
   );
   const points = [{ date: formatDate(startDateOnly), balance: startingBalance }];

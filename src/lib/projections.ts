@@ -1,4 +1,4 @@
-import { dateOnlyInAppTimezone, dayOfMonthInAppTimezone } from "./timezone";
+import { dateOnlyIn, dayOfMonthIn } from "./timezone";
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const TRAILING_WINDOW_DAYS = 30;
@@ -28,14 +28,15 @@ export function projectSavingsDate(
   targetAmount: number,
   transactions: Transaction[],
   accountCreatedAt: Date,
+  tz: string,
   today: Date = new Date(),
 ): Date | null {
-  const todayDateOnly = dateOnlyInAppTimezone(today);
+  const todayDateOnly = dateOnlyIn(tz, today);
 
   const remaining = targetAmount - currentBalance;
   if (remaining <= 0) return todayDateOnly;
 
-  const createdDateOnly = dateOnlyInAppTimezone(accountCreatedAt);
+  const createdDateOnly = dateOnlyIn(tz, accountCreatedAt);
   const windowStart = addDays(todayDateOnly, -TRAILING_WINDOW_DAYS);
   const effectiveStart = windowStart > createdDateOnly ? windowStart : createdDateOnly;
 
@@ -71,9 +72,10 @@ function simulatePayoff(
   dailyMicropaymentGoal: number,
   minimumPaymentDue: number,
   statementDay: number,
+  tz: string,
   today: Date,
 ): PayoffSimulation {
-  const todayDateOnly = dateOnlyInAppTimezone(today);
+  const todayDateOnly = dateOnlyIn(tz, today);
 
   let balance = currentBalance;
   if (balance <= 0) return { payoffDate: todayDateOnly, totalInterest: 0 };
@@ -89,7 +91,7 @@ function simulatePayoff(
     balance -= dailyMicropaymentGoal;
 
     date = addDays(date, 1);
-    if (dayOfMonthInAppTimezone(date) === statementDay) {
+    if (dayOfMonthIn(tz, date) === statementDay) {
       balance -= minimumPaymentDue;
     }
 
@@ -111,6 +113,7 @@ export function projectPayoffDate(
   dailyMicropaymentGoal: number,
   minimumPaymentDue: number,
   statementDay: number,
+  tz: string,
   today: Date = new Date(),
 ): Date | null {
   return simulatePayoff(
@@ -119,6 +122,7 @@ export function projectPayoffDate(
     dailyMicropaymentGoal,
     minimumPaymentDue,
     statementDay,
+    tz,
     today,
   ).payoffDate;
 }
@@ -139,6 +143,7 @@ export function estimateInterestSaved(
   dailyMicropaymentGoal: number,
   minimumPaymentDue: number,
   statementDay: number,
+  tz: string,
   today: Date = new Date(),
 ): number | null {
   if (currentBalance <= 0 || dailyMicropaymentGoal <= 0) return 0;
@@ -150,6 +155,7 @@ export function estimateInterestSaved(
     0,
     minimumPaymentDue,
     statementDay,
+    tz,
     today,
   );
   if (minimumOnly.payoffDate === null) return null;
@@ -160,6 +166,7 @@ export function estimateInterestSaved(
     dailyMicropaymentGoal,
     minimumPaymentDue,
     statementDay,
+    tz,
     today,
   );
 
@@ -183,10 +190,11 @@ export function requiredDailyPayment(
   minimumPaymentDue: number,
   statementDay: number,
   targetDate: Date,
+  tz: string,
   today: Date = new Date(),
 ): number | null {
-  const todayDateOnly = dateOnlyInAppTimezone(today);
-  const targetDateOnly = dateOnlyInAppTimezone(targetDate);
+  const todayDateOnly = dateOnlyIn(tz, today);
+  const targetDateOnly = dateOnlyIn(tz, targetDate);
 
   if (currentBalance <= 0) return 0;
   if (targetDateOnly < todayDateOnly) return null;
@@ -198,6 +206,7 @@ export function requiredDailyPayment(
       dailyPayment,
       minimumPaymentDue,
       statementDay,
+      tz,
       todayDateOnly,
     );
 

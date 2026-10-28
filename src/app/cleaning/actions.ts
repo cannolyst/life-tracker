@@ -5,7 +5,8 @@ import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { cleaningAreas, cleaningTasks, cleaningCompletions } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
-import { dateKeyInAppTimezone } from "@/lib/timezone";
+import { dateKeyIn } from "@/lib/timezone";
+import { getUserTimezone } from "@/db/userSettings";
 
 export type ActionState = { error?: string };
 
@@ -73,7 +74,7 @@ export async function archiveTask(taskId: string) {
 
 export async function markDone(taskId: string) {
   const userId = await requireUserId();
-  const todayKey = dateKeyInAppTimezone();
+  const todayKey = dateKeyIn(await getUserTimezone(userId));
   const [existing] = await db
     .select()
     .from(cleaningCompletions)

@@ -11,6 +11,7 @@ import {
   primaryKey,
   foreignKey,
   unique,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -797,7 +798,7 @@ export const weeklyTasks = pgTable(
 ).enableRLS();
 
 // One completion per task per week — checked state is derived from row
-// existence for the current weekKey (see weekKeyInAppTimezone in
+// existence for the current weekKey (see weekKeyIn in
 // src/lib/timezone.ts), same trick as paycheckChecklistChecks, so a new
 // week naturally starts unchecked with no reset job. date is the actual
 // day it was checked (for the Points page's today/yesterday stats and
@@ -860,3 +861,46 @@ export const briefTokens = pgTable("brief_tokens", {
   tokenHash: text("token_hash").notNull().unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }).enableRLS();
+
+// --- Per-user settings for the central hub (time zone, day structure,
+// calendar, brief city, notification preferences, feature switches) ---
+
+// One row per user, created lazily on first save — no row means defaults.
+// Distinct from module_settings, which only controls which nav tabs show.
+export const userSettings = pgTable(
+  "user_settings",
+  {
+    userId: uuid("user_id").primaryKey(),
+    // IANA zone name; every "what day is it" calculation uses this.
+    timezone: text("timezone").notNull().default("America/Chicago"),
+    // Block boundaries as minutes after local midnight. Transition begins
+    // when work ends; Evening and Shutdown have their own start times.
+    launchStartMinutes: integer("launch_start_minutes").notNull().default(300), // 5:00
+    workStartMinutes: integer("work_start_minutes").notNull().default(480), // 8:00
+    workEndMinutes: integer("work_end_minutes").notNull().default(960), // 4:00 pm
+    eveningStartMinutes: integer("evening_start_minutes").notNull().default(1020), // 5:00 pm
+    shutdownStartMinutes: integer("shutdown_start_minutes").notNull().default(1200), // 8:00 pm
+    // The user's iCloud public calendar link, AES-256-GCM encrypted — the
+    // server must be able to read it back to fetch the feed, so it can't be
+    // hashed, and it is never sent to the browser. The hint is a short,
+    // non-secret fragment for "link saved" UI.
+    calendarUrlEncrypted: text("calendar_url_encrypted"),
+    calendarUrlHint: text("calendar_url_hint"),
+    briefCity: text("brief_city").notNull().default("Chicago"),
+    // { lunchCard, shutdownNudge, sundayReset, urgentFlags } — stored now,
+    // acted on once notifications ship.
+    notificationPrefs: jsonb("notification_prefs")
+      .notNull()
+      .default(sql`'{"lunchCard":true,"shutdownNudge":true,"sundayReset":true,"urgentFlags":true}'::jsonb`),
+    // Feature switches keyed by id (see src/lib/features.ts). A missing key
+    // means off — new features are opt-in for everyone.
+    features: jsonb("features").notNull().default(sql`'{}'::jsonb`),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      "user_settings_block_order_check",
+      sql`${table.launchStartMinutes} < ${table.workStartMinutes} and ${table.workStartMinutes} < ${table.workEndMinutes} and ${table.workEndMinutes} <= ${table.eveningStartMinutes} and ${table.eveningStartMinutes} < ${table.shutdownStartMinutes} and ${table.shutdownStartMinutes} < 1440 and ${table.launchStartMinutes} >= 0`,
+    ),
+  ],
+).enableRLS();

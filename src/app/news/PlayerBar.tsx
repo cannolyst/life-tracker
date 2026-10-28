@@ -20,7 +20,7 @@ export function PlayerBar({ status, label, position, onPause, onResume, onSkip, 
     <div
       role="region"
       aria-label="Audio player"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-800 bg-neutral-900"
+      className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-neutral-800 bg-neutral-900"
     >
       <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">
         <div className="min-w-0 flex-1">

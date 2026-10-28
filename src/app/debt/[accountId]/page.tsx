@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { dateKeyIn } from "@/lib/timezone";
+import { getUserTimezone } from "@/db/userSettings";
 import { getDebtAccountDetail } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
@@ -27,7 +29,9 @@ export default async function DebtDetailPage({
   params: Promise<{ accountId: string }>;
 }) {
   const { accountId } = await params;
-  const detail = await getDebtAccountDetail(accountId, await requireUserId());
+  const userId = await requireUserId();
+  const tz = await getUserTimezone(userId);
+  const detail = await getDebtAccountDetail(accountId, userId);
   if (!detail) notFound();
 
   const {
@@ -50,6 +54,7 @@ export default async function DebtDetailPage({
     Number(account.startingBalance),
     account.createdAt,
     transactions,
+    tz,
   );
 
   const latestStatement = statements[statements.length - 1];
@@ -157,11 +162,11 @@ export default async function DebtDetailPage({
         <div className="grid gap-6 sm:grid-cols-2">
           <Card>
             <h2 className="mb-3 font-medium">Add transaction</h2>
-            <AddTransactionForm accountId={account.id} />
+            <AddTransactionForm accountId={account.id} today={dateKeyIn(tz)} />
           </Card>
           <Card>
             <h2 className="mb-3 font-medium">Log monthly statement</h2>
-            <StatementForm accountId={account.id} />
+            <StatementForm accountId={account.id} today={dateKeyIn(tz)} />
           </Card>
         </div>
 

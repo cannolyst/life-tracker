@@ -3,11 +3,10 @@
 import { useActionState } from "react";
 import { addSavingsTransaction, updateSavingsGoal, type ActionState } from "./actions";
 import { inputClass, labelClass, buttonClass } from "@/components/ui";
-import { dateKeyInAppTimezone } from "@/lib/timezone";
 
 const initialState: ActionState = {};
 
-export function AddTransactionForm({ accountId }: { accountId: string }) {
+export function AddTransactionForm({ accountId, today }: { accountId: string; today: string }) {
   const action = addSavingsTransaction.bind(null, accountId);
   const [state, formAction, pending] = useActionState(action, initialState);
 
@@ -40,7 +39,7 @@ export function AddTransactionForm({ accountId }: { accountId: string }) {
             name="date"
             type="date"
             required
-            defaultValue={dateKeyInAppTimezone()}
+            defaultValue={today}
             className={inputClass}
           />
         </div>

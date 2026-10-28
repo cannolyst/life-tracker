@@ -1,4 +1,5 @@
 import { requireUserId } from "@/lib/session";
+import { getUserTimezone } from "@/db/userSettings";
 import { Nav } from "@/components/Nav";
 import { fetchAllStories } from "@/lib/news";
 import { getSeenStoryIds } from "@/db/brief";
@@ -23,7 +24,7 @@ export default async function NewsPage() {
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-xl font-semibold">News</h1>
         <NewsClient
-          initialBrief={{ dateLabel: formatBriefDate(), brief }}
+          initialBrief={{ dateLabel: formatBriefDate(await getUserTimezone(userId)), brief }}
           initialFeed={{
             stories: page.map((story) => ({ ...story, seen: seen.has(story.id) })),
             nextOffset,

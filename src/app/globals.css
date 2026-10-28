@@ -118,3 +118,71 @@ h3,
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
+
+/*
+ * Mobile: the page runs edge to edge (viewport-fit=cover in layout.tsx), so
+ * pad it back in around the notch / home indicator when installed to the
+ * Home Screen. All env() values are 0 in a normal browser tab.
+ */
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+header {
+  padding-top: env(safe-area-inset-top);
+}
+/* Bottom-anchored surfaces (audio player bar, bottom sheets) clear the home indicator. */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+main {
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+}
+
+/*
+ * Touch targets: on touch screens every control gets at least 44px of
+ * hit area. Gated on (pointer: coarse) so mouse layouts keep their denser
+ * sizing, and on no hover-only behaviour anywhere.
+ */
+@media (pointer: coarse) {
+  button,
+  select,
+  summary,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="hidden"]),
+  header nav a,
+  [role="tab"] {
+    min-height: 44px;
+  }
+  button,
+  header nav a {
+    min-width: 44px;
+  }
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  /* The whole label row is the target for checkbox rows. */
+  label:has(> input[type="checkbox"]),
+  label:has(> input[type="radio"]) {
+    min-height: 44px;
+  }
+  button,
+  header nav a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  summary {
+    padding-block: 0.5rem;
+  }
+}
+
+/* Links styled as buttons or pills: same 44px floor as real buttons. */
+@media (pointer: coarse) {
+  .tap {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}

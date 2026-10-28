@@ -1,7 +1,10 @@
 import { cookies } from "next/headers";
 import { getModuleSettings } from "@/db/queries";
 import { getBriefTokenCreatedAt } from "@/db/brief";
-import { dateOnlyInAppTimezone } from "@/lib/timezone";
+import { dateOnlyIn } from "@/lib/timezone";
+import { getUserSettings } from "@/db/userSettings";
+import { isEncryptionConfigured } from "@/lib/calendarCrypto";
+import { listTimezones } from "@/lib/timezoneOptions";
 import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
 import { Card, labelClass, formatDate } from "@/components/ui";
@@ -10,15 +13,24 @@ import { BackgroundColorPicker } from "@/components/BackgroundColorPicker";
 import { BACKGROUND_COLORS, type BackgroundColor } from "@/lib/backgroundColors";
 import { ModulePicker } from "./ModulePicker";
 import { BriefLinkCard } from "./BriefLinkCard";
+import {
+  BriefCityForm,
+  CalendarCard,
+  DayForm,
+  FeaturesForm,
+  NotificationsForm,
+} from "./UserSettingsForms";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const userId = await requireUserId();
-  const [settings, briefCreatedAt] = await Promise.all([
+  const [settings, briefCreatedAt, userSettings] = await Promise.all([
     getModuleSettings(userId),
     getBriefTokenCreatedAt(userId),
+    getUserSettings(userId),
   ]);
+  const tz = userSettings.timezone;
   const cookieStore = await cookies();
   const theme = cookieStore.get("theme")?.value === "dark" ? "dark" : "light";
   const colorCookie = cookieStore.get("color")?.value;
@@ -51,10 +63,34 @@ export default async function SettingsPage() {
           <ModulePicker initialValues={settings} redirectTo="/settings" submitLabel="Save" />
         </Card>
         <Card>
+          <h2 className="mb-3 font-medium">Your day</h2>
+          <DayForm day={userSettings} timezone={tz} zones={listTimezones()} />
+        </Card>
+        <Card>
+          <h2 className="mb-3 font-medium">Calendar</h2>
+          <CalendarCard
+            hasLink={userSettings.hasCalendarLink}
+            hint={userSettings.calendarUrlHint}
+            encryptionReady={isEncryptionConfigured()}
+          />
+        </Card>
+        <Card>
           <h2 className="mb-3 font-medium">Daily brief link</h2>
           <BriefLinkCard
-            createdLabel={briefCreatedAt ? formatDate(dateOnlyInAppTimezone(briefCreatedAt)) : null}
+            createdLabel={briefCreatedAt ? formatDate(dateOnlyIn(tz, briefCreatedAt)) : null}
           />
+        </Card>
+        <Card>
+          <h2 className="mb-3 font-medium">Daily brief city</h2>
+          <BriefCityForm city={userSettings.briefCity} />
+        </Card>
+        <Card>
+          <h2 className="mb-3 font-medium">Notifications</h2>
+          <NotificationsForm prefs={userSettings.notificationPrefs} />
+        </Card>
+        <Card>
+          <h2 className="mb-3 font-medium">New features</h2>
+          <FeaturesForm features={userSettings.features} />
         </Card>
       </main>
     </div>

@@ -5,7 +5,8 @@ import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { habitTasks, habitCompletions, emotionEntries } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
-import { dateKeyInAppTimezone } from "@/lib/timezone";
+import { dateKeyIn } from "@/lib/timezone";
+import { getUserTimezone } from "@/db/userSettings";
 
 const EMOTION_CHECKIN_TASK_NAME = "Emotion check-in";
 
@@ -37,7 +38,7 @@ export type EmotionEntryInput = {
 export async function saveEmotionEntry(input: EmotionEntryInput) {
   const userId = await requireUserId();
   const task = await getOrCreateEmotionCheckinTask(userId);
-  const todayKey = dateKeyInAppTimezone();
+  const todayKey = dateKeyIn(await getUserTimezone(userId));
 
   const [entry] = await db
     .insert(emotionEntries)

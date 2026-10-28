@@ -36,7 +36,7 @@ export function StoryDetail({
         aria-modal="true"
         aria-labelledby="story-detail-title"
         onClick={(event) => event.stopPropagation()}
-        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-lg border border-neutral-800 bg-neutral-900 p-5 sm:rounded-lg"
+        className="max-h-[85vh] pb-[calc(1.25rem+env(safe-area-inset-bottom))] w-full max-w-lg overflow-y-auto rounded-t-lg border border-neutral-800 bg-neutral-900 p-5 sm:rounded-lg"
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <p className="flex items-center gap-2 text-xs text-neutral-500">
