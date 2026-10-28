@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { BUCKETS, BUCKET_LABEL, VERB_SUGGESTIONS, BLOCK_IDS, type Bucket } from "@/lib/planning";
+import { BUCKETS, BUCKET_LABEL, BLOCK_IDS, type Bucket } from "@/lib/planning";
 import { deletePlanTask, fileIntoCollection, refineTask, sendToSomeday } from "./actions";
 
 const inputClass =
@@ -10,9 +10,9 @@ const smallButton =
   "min-h-11 shrink-0 rounded-md border border-neutral-700 px-3 text-sm text-neutral-300 disabled:opacity-60";
 const labelClass = "text-xs text-neutral-500";
 
-// One Inbox item and the three things it can become: a task (given a verb and
-// a time), an entry in a collection, or Someday. Nothing leaves the Inbox
-// until you choose.
+// One Inbox item and what it can become. Nothing is required: it can sit here
+// exactly as you jotted it, get a few details, move into a collection, wait
+// for Someday, or go away.
 export function InboxItem({
   taskId,
   title,
@@ -23,7 +23,6 @@ export function InboxItem({
   collections: { id: string; name: string }[];
 }) {
   const [open, setOpen] = useState(false);
-  const [verb, setVerb] = useState("");
   const [minutes, setMinutes] = useState("");
   const [area, setArea] = useState<Bucket | "">("");
   const [energy, setEnergy] = useState("");
@@ -45,7 +44,7 @@ export function InboxItem({
       {!open ? (
         <div className="flex flex-wrap gap-2">
           <button type="button" disabled={pending} onClick={() => setOpen(true)} className={smallButton}>
-            Make it a task
+            Add details
           </button>
           {collections.length > 0 && (
             <select
@@ -79,7 +78,6 @@ export function InboxItem({
             e.preventDefault();
             run(() =>
               refineTask(taskId, {
-                verb,
                 minutes: minutes ? Number(minutes) : null,
                 bucket: area,
                 energy: energy || null,
@@ -89,23 +87,18 @@ export function InboxItem({
             );
           }}
         >
+          <p className="text-xs text-neutral-500">Everything here is optional.</p>
           <div className="grid grid-cols-2 gap-3">
             <label className="block space-y-1">
-              <span className={labelClass}>Starts with the verb</span>
-              <input
-                list={`verbs-${taskId}`}
-                value={verb}
-                onChange={(e) => setVerb(e.target.value)}
-                maxLength={30}
-                placeholder="Call, Write…"
-                required
-                className={inputClass}
-              />
-              <datalist id={`verbs-${taskId}`}>
-                {VERB_SUGGESTIONS.map((v) => (
-                  <option key={v} value={v} />
+              <span className={labelClass}>Area</span>
+              <select value={area} onChange={(e) => setArea(e.target.value as Bucket)} className={inputClass}>
+                <option value="">Not sure</option>
+                {BUCKETS.filter((b) => b !== "inbox").map((b) => (
+                  <option key={b} value={b}>
+                    {BUCKET_LABEL[b]}
+                  </option>
                 ))}
-              </datalist>
+              </select>
             </label>
             <label className="block space-y-1">
               <span className={labelClass}>Minutes</span>
@@ -113,67 +106,46 @@ export function InboxItem({
                 value={minutes}
                 onChange={(e) => setMinutes(e.target.value.replace(/\D/g, "").slice(0, 3))}
                 inputMode="numeric"
-                required
                 className={inputClass}
               />
             </label>
+            <label className="block space-y-1">
+              <span className={labelClass}>Energy it needs</span>
+              <select value={energy} onChange={(e) => setEnergy(e.target.value)} className={inputClass}>
+                <option value="">Any</option>
+                <option value="low">Low</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+            <label className="block space-y-1">
+              <span className={labelClass}>Best part of the day</span>
+              <select value={block} onChange={(e) => setBlock(e.target.value)} className={inputClass}>
+                <option value="">Any</option>
+                {BLOCK_IDS.map((b) => (
+                  <option key={b} value={b}>
+                    {b.charAt(0).toUpperCase() + b.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           <label className="block space-y-1">
-            <span className={labelClass}>Area</span>
-            <select value={area} onChange={(e) => setArea(e.target.value as Bucket)} required className={inputClass}>
-              <option value="" disabled>
-                Choose…
-              </option>
-              {BUCKETS.filter((b) => b !== "inbox").map((b) => (
-                <option key={b} value={b}>
-                  {BUCKET_LABEL[b]}
-                </option>
-              ))}
-            </select>
+            <span className={labelClass}>First step</span>
+            <input
+              value={firstStep}
+              onChange={(e) => setFirstStep(e.target.value)}
+              maxLength={300}
+              placeholder="e.g. Find the dentist's number"
+              className={inputClass}
+            />
           </label>
-          <details>
-            <summary className="cursor-pointer py-1 text-sm text-neutral-400">More (optional)</summary>
-            <div className="mt-2 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block space-y-1">
-                  <span className={labelClass}>Energy it needs</span>
-                  <select value={energy} onChange={(e) => setEnergy(e.target.value)} className={inputClass}>
-                    <option value="">Any</option>
-                    <option value="low">Low</option>
-                    <option value="high">High</option>
-                  </select>
-                </label>
-                <label className="block space-y-1">
-                  <span className={labelClass}>Best part of the day</span>
-                  <select value={block} onChange={(e) => setBlock(e.target.value)} className={inputClass}>
-                    <option value="">Any</option>
-                    {BLOCK_IDS.map((b) => (
-                      <option key={b} value={b}>
-                        {b.charAt(0).toUpperCase() + b.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <label className="block space-y-1">
-                <span className={labelClass}>First step</span>
-                <input
-                  value={firstStep}
-                  onChange={(e) => setFirstStep(e.target.value)}
-                  maxLength={300}
-                  placeholder="e.g. Find the dentist's number"
-                  className={inputClass}
-                />
-              </label>
-            </div>
-          </details>
           <div className="flex gap-2">
             <button
               type="submit"
               disabled={pending}
               className="min-h-11 rounded-md bg-neutral-100 px-4 font-medium text-neutral-900 disabled:opacity-60"
             >
-              Save task
+              Save
             </button>
             <button type="button" disabled={pending} onClick={() => setOpen(false)} className={smallButton}>
               Cancel

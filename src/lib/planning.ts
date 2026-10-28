@@ -194,6 +194,18 @@ export function composeTitle(verb: string | null | undefined, what: string): str
   return `${v.charAt(0).toUpperCase()}${v.slice(1)} ${object.charAt(0).toLowerCase()}${object.slice(1)}`;
 }
 
+/**
+ * Pulls a trailing time off a quick jotting: "Call the dentist 10m" or
+ * "write report 45 min" becomes the title plus 10 / 45 minutes.
+ */
+export function splitQuickTitle(input: string): { title: string; minutes: number | null } {
+  const text = input.trim();
+  const match = /^(.*\S)\s+(\d{1,3})\s*(?:m|min|mins|minutes)$/i.exec(text);
+  if (!match) return { title: text, minutes: null };
+  const minutes = Number(match[2]);
+  return minutes >= 1 && minutes <= 600 ? { title: match[1], minutes } : { title: text, minutes: null };
+}
+
 export const DEFAULT_FIRST_STEP = "Set a five-minute timer and begin with just the very first small piece.";
 
 export function firstStepFor(task: { firstStep?: string | null }): string {
@@ -207,6 +219,7 @@ type Dealable = PlanTaskLike;
 // check-in favors easy tasks, a high one favors the demanding ones.
 function dealRank(task: Dealable, ctx: { todayKey: string; energy: Energy | null; blockId: string }): number {
   let rank = 0;
+  if (task.bucket === "inbox") rank += 1;
   if (task.plannedFor === ctx.todayKey) rank -= 4;
   if (task.isPriority) rank -= 1;
   if (task.block === ctx.blockId) rank -= 2;
@@ -222,15 +235,16 @@ function dealRank(task: Dealable, ctx: { todayKey: string; energy: Energy | null
 }
 
 /**
- * The one card to show now. Inbox items aren't dealt until they've been turned
- * into tasks. Anything swapped away today ("Not this one") stays away, and after
+ * The one card to show now. Any open task can be dealt — a one-line jotting in
+ * the Inbox is enough — though ones that have been sorted into an area come
+ * first. Anything swapped away today ("Not this one") stays away, and after
  * a swap the next card is smaller than the smallest one passed over.
  */
 export function dealCard<T extends Dealable>(
   tasks: T[],
   ctx: { todayKey: string; energy: Energy | null; blockId: string },
 ): T | null {
-  const dealable = tasks.filter((t) => t.status === "open" && t.bucket !== "inbox");
+  const dealable = tasks.filter((t) => t.status === "open");
   const passedOver = dealable.filter((t) => t.skippedDate === ctx.todayKey);
   const remaining = dealable.filter((t) => t.skippedDate !== ctx.todayKey);
 

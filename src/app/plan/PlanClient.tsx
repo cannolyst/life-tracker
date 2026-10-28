@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { BLOCK_IDS, BUCKETS, BUCKET_LABEL, VERB_SUGGESTIONS, type Bucket, type PlanStatus } from "@/lib/planning";
+import { BLOCK_IDS, BUCKETS, BUCKET_LABEL, type Bucket, type PlanStatus } from "@/lib/planning";
 import {
   addPlanTask,
   completePlanTask,
@@ -34,10 +34,9 @@ const smallButton =
   "min-h-11 shrink-0 rounded-md border border-neutral-700 px-4 text-sm text-neutral-300 disabled:opacity-60";
 
 export function AddTaskForm() {
-  const [verb, setVerb] = useState("");
-  const [what, setWhat] = useState("");
+  const [title, setTitle] = useState("");
   const [minutes, setMinutes] = useState("");
-  const [area, setArea] = useState<Bucket | "">("");
+  const [area, setArea] = useState<Bucket | "inbox">("inbox");
   const [energy, setEnergy] = useState("");
   const [block, setBlock] = useState("");
   const [firstStep, setFirstStep] = useState("");
@@ -49,8 +48,7 @@ export function AddTaskForm() {
     event.preventDefault();
     startTransition(async () => {
       const result = await addPlanTask({
-        title: what,
-        verb,
+        title,
         lowTitle,
         firstStep,
         bucket: area,
@@ -59,8 +57,7 @@ export function AddTaskForm() {
         minutes: minutes.trim() ? Number(minutes) : null,
       });
       if (result.ok) {
-        setVerb("");
-        setWhat("");
+        setTitle("");
         setMinutes("");
         setFirstStep("");
         setLowTitle("");
@@ -73,68 +70,48 @@ export function AddTaskForm() {
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      <p className="text-sm text-neutral-500">
-        A task starts with a verb and has a size. For a quick thought, use the capture box on the home page.
+      <div className="flex gap-2">
+        <input
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            setMessage(null);
+          }}
+          maxLength={200}
+          placeholder="Jot it down — e.g. call the dentist 10m"
+          aria-label="Task"
+          className={inputClass}
+        />
+        <button type="submit" disabled={pending || !title.trim()} className={buttonClass + " shrink-0"}>
+          {pending ? "Adding..." : "Add"}
+        </button>
+      </div>
+      <p className="text-xs text-neutral-500">
+        One line is all it needs. Add a time at the end (like 10m) if you know it; everything else is optional.
       </p>
-      <div className="grid grid-cols-[8rem_1fr] gap-3">
-        <label className="block space-y-1">
-          <span className={labelClass}>Verb</span>
-          <input
-            list="plan-verbs"
-            value={verb}
-            onChange={(e) => setVerb(e.target.value)}
-            maxLength={30}
-            placeholder="Call"
-            required
-            className={inputClass}
-          />
-          <datalist id="plan-verbs">
-            {VERB_SUGGESTIONS.map((v) => (
-              <option key={v} value={v} />
-            ))}
-          </datalist>
-        </label>
-        <label className="block space-y-1">
-          <span className={labelClass}>What</span>
-          <input
-            value={what}
-            onChange={(e) => setWhat(e.target.value)}
-            maxLength={200}
-            placeholder="the dentist"
-            required
-            className={inputClass}
-          />
-        </label>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <label className="block space-y-1">
-          <span className={labelClass}>Minutes</span>
-          <input
-            value={minutes}
-            onChange={(e) => setMinutes(e.target.value.replace(/\D/g, "").slice(0, 3))}
-            inputMode="numeric"
-            required
-            className={inputClass}
-          />
-        </label>
-        <label className="block space-y-1">
-          <span className={labelClass}>Area</span>
-          <select value={area} onChange={(e) => setArea(e.target.value as Bucket)} required className={inputClass}>
-            <option value="" disabled>
-              Choose…
-            </option>
-            {BUCKETS.filter((b) => b !== "inbox").map((b) => (
-              <option key={b} value={b}>
-                {BUCKET_LABEL[b]}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
       <details>
-        <summary className="cursor-pointer py-1 text-sm text-neutral-400">More (optional)</summary>
+        <summary className="cursor-pointer py-1 text-sm text-neutral-400">Add details</summary>
         <div className="mt-2 space-y-3">
           <div className="grid grid-cols-2 gap-3">
+            <label className="block space-y-1">
+              <span className={labelClass}>Area</span>
+              <select value={area} onChange={(e) => setArea(e.target.value as Bucket)} className={inputClass}>
+                {BUCKETS.map((b) => (
+                  <option key={b} value={b}>
+                    {b === "inbox" ? "Not sure (Inbox)" : BUCKET_LABEL[b]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block space-y-1">
+              <span className={labelClass}>Minutes</span>
+              <input
+                value={minutes}
+                onChange={(e) => setMinutes(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                inputMode="numeric"
+                className={inputClass}
+              />
+            </label>
             <label className="block space-y-1">
               <span className={labelClass}>Energy it needs</span>
               <select value={energy} onChange={(e) => setEnergy(e.target.value)} className={inputClass}>
@@ -172,9 +149,6 @@ export function AddTaskForm() {
         </div>
       </details>
       {message && <p className="text-sm text-neutral-400">{message}</p>}
-      <button type="submit" disabled={pending || !what.trim() || !verb.trim() || !area || !minutes} className={buttonClass}>
-        {pending ? "Adding..." : "Add task"}
-      </button>
     </form>
   );
 }

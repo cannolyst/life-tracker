@@ -7,7 +7,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   {
     date: "2026-10-31",
     title: "Tasks, collections, and one card at a time",
-    body: "Capture anything in one box and sort it later. Things to do become tasks that start with a verb and have a size; things to keep (groceries, movies, books, gift ideas) go into collections. In the afternoon and evening you see one card at a time, with the first step spelled out and a 5-minute Start. Not feeling it? “Not this one” deals you a smaller task. Collections show up where they help: a film on a low-energy evening, your next book at Shutdown. Any open to-dos you had were moved into your Inbox. (Home dashboard only.)",
+    body: "Capture anything in one line and sort it later — no verb, time or area required. A time at the end (like “call the dentist 10m”) is picked up for you. Things to keep (groceries, movies, books, gift ideas) go into collections. In the afternoon and evening you see one card at a time, with the first step spelled out and a 5-minute Start. Not feeling it? “Not this one” deals you a smaller task. Collections show up where they help: a film on a low-energy evening, your next book at Shutdown. Any open to-dos you had were moved into your Inbox. (Home dashboard only.)",
   },
   {
     date: "2026-10-30",
@@ -80,8 +80,9 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     title: "Plan",
     summary: "Where your tasks live (home dashboard only).",
     points: [
-      "Capture anything in the Inbox first, then sort it: “Make it a task” (pick a verb, a time and an area), file it into one of your collections, save it for Someday, or remove it.",
-      "A task starts with a verb (Call, Write, Clean…) and has a time estimate and an area. Optionally add the energy it needs, the best part of the day for it, a first step, and an easier version for low-energy days.",
+      "A task is one line. Type it and tap Add — nothing else is required. A time at the end (like “10m”) becomes its time estimate.",
+      "When you have a moment, Add details: an area, minutes, the energy it needs, the best part of the day, a first step, or an easier version for low-energy days. Unsorted Inbox items can still come up as cards.",
+      "At Shutdown (or here) you can also file an Inbox item into one of your collections, save it for Someday, or remove it.",
       "Tomorrow shows what’s planned and how much room is left. Someday holds anything you want to keep but not do soon.",
       "Use More… on a task to move it, plan it for tomorrow, make it tomorrow’s lead, save it for Someday, or remove it.",
       "Your habits, cleaning, weekly tasks and workouts stay in their own tabs; due ones also show in the Body and Home buckets.",

@@ -7,6 +7,7 @@ import {
   composeTitle,
   dealCard,
   firstStepFor,
+  splitQuickTitle,
   formatCountdown,
   groupOpenByBucket,
   inLunchWindow,
@@ -170,6 +171,21 @@ describe("composeTitle", () => {
   });
 });
 
+describe("splitQuickTitle", () => {
+  it("pulls a trailing time off a quick jotting", () => {
+    expect(splitQuickTitle("Call the dentist 10m")).toEqual({ title: "Call the dentist", minutes: 10 });
+    expect(splitQuickTitle("write report 45 min")).toEqual({ title: "write report", minutes: 45 });
+    expect(splitQuickTitle("Stretch 5 minutes")).toEqual({ title: "Stretch", minutes: 5 });
+  });
+
+  it("leaves everything else alone", () => {
+    expect(splitQuickTitle("Buy 3 lemons")).toEqual({ title: "Buy 3 lemons", minutes: null });
+    expect(splitQuickTitle("Plan the 2026 trip")).toEqual({ title: "Plan the 2026 trip", minutes: null });
+    expect(splitQuickTitle("10m")).toEqual({ title: "10m", minutes: null });
+    expect(splitQuickTitle("Clean 9999m")).toEqual({ title: "Clean 9999m", minutes: null });
+  });
+});
+
 describe("firstStepFor", () => {
   it("uses the written first step, or a gentle default", () => {
     expect(firstStepFor({ firstStep: "Open the lease PDF" })).toBe("Open the lease PDF");
@@ -187,9 +203,15 @@ describe("dealCard", () => {
       skippedDate: string | null;
     };
 
-  it("never deals an Inbox item or a finished one", () => {
-    const tasks = [act({ id: "a", bucket: "inbox" }), act({ id: "b", status: "done" }), act({ id: "c", status: "someday" })];
+  it("never deals a finished or Someday task", () => {
+    const tasks = [act({ id: "b", status: "done" }), act({ id: "c", status: "someday" })];
     expect(dealCard(tasks, ctx)).toBeNull();
+  });
+
+  it("can deal a one-line Inbox jotting, but prefers tasks that were sorted into an area", () => {
+    const jotted = act({ id: "jotted", bucket: "inbox" });
+    expect(dealCard([jotted], ctx)?.id).toBe("jotted");
+    expect(dealCard([jotted, act({ id: "sorted", bucket: "home" })], ctx)?.id).toBe("sorted");
   });
 
   it("leads with what's planned for today, then the block's own tasks", () => {

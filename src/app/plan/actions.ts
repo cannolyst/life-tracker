@@ -9,7 +9,16 @@ import { getFinishedCount, getPlanTasks } from "@/db/planning";
 import { requireUserId } from "@/lib/session";
 import { addDays } from "@/lib/dashboard";
 import { dateKeyIn } from "@/lib/timezone";
-import { capacityCap, composeTitle, isBucket, isEnergy, isTaskBlock, roomLeft, type Bucket } from "@/lib/planning";
+import {
+  capacityCap,
+  composeTitle,
+  isBucket,
+  isEnergy,
+  isTaskBlock,
+  roomLeft,
+  splitQuickTitle,
+  type Bucket,
+} from "@/lib/planning";
 
 export type TaskResult = { ok: true; note?: string } | { ok: false; error: string };
 
@@ -58,34 +67,40 @@ function parseDetails(input: TaskDetails) {
 // time — the Plan page asks for both — makes it a ready-to-start task.
 export async function addPlanTask(input: { title: string } & TaskDetails): Promise<TaskResult> {
   const details = parseDetails(input);
-  const title = composeTitle(details.verb, cleanText(input.title, 200));
+  // One line is enough: a trailing "10m" in the text becomes the time estimate.
+  const quick = splitQuickTitle(cleanText(input.title, 200));
+  const title = composeTitle(details.verb, quick.title);
   if (!title) return { ok: false, error: "Give the task a name." };
   const bucket: Bucket = input.bucket && isBucket(input.bucket) ? input.bucket : "inbox";
 
   const userId = await requireUserId();
-  await db.insert(planTasks).values({ userId, title, bucket, ...details });
+  await db.insert(planTasks).values({ userId, title, bucket, ...details, minutes: details.minutes ?? quick.minutes });
   refresh();
   return { ok: true };
 }
 
-/** Turns an Inbox item into a task: a verb, a time, an area, and optionally energy, block and first step. */
+/**
+ * Adds details to a task, all optional: an area, a time, the energy it needs,
+ * the best part of the day, a first step, an easier version. Only what's filled
+ * in changes; the wording of the task itself is never touched.
+ */
 export async function refineTask(taskId: string, input: TaskDetails): Promise<TaskResult> {
   const details = parseDetails(input);
-  if (!details.verb) return { ok: false, error: "Pick a verb to start the task with." };
-  if (!details.minutes) return { ok: false, error: "About how many minutes will it take?" };
   const bucket = input.bucket && isBucket(input.bucket) ? input.bucket : null;
-  if (!bucket || bucket === "inbox") return { ok: false, error: "Pick an area for it." };
+
+  const changes: Partial<typeof planTasks.$inferInsert> = {};
+  if (bucket) changes.bucket = bucket;
+  if (details.minutes) changes.minutes = details.minutes;
+  if (details.energy) changes.energy = details.energy;
+  if (details.block) changes.block = details.block;
+  if (details.firstStep) changes.firstStep = details.firstStep;
+  if (details.lowTitle) changes.lowTitle = details.lowTitle;
+  if (Object.keys(changes).length === 0) return { ok: false, error: "Fill in at least one detail." };
 
   const userId = await requireUserId();
-  const [task] = await db
-    .select({ title: planTasks.title })
-    .from(planTasks)
-    .where(and(eq(planTasks.id, taskId), eq(planTasks.userId, userId)));
-  if (!task) return { ok: false, error: "That task is gone." };
-
   await db
     .update(planTasks)
-    .set({ ...details, bucket, title: composeTitle(details.verb, task.title) })
+    .set(changes)
     .where(and(eq(planTasks.id, taskId), eq(planTasks.userId, userId)));
   refresh();
   return { ok: true };
