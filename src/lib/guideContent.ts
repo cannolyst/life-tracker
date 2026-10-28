@@ -5,6 +5,11 @@ export type WhatsNewEntry = { date: string; title: string; body: string };
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    date: "2026-11-02",
+    title: "The Sunday reset, and more in your Year in review",
+    body: "On Sundays your home page offers a ten-minute reset: look back at the week, look ahead at your calendar (with Out tonight nights flagged and open evenings marked), give your bigger tasks a home on those evenings, check the groceries, and clear the decks — sort the Inbox, review Someday, and drop anything that’s gone stale. Finishing earns +5 points, once a week. Your Year in review has a new “in numbers” card: tasks started and finished, comebacks, Out tonight nights, how often each part of the day’s habits got done, and the highlight from each reset. (With the home dashboard on.)",
+  },
+  {
     date: "2026-11-01",
     title: "Points for starting, and a welcome back",
     body: "Starting counts now, not just finishing. Tap Start 5 minutes on a task for +1 point (up to three different tasks a day). Finishing a task pays by its size: +2 for ten minutes or less, +3 up to 30, +5 up to an hour, +8 beyond that; the easier low-energy version earns the full amount. If you’ve had two or more days with no points at all, your first start or finish earns a one-time +5 welcome back. Rest, the energy check-in, Out tonight and the journal never earn or cost points. Each habit can now belong to a part of the day, so it’s suggested at the right time. Your existing points and history are untouched.",
@@ -81,6 +86,19 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     ],
   },
   {
+    id: "sunday-reset",
+    title: "Sunday reset",
+    summary: "About ten minutes to close one week and set up the next. It shows on your home page on Sundays and is always at Plan → Sunday reset.",
+    points: [
+      "Look back: your points, active days and streak for the week just ended, your best day, and one highlight you choose (a suggestion is filled in).",
+      "Look ahead: the next seven days from your calendar. Nights with an evening plan, or that you marked Out tonight, show as “Out tonight”; the rest are “Open evening”.",
+      "Plan the week: give your bigger tasks a home on the open evenings, or tap “Suggest my biggest tasks”.",
+      "Groceries: check off what you have and add what you need. Mark one of your lists as Groceries on the Lists page.",
+      "Clear the decks: sort the Inbox, bring back or drop Someday items, and keep, shelve or drop anything that’s sat untouched for three weeks.",
+      "Finishing is worth +5 points, once a week. You can finish without doing every step.",
+    ],
+  },
+  {
     id: "plan",
     title: "Plan",
     summary: "Where your tasks live (home dashboard only).",
@@ -153,6 +171,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     title: "Year in review",
     summary: "A running log of what happened this year, by category.",
     points: [
+      "With the home dashboard on, a “your year in numbers” card shows tasks started and finished, comebacks, Out tonight nights, how often each part of the day’s habits got done, and your Sunday-reset highlights. Goals and journal highlights will join it later.",
       "Create categories (trips, books, concerts…) and add entries with dates, people and places.",
       "Switch years with the pills at the top.",
     ],

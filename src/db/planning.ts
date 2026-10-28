@@ -22,6 +22,7 @@ export type PlanTask = PlanTaskLike & {
   skipCount: number;
   skippedDate: string | null;
   doneDate: string | null;
+  reviewedAt: Date | null;
   createdAt: Date;
 };
 
@@ -45,6 +46,7 @@ function toPlanTask(row: PlanTaskRow): PlanTask {
     skipCount: row.skipCount,
     skippedDate: row.skippedDate,
     doneDate: row.doneDate,
+    reviewedAt: row.reviewedAt,
     createdAt: row.createdAt,
   };
 }

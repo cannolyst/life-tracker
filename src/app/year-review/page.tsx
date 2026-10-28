@@ -2,7 +2,10 @@ import Link from "next/link";
 import { getYearReviewData } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
 import { dateKeyIn } from "@/lib/timezone";
-import { getUserTimezone } from "@/db/userSettings";
+import { getUserSettings } from "@/db/userSettings";
+import { getYearNumbers } from "@/db/reset";
+import { isFeatureOn } from "@/lib/features";
+import { BLOCK_LABELS, percent } from "@/lib/yearNumbers";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
 import { AddYearReviewCategoryForm, AddYearReviewItemForm } from "./YearReviewForms";
@@ -21,9 +24,14 @@ export default async function YearReviewPage({
   const { year: yearParam } = await searchParams;
   const selectedYear = yearParam ? Number(yearParam) : undefined;
   const userId = await requireUserId();
-  const today = dateKeyIn(await getUserTimezone(userId));
+  const settings = await getUserSettings(userId);
+  const today = dateKeyIn(settings.timezone);
   const { years, year, categoriesWithItems, allPeople, allPlaces } =
     await getYearReviewData(userId, selectedYear);
+  // The new numbers come from the home dashboard's features, so they only appear with it on.
+  const numbers = isFeatureOn(settings.features, "dashboard")
+    ? await getYearNumbers(userId, year, settings.timezone)
+    : null;
 
   return (
     <div className="flex min-h-full flex-col">
@@ -64,6 +72,65 @@ export default async function YearReviewPage({
                 </div>
               ))}
             </div>
+          </Card>
+        )}
+
+        {numbers && (
+          <Card>
+            <h2 className="mb-3 font-medium">Your {year} in numbers</h2>
+            <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+              <div>
+                <p className="text-neutral-500">Tasks started</p>
+                <p className="text-2xl font-semibold">{numbers.starts}</p>
+              </div>
+              <div>
+                <p className="text-neutral-500">Tasks finished</p>
+                <p className="text-2xl font-semibold">{numbers.finished}</p>
+              </div>
+              <div>
+                <p className="text-neutral-500">Comebacks</p>
+                <p className="text-2xl font-semibold">{numbers.reentries}</p>
+              </div>
+              <div>
+                <p className="text-neutral-500">Out tonight</p>
+                <p className="text-2xl font-semibold">{numbers.outNights}</p>
+              </div>
+            </div>
+
+            {numbers.blockRates.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <p className="text-sm text-neutral-500">How often each part of the day’s habits got done</p>
+                <ul className="space-y-2">
+                  {numbers.blockRates.map((b) => (
+                    <li key={b.block} className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span>{BLOCK_LABELS[b.block] ?? b.block}</span>
+                        <span className="text-neutral-400">{percent(b.rate)}</span>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-800">
+                        <div className="h-full rounded-full bg-neutral-500" style={{ width: percent(b.rate) }} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {numbers.highlights.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <p className="text-sm text-neutral-500">
+                  Weekly highlights ({numbers.resets} {numbers.resets === 1 ? "reset" : "resets"} finished)
+                </p>
+                <ul className="space-y-1 text-sm">
+                  {numbers.highlights.map((h) => (
+                    <li key={h.weekKey}>
+                      <span className="mr-2 text-xs text-neutral-500">Week of {h.weekKey}</span>
+                      {h.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </Card>
         )}
 

@@ -1003,6 +1003,8 @@ export const planTasks = pgTable(
     skippedDate: text("skipped_date"),
     // Set when this task was copied over from the old To-do list (so a re-run never duplicates).
     sourceTodoId: uuid("source_todo_id"),
+    // Last time the Sunday reset's "clear the decks" kept this task; stale is measured from here.
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
     status: text("status").notNull().default("open"), // open | done | someday
     // Local day (YYYY-MM-DD) this task is planned for; null = not planned.
     plannedFor: text("planned_for"),
@@ -1091,7 +1093,7 @@ export const taskPointEvents = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    check("task_point_events_kind_check", sql`${table.kind} in ('start','finish','reentry')`),
+    check("task_point_events_kind_check", sql`${table.kind} in ('start','finish','reentry','reset')`),
     // A task earns its start points once a day, its finish points once ever,
     // and a user's welcome-back once a day — so repeats can't farm points.
     uniqueIndex("task_point_events_start_unique")
@@ -1103,5 +1105,26 @@ export const taskPointEvents = pgTable(
     uniqueIndex("task_point_events_reentry_unique")
       .on(table.userId, table.date)
       .where(sql`${table.kind} = 'reentry'`),
+    uniqueIndex("task_point_events_reset_unique")
+      .on(table.userId, table.date)
+      .where(sql`${table.kind} = 'reset'`),
   ],
+).enableRLS();
+
+// --- Sunday reset (Phase 6) ---
+
+// One row per user per week (keyed by the Sunday that starts it). The reset
+// is finished at most once a week — completed_at is set atomically, and only
+// the call that sets it earns the bonus. The highlight is the one good thing
+// from the week just looked back on, kept for the Year in review.
+export const weeklyResets = pgTable(
+  "weekly_resets",
+  {
+    userId: uuid("user_id").notNull(),
+    weekKey: text("week_key").notNull(), // YYYY-MM-DD of the Sunday
+    highlight: text("highlight").notNull().default(""),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.weekKey] })],
 ).enableRLS();

@@ -15,6 +15,8 @@ import {
   recordAutoOutTonight,
   type PlanTask,
 } from "@/db/planning";
+import { getResetState } from "@/db/reset";
+import { RESET_POINTS, isSunday, resetWeekKey } from "@/lib/reset";
 import { getTodaysSpark } from "@/db/sparks";
 import { getCalendarEvents, type CalendarResult } from "@/lib/calendarService";
 import { fetchAllStories } from "@/lib/news";
@@ -80,7 +82,7 @@ export async function Dashboard({ userId }: { userId: string }) {
     ? getCalendarEvents(userId, { days: COMING_UP_DAYS + 1 })
     : Promise.resolve(null);
 
-  const [agenda, todaysSpark, storedFlag] = await Promise.all([
+  const [agenda, todaysSpark, storedFlag, resetState] = await Promise.all([
     getDayAgenda(userId, tz, {
       points: modules.showPoints,
       cleaning: modules.showCleaning,
@@ -89,6 +91,8 @@ export async function Dashboard({ userId }: { userId: string }) {
     }),
     getTodaysSpark(userId, todayKey),
     getDayFlag(userId, todayKey),
+    // Only Sundays show the reset card, so only Sundays pay for the lookup.
+    isSunday(todayKey) ? getResetState(userId, resetWeekKey(todayKey)) : Promise.resolve(null),
   ]);
 
   const deck = onDeckCount({
@@ -170,6 +174,23 @@ export async function Dashboard({ userId }: { userId: string }) {
             showCleaning={modules.showCleaning}
           />
         </Suspense>
+
+        {resetState && !resetState.completed && (
+          <Link
+            href="/reset"
+            className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-3"
+          >
+            <span>
+              <span className="block text-sm font-medium text-neutral-200">Sunday reset</span>
+              <span className="block text-xs text-neutral-500">
+                About ten minutes · +{RESET_POINTS} points when you finish
+              </span>
+            </span>
+            <span aria-hidden className="text-neutral-600">
+              ›
+            </span>
+          </Link>
+        )}
 
         {modules.showNews && (
           <Suspense fallback={<SectionShell title="Today’s Brief" note="Loading…" />}>
