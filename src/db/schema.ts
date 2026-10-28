@@ -954,3 +954,84 @@ export const savedSparks = pgTable(
   },
   (table) => [primaryKey({ columns: [table.userId, table.sparkId] })],
 ).enableRLS();
+
+// --- Time blocks & planning (Phase 3) ---
+
+// The small task list behind the evening buckets, tomorrow's plan and Someday.
+// Deliberately minimal: Phase 4 (Tasks & lists) builds the Inbox flow and
+// Action-vs-Collection on top of this table. Habits, cleaning, weekly tasks and
+// workouts keep living in their own tables.
+export const planTasks = pgTable(
+  "plan_tasks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    // The normal ("high-energy") version of the task.
+    title: text("title").notNull(),
+    // An easier version shown when the user checks in as low energy.
+    lowTitle: text("low_title"),
+    bucket: text("bucket").notNull().default("inbox"), // learning | body | home | inbox
+    minutes: integer("minutes"),
+    status: text("status").notNull().default("open"), // open | done | someday
+    // Local day (YYYY-MM-DD) this task is planned for; null = not planned.
+    plannedFor: text("planned_for"),
+    // The one task that leads that day's Launch block.
+    isPriority: boolean("is_priority").notNull().default(false),
+    doneAt: timestamp("done_at", { withTimezone: true }),
+    // Local day it was finished on, so "finished today" needs no time-zone math.
+    doneDate: text("done_date"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("plan_tasks_bucket_check", sql`${table.bucket} in ('learning','body','home','inbox')`),
+    check("plan_tasks_status_check", sql`${table.status} in ('open','done','someday')`),
+    check("plan_tasks_minutes_check", sql`${table.minutes} is null or (${table.minutes} between 1 and 600)`),
+  ],
+).enableRLS();
+
+// The Transition block's one-tap check-in (point-neutral) and its 20-minute rest.
+export const energyCheckins = pgTable(
+  "energy_checkins",
+  {
+    userId: uuid("user_id").notNull(),
+    date: text("date").notNull(),
+    level: text("level").notNull(), // high | low
+    restStartedAt: timestamp("rest_started_at", { withTimezone: true }),
+    restDone: boolean("rest_done").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.date] }),
+    check("energy_checkins_level_check", sql`${table.level} in ('high','low')`),
+  ],
+).enableRLS();
+
+// "Out tonight" for a day: written automatically when an evening calendar
+// event exists, or by the user's own tap (which always wins over auto).
+// A day marked out protects the streak.
+export const dayFlags = pgTable(
+  "day_flags",
+  {
+    userId: uuid("user_id").notNull(),
+    date: text("date").notNull(),
+    outTonight: boolean("out_tonight").notNull(),
+    source: text("source").notNull(), // auto | manual
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.date] }),
+    check("day_flags_source_check", sql`${table.source} in ('auto','manual')`),
+  ],
+).enableRLS();
+
+// The Shutdown "log the day" (and the out-tonight quick log): one line per day.
+export const dayLogs = pgTable(
+  "day_logs",
+  {
+    userId: uuid("user_id").notNull(),
+    date: text("date").notNull(),
+    note: text("note").notNull().default(""),
+    finishedCount: integer("finished_count").notNull().default(0),
+    loggedAt: timestamp("logged_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.date] })],
+).enableRLS();

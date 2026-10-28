@@ -1,5 +1,6 @@
 import { and, eq, gte, lt } from "drizzle-orm";
 import { db } from "./index";
+import { getProtectedDates } from "./planning";
 import { briefSeen, habitCompletions, habitTasks } from "./schema";
 import {
   getBillsLineItems,
@@ -27,6 +28,7 @@ export type DayAgenda = {
   streak: number;
   cleaning: { name: string; overdue: boolean } | null;
   cleaningDue: number;
+  cleaningDueNames: string[];
   cleaningUpcoming: UpcomingCleaning[];
   weekly: { name: string } | null;
   weeklyLeft: number;
@@ -43,6 +45,7 @@ const EMPTY: DayAgenda = {
   streak: 0,
   cleaning: null,
   cleaningDue: 0,
+  cleaningDueNames: [],
   cleaningUpcoming: [],
   weekly: null,
   weeklyLeft: 0,
@@ -53,7 +56,7 @@ const EMPTY: DayAgenda = {
 };
 
 async function loadHabits(userId: string, tz: string, todayKey: string) {
-  const [tasks, completions] = await Promise.all([
+  const [tasks, completions, protectedDates] = await Promise.all([
     db
       .select({ id: habitTasks.id, name: habitTasks.name, points: habitTasks.points, repeatable: habitTasks.repeatable })
       .from(habitTasks)
@@ -63,6 +66,7 @@ async function loadHabits(userId: string, tz: string, todayKey: string) {
       .select({ taskId: habitCompletions.taskId, date: habitCompletions.date })
       .from(habitCompletions)
       .where(eq(habitCompletions.userId, userId)),
+    getProtectedDates(userId),
   ]);
   const doneTodayIds = new Set(completions.filter((c) => c.date === todayKey).map((c) => c.taskId));
   // Repeatable tasks can be logged any number of times, so they're never "left".
@@ -73,7 +77,7 @@ async function loadHabits(userId: string, tz: string, todayKey: string) {
     habitDoneToday: doneTodayIds.size > 0,
     doneTodayCount: doneTodayIds.size,
     streak: computeStreak(
-      completions.map((c) => c.date),
+      [...completions.map((c) => c.date), ...protectedDates],
       tz,
     ),
   };
@@ -87,6 +91,7 @@ async function loadCleaning(userId: string) {
   return {
     cleaning: due[0] ? { name: due[0].name, overdue: due[0].status === "overdue" } : null,
     cleaningDue: due.length,
+    cleaningDueNames: due.slice(0, 4).map((t) => t.name),
     cleaningUpcoming: tasks
       .filter((t) => t.status === "upcoming")
       .map((t) => ({ name: t.name, dueKey: t.dueDate.toISOString().slice(0, 10) })),
@@ -142,6 +147,7 @@ export async function getDayAgenda(userId: string, tz: string, modules: Dashboar
     streak: habits?.streak ?? 0,
     cleaning: cleaning?.cleaning ?? null,
     cleaningDue: cleaning?.cleaningDue ?? 0,
+    cleaningDueNames: cleaning?.cleaningDueNames ?? [],
     cleaningUpcoming: cleaning?.cleaningUpcoming ?? [],
     weekly: weeklyLeft[0] ? { name: weeklyLeft[0].name } : null,
     weeklyLeft: weeklyLeft.length,

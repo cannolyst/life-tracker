@@ -124,11 +124,56 @@ describe("Now card", () => {
     );
   });
 
-  it("winds down at shutdown, with calm wording", () => {
-    expect(buildNowCard({ ...base, minutes: t(21) }).title).toMatch(/^One small thing before bed/);
-    const done = buildNowCard({ ...base, minutes: t(21), habit: null, cleaning: null, doneToday: 3 });
-    expect(done.title).toBe("Wind down");
-    expect(done.detail).toBe("3 things done today. That counts.");
+  it("walks through the three shutdown steps in order", () => {
+    const at = (shutdown: NowInput["shutdown"]) => buildNowCard({ ...base, minutes: t(21), shutdown });
+    expect(at({ logged: false, inboxCount: 2, plannedCount: 0 }).title).toBe("Log the day");
+    expect(at({ logged: true, inboxCount: 2, plannedCount: 0 }).title).toBe("Tidy the Inbox");
+    expect(at({ logged: true, inboxCount: 2, plannedCount: 0 }).detail).toContain("2 things");
+    expect(at({ logged: true, inboxCount: 1, plannedCount: 0 }).detail).toContain("1 thing ");
+    expect(at({ logged: true, inboxCount: 0, plannedCount: 0 }).title).toBe("Plan tomorrow");
+    const done = buildNowCard({
+      ...base,
+      minutes: t(21),
+      doneToday: 3,
+      shutdown: { logged: true, inboxCount: 0, plannedCount: 2 },
+    });
+    expect(done.title).toBe("You're set for tomorrow");
+    expect(done.detail).toBe("3 things done today. Rest well.");
+  });
+
+  it("leads Launch with last night's priority", () => {
+    const card = buildNowCard({ ...base, priorityTask: { id: "p1", title: "Send the invoice" } });
+    expect(card.title).toBe("Send the invoice");
+    expect(card.taskId).toBe("p1");
+    expect(card.detail).toContain("one priority");
+  });
+
+  it("offers the optional lunch task only inside the lunch window", () => {
+    const lunchTask = { id: "l1", title: "Water the plants" };
+    const at = (minutes: number) => buildNowCard({ ...base, minutes, lunchTask });
+    expect(at(t(12)).title).toBe("Water the plants");
+    expect(at(t(12)).eyebrow).toBe("Now · Lunch");
+    expect(at(t(12)).taskId).toBe("l1");
+    expect(at(t(9)).title).toBe("Work time");
+    expect(at(t(14)).title).toBe("Work time");
+  });
+
+  it("puts a planned task first in the evening, and says when it's the easier version", () => {
+    const planned = { id: "t1", title: "Read one page", easier: true };
+    const card = buildNowCard({ ...base, minutes: t(18), plannedTask: planned });
+    expect(card.title).toBe("Read one page");
+    expect(card.detail).toContain("easier version");
+    expect(buildNowCard({ ...base, minutes: t(18), plannedTask: { id: "t2", title: "Study" } }).detail).toBe(
+      "Next up for this evening.",
+    );
+  });
+
+  it("collapses the evening when out tonight, and says the streak is safe", () => {
+    const evening = buildNowCard({ ...base, minutes: t(18), outTonight: true, plannedTask: { id: "t1", title: "x" } });
+    expect(evening.title).toBe("Enjoy your evening");
+    expect(evening.detail).toContain("streak is protected");
+    expect(evening.taskId).toBeUndefined();
+    expect(buildNowCard({ ...base, minutes: t(21), outTonight: true }).title).toBe("Welcome back");
   });
 
   it("handles the small hours before Launch", () => {
@@ -253,6 +298,10 @@ describe("flags", () => {
     expect(buildFlags({ ...base, minutes: t(10) })).toEqual([]);
     expect(buildFlags({ ...base, habitDoneToday: true })).toEqual([]);
     expect(buildFlags({ ...base, streak: 1 })).toEqual([]);
+  });
+
+  it("stays quiet about the streak when out tonight", () => {
+    expect(buildFlags({ ...base, outTonight: true })).toEqual([]);
   });
 
   it("flags bills due within two days, soonest first, and never more than three flags", () => {

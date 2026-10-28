@@ -1,5 +1,6 @@
 import { eq, and, inArray, gte, lte, sum, desc, sql } from "drizzle-orm";
 import { db } from "./index";
+import { getProtectedDates } from "./planning";
 import {
   accounts,
   savingsDetails,
@@ -520,7 +521,7 @@ function addDaysToDateKey(dateKey: string, days: number): string {
 // match. Reflects the whole shared economy (habit + cleaning completions).
 export async function getPointsSummary(userId: string) {
   const tz = await getUserTimezone(userId);
-  const [completions, cleaningCompletionsAll, weeklyCompletionsAll, [{ spent }]] = await Promise.all([
+  const [completions, cleaningCompletionsAll, weeklyCompletionsAll, [{ spent }], protectedDates] = await Promise.all([
     db
       .select({ date: habitCompletions.date, pointsAwarded: habitCompletions.pointsAwarded })
       .from(habitCompletions)
@@ -534,6 +535,7 @@ export async function getPointsSummary(userId: string) {
       .from(weeklyTaskCompletions)
       .where(eq(weeklyTaskCompletions.userId, userId)),
     db.select({ spent: sum(redemptions.pointsCost) }).from(redemptions).where(eq(redemptions.userId, userId)),
+    getProtectedDates(userId),
   ]);
 
   const todayKey = dateKeyIn(tz);
@@ -548,7 +550,8 @@ export async function getPointsSummary(userId: string) {
       .filter((c) => c.date === dateKey)
       .reduce((s, c) => s + c.pointsAwarded, 0);
 
-  const distinctDays = Array.from(new Set(completions.map((c) => c.date)));
+  // Days marked "out tonight" keep the streak alive even with no habit logged.
+  const distinctDays = Array.from(new Set([...completions.map((c) => c.date), ...protectedDates]));
 
   // Computed from the same rows already fetched above instead of calling
   // getPointsBalance (which would re-query these same three tables again).

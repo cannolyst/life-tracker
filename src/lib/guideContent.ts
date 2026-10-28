@@ -5,6 +5,11 @@ export type WhatsNewEntry = { date: string; title: string; body: string };
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    date: "2026-10-30",
+    title: "Your day now has real time blocks",
+    body: "With the home dashboard on, each part of your day gets its own screen. Launch leads with the one priority you set the night before. Work stays quiet, with an optional ten-minute lunch task. Transition is a one-tap energy check-in, a twenty-minute rest, and one easy way to start. Evening shows Learning, Body, Home and Inbox, with easier versions on low-energy days. Shutdown is three small steps: log the day, tidy the Inbox, plan tomorrow. Tomorrow holds about as many tasks as you finished today; extras wait in Someday. And “Out tonight” collapses the evening and protects your streak. There’s a new Plan page for your tasks.",
+  },
+  {
     date: "2026-10-29",
     title: "A new home dashboard (optional)",
     body: "Turn on “Home dashboard” in Settings and your home page becomes a calm view of your day: a greeting, a daily spark, one thing to do right now, your daily brief, today’s timeline, what’s coming up, and a short list of things worth a look. After 8pm the page warms and darkens. Your daily brief’s local section now follows the city you set in Settings. The classic Overview is always still at /overview.",
@@ -40,12 +45,38 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     points: [
       "Greeting: one sentence that changes through the day — your workout, an evening plan, or how many things are on deck.",
       "Daily spark: a quote, question, thought experiment, word or fact, new each day and never repeated within a year. Tap Save to keep it in Saved sparks; over time you’ll see a little more of the kinds you save.",
-      "Now: the one next thing for this part of your day (Launch, Work, Transition, Evening or Shutdown). Only this card carries the accent color.",
+      "Now: the one next thing for this part of your day. Only this card carries the accent color. What it shows depends on the block — see “Time blocks” below.",
       "Daily brief: open before work, folded into one line after. Tap Play to listen. Your alarm Shortcut keeps working as before.",
       "Today: your day’s blocks with calendar events in between. Finished parts fade.",
       "Coming up: the next few days — events, bills and cleaning — with a note on what each needs.",
       "Worth a look: at most three gentle nudges, like a bill due soon or a streak waiting on one habit.",
       "After 8pm (or whenever your Shutdown time is) the page turns darker and warmer until Launch.",
+    ],
+  },
+  {
+    id: "time-blocks",
+    title: "Time blocks and planning",
+    summary: "Your day in five parts, using the times in Settings → Your day. Part of the home dashboard.",
+    points: [
+      "Launch: the one priority you set last night comes first, then your workout and habits.",
+      "Work: mostly quiet. Around lunchtime you may see one optional task of ten minutes or less.",
+      "Transition: tap High or Low for your energy (it never affects points), take a twenty-minute rest or skip it, then get one easy way to start.",
+      "Evening: your next task, with Learning, Body, Home and Inbox listed below. On a low-energy evening you’ll see each task’s easier version if it has one.",
+      "Shutdown: log the day, tidy the Inbox (move things to a bucket, Someday, or remove them), and plan tomorrow.",
+      "Tomorrow’s plan holds about as many tasks as you finished today — never fewer than one. Anything more is saved in Someday instead of piling up. Tap ★ Lead to choose the one that starts tomorrow.",
+      "Out tonight: switches on by itself when your calendar has an evening event, or tap it yourself. The evening shrinks to a one-line log, and the day counts toward your streak either way.",
+      "Capture: the box at the bottom of the home page adds anything to your Inbox in one line.",
+    ],
+  },
+  {
+    id: "plan",
+    title: "Plan",
+    summary: "Where your tasks live (home dashboard only).",
+    points: [
+      "Add a task with a name, an optional easier version for low-energy days, a bucket, and optionally how many minutes it takes.",
+      "Tomorrow shows what’s planned and how much room is left. Someday holds anything you want to keep but not do soon.",
+      "Use More… on a task to move it, plan it for tomorrow, make it tomorrow’s lead, save it for Someday, or remove it.",
+      "Your habits, cleaning, weekly tasks and workouts stay in their own tabs; due ones also show in the Body and Home buckets.",
     ],
   },
   {

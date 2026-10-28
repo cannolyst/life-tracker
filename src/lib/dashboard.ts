@@ -1,5 +1,6 @@
 import type { CalendarEvent } from "./calendarParse";
 import { currentBlock, dayBlocks, formatMinutes, type BlockId, type DayBlock } from "./dayBlocks";
+import { inLunchWindow } from "./planning";
 import { minutesIntoDayIn, zonedParts } from "./timezone";
 import type { DayStructure } from "./userSettingsDefaults";
 
@@ -90,6 +91,10 @@ export function greetingHighlights(opts: {
 
 /* ---------- Now card ---------- */
 
+export type TaskPick = { id: string; title: string; easier?: boolean };
+
+export type ShutdownProgress = { logged: boolean; inboxCount: number; plannedCount: number };
+
 export type NowInput = {
   structure: DayStructure;
   minutes: number;
@@ -103,6 +108,14 @@ export type NowInput = {
   workout: { dayName: string } | null;
   /** How many things were finished today. */
   doneToday: number;
+  /** The one priority task set the night before for today. */
+  priorityTask?: TaskPick | null;
+  /** The best open plan task for this evening (planned-for-today first), already in the user's energy version. */
+  plannedTask?: TaskPick | null;
+  /** An open task of ten minutes or less, for the optional lunch card. */
+  lunchTask?: TaskPick | null;
+  outTonight?: boolean;
+  shutdown?: ShutdownProgress;
 };
 
 export type NowCard = {
@@ -111,11 +124,14 @@ export type NowCard = {
   detail?: string;
   href?: string;
   cta?: string;
+  /** A plan task this card is about, so the card can offer a one-tap Done. */
+  taskId?: string;
 };
 
+type Kind = "workout" | "habit" | "cleaning" | "weekly";
 type Candidate = { title: string; detail?: string; href: string; cta: string };
 
-function candidates(input: NowInput, order: ("workout" | "habit" | "cleaning" | "weekly")[]): Candidate[] {
+function candidates(input: NowInput, order: Kind[]): Candidate[] {
   const list: Candidate[] = [];
   for (const kind of order) {
     if (kind === "workout" && input.workout) {
@@ -141,6 +157,31 @@ function candidates(input: NowInput, order: ("workout" | "habit" | "cleaning" | 
   return list;
 }
 
+function shutdownCard(eyebrow: string, progress: ShutdownProgress | undefined, doneToday: number): NowCard {
+  const p = progress ?? { logged: false, inboxCount: 0, plannedCount: 0 };
+  if (!p.logged) {
+    return { eyebrow, title: "Log the day", detail: "Step 1 of 3 — a quick line about how it went." };
+  }
+  if (p.inboxCount > 0) {
+    return {
+      eyebrow,
+      title: "Tidy the Inbox",
+      detail: `Step 2 of 3 — ${p.inboxCount} ${plural(p.inboxCount, "thing", "things")} to sort.`,
+    };
+  }
+  if (p.plannedCount === 0) {
+    return { eyebrow, title: "Plan tomorrow", detail: "Step 3 of 3 — choose what tomorrow is for." };
+  }
+  return {
+    eyebrow,
+    title: "You're set for tomorrow",
+    detail:
+      doneToday > 0
+        ? `${doneToday} ${plural(doneToday, "thing", "things")} done today. Rest well.`
+        : "Rest well. Tomorrow starts fresh.",
+  };
+}
+
 /** The single next action for the current part of the day. */
 export function buildNowCard(input: NowInput): NowCard {
   const block = currentBlock(input.structure, input.minutes);
@@ -150,13 +191,21 @@ export function buildNowCard(input: NowInput): NowCard {
     return { eyebrow, title: "It's early", detail: "Rest is part of the plan. Launch begins at " + formatMinutes(input.structure.launchStartMinutes) + "." };
   }
 
-  const pick = (order: ("workout" | "habit" | "cleaning" | "weekly")[]): NowCard | null => {
+  const pick = (order: Kind[]): NowCard | null => {
     const first = candidates(input, order)[0];
     return first ? { eyebrow, ...first } : null;
   };
 
   switch (block.id as BlockId) {
     case "launch":
+      if (input.priorityTask) {
+        return {
+          eyebrow,
+          title: input.priorityTask.title,
+          detail: "Your one priority, set last night.",
+          taskId: input.priorityTask.id,
+        };
+      }
       return (
         pick(["workout", "habit", "weekly"]) ?? {
           eyebrow,
@@ -165,6 +214,14 @@ export function buildNowCard(input: NowInput): NowCard {
         }
       );
     case "work":
+      if (input.lunchTask && inLunchWindow(input.structure, input.minutes)) {
+        return {
+          eyebrow: "Now · Lunch",
+          title: input.lunchTask.title,
+          detail: "Optional — ten minutes, just for you.",
+          taskId: input.lunchTask.id,
+        };
+      }
       return {
         eyebrow,
         title: "Work time",
@@ -181,7 +238,22 @@ export function buildNowCard(input: NowInput): NowCard {
         ...(easy ? { href: easy.href, cta: easy.cta } : {}),
       };
     }
-    case "evening":
+    case "evening": {
+      if (input.outTonight) {
+        return {
+          eyebrow: "Now · Out tonight",
+          title: "Enjoy your evening",
+          detail: "Nothing needed. Your streak is protected — a quick log when you're back is plenty.",
+        };
+      }
+      if (input.plannedTask) {
+        return {
+          eyebrow,
+          title: input.plannedTask.title,
+          detail: input.plannedTask.easier ? "The easier version, for a lower-energy evening." : "Next up for this evening.",
+          taskId: input.plannedTask.id,
+        };
+      }
       return (
         pick(["cleaning", "habit", "weekly", "workout"]) ?? {
           eyebrow,
@@ -189,26 +261,16 @@ export function buildNowCard(input: NowInput): NowCard {
           detail: "Enjoy the evening.",
         }
       );
-    case "shutdown": {
-      const small = candidates(input, ["habit", "cleaning"])[0];
-      if (small) {
+    }
+    case "shutdown":
+      if (input.outTonight) {
         return {
-          eyebrow,
-          title: `One small thing before bed: ${small.title}`,
-          detail: "Or let it wait — tomorrow is fine too.",
-          href: small.href,
-          cta: small.cta,
+          eyebrow: "Now · Out tonight",
+          title: "Welcome back",
+          detail: "A quick log is all tonight needs.",
         };
       }
-      return {
-        eyebrow,
-        title: "Wind down",
-        detail:
-          input.doneToday > 0
-            ? `${input.doneToday} ${plural(input.doneToday, "thing", "things")} done today. That counts.`
-            : "Rest up. Tomorrow starts fresh.",
-      };
-    }
+      return shutdownCard(eyebrow, input.shutdown, input.doneToday);
   }
 }
 
@@ -384,6 +446,8 @@ export function buildFlags(opts: {
   structure: DayStructure;
   /** Unpaid bills with a due day, as days from today (0 = today). */
   bills: { name: string; daysUntil: number }[];
+  /** Out tonight protects the streak, so there is nothing to nudge about. */
+  outTonight?: boolean;
 }): Flag[] {
   const flags: Flag[] = [];
 
@@ -393,7 +457,7 @@ export function buildFlags(opts: {
     flags.push({ key: `bill-${bill.name}`, text: `${bill.name} is due ${when}.`, href: "/finance" });
   }
 
-  if (opts.streak >= 2 && !opts.habitDoneToday && opts.minutes >= opts.structure.workEndMinutes) {
+  if (!opts.outTonight && opts.streak >= 2 && !opts.habitDoneToday && opts.minutes >= opts.structure.workEndMinutes) {
     flags.push({
       key: "streak",
       text: `Your ${opts.streak}-day streak is waiting on one habit today.`,

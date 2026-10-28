@@ -4,13 +4,36 @@ import { getModuleSettings } from "@/db/queries";
 import { getUserSettings } from "@/db/userSettings";
 import { getSeenStoryIds } from "@/db/brief";
 import { getBriefPlayedToday, getDayAgenda, type DayAgenda } from "@/db/dashboard";
+import {
+  getDayFlag,
+  getDayLog,
+  getEnergyToday,
+  getFinishedCount,
+  getPlanTasks,
+  recordAutoOutTonight,
+  type PlanTask,
+} from "@/db/planning";
 import { getTodaysSpark } from "@/db/sparks";
 import { getCalendarEvents, type CalendarResult } from "@/lib/calendarService";
 import { fetchAllStories } from "@/lib/news";
 import { buildBrief, formatBriefDate } from "@/lib/brief";
 import { isFeatureOn } from "@/lib/features";
 import { dateKeyIn, minutesIntoDayIn } from "@/lib/timezone";
+import { currentBlock } from "@/lib/dayBlocks";
 import {
+  BUCKETS,
+  BUCKET_LABEL,
+  capacityCap,
+  groupOpenByBucket,
+  outTonightState,
+  pickLunchTask,
+  pickStarter,
+  versionFor,
+  type Bucket,
+  type Energy,
+} from "@/lib/planning";
+import {
+  addDays,
   buildComingUp,
   buildFlags,
   buildGreeting,
@@ -28,6 +51,10 @@ import type { DayStructure } from "@/lib/userSettingsDefaults";
 import { Nav } from "@/components/Nav";
 import { SparkCard } from "./SparkCard";
 import { DashboardBrief } from "./DashboardBrief";
+import { NowShell } from "./NowShell";
+import { TransitionFlow } from "./TransitionFlow";
+import { ShutdownSteps } from "./ShutdownSteps";
+import { EnergyChips, OutTonightCard, OutTonightToggle, QuickAdd, TaskDoneRow } from "./PlanControls";
 
 const COMING_UP_DAYS = 4;
 
@@ -49,7 +76,7 @@ export async function Dashboard({ userId }: { userId: string }) {
     ? getCalendarEvents(userId, { days: COMING_UP_DAYS + 1 })
     : Promise.resolve(null);
 
-  const [agenda, todaysSpark] = await Promise.all([
+  const [agenda, todaysSpark, storedFlag] = await Promise.all([
     getDayAgenda(userId, tz, {
       points: modules.showPoints,
       cleaning: modules.showCleaning,
@@ -57,6 +84,7 @@ export async function Dashboard({ userId }: { userId: string }) {
       finance: modules.showFinance,
     }),
     getTodaysSpark(userId, todayKey),
+    getDayFlag(userId, todayKey),
   ]);
 
   const deck = onDeckCount({
@@ -71,7 +99,8 @@ export async function Dashboard({ userId }: { userId: string }) {
     weekday,
   };
 
-  const nowCard = buildNowCard({
+  // What the Now card shows before the calendar and plan data have loaded.
+  const basicNowCard = buildNowCard({
     structure,
     minutes: nowMinutes,
     habit: agenda.habit,
@@ -87,6 +116,7 @@ export async function Dashboard({ userId }: { userId: string }) {
     minutes: nowMinutes,
     structure,
     bills: agenda.billsUnpaidDaysUntil,
+    outTonight: storedFlag?.outTonight === true,
   });
 
   return (
@@ -122,7 +152,20 @@ export async function Dashboard({ userId }: { userId: string }) {
 
         {todaysSpark && <SparkCard spark={todaysSpark.spark} saved={todaysSpark.saved} />}
 
-        <NowCardView card={nowCard} />
+        <Suspense fallback={<NowShell {...basicNowCard} />}>
+          <NowArea
+            userId={userId}
+            tz={tz}
+            structure={structure}
+            nowMinutes={nowMinutes}
+            todayKey={todayKey}
+            nowMs={now.getTime()}
+            agenda={agenda}
+            calendarPromise={calendarPromise}
+            showExercise={modules.showExercise}
+            showCleaning={modules.showCleaning}
+          />
+        </Suspense>
 
         {modules.showNews && (
           <Suspense fallback={<SectionShell title="Today’s Brief" note="Loading…" />}>
@@ -172,6 +215,8 @@ export async function Dashboard({ userId }: { userId: string }) {
             </ul>
           </section>
         )}
+
+        <QuickAdd />
 
         <p className="px-1 pt-2 text-center text-xs text-neutral-600">
           <Link href="/overview" className="tap px-2 underline">
@@ -227,25 +272,224 @@ async function CalendarGreeting({
   );
 }
 
-// The Now card is the one place on the page that carries the accent color.
-function NowCardView({ card }: { card: ReturnType<typeof buildNowCard> }) {
+// The Now card, and whatever the current block adds beneath it:
+//   Launch      the one priority set last night, then workout and habits
+//   Work        mostly quiet; an optional lunch card
+//   Transition  energy check-in, 20-minute rest, one easy start (takes over the card)
+//   Evening     the next task, with Learning / Body / Home / Inbox beneath
+//   Shutdown    log the day, tidy the Inbox, plan tomorrow
+// "Out tonight" collapses the evening and shutdown to a one-line log.
+async function NowArea({
+  userId,
+  tz,
+  structure,
+  nowMinutes,
+  todayKey,
+  nowMs,
+  agenda,
+  calendarPromise,
+  showExercise,
+  showCleaning,
+}: {
+  userId: string;
+  tz: string;
+  structure: DayStructure;
+  nowMinutes: number;
+  todayKey: string;
+  nowMs: number;
+  agenda: DayAgenda;
+  calendarPromise: Promise<CalendarResult | null>;
+  showExercise: boolean;
+  showCleaning: boolean;
+}) {
+  const [events, tasks, energy, storedFlag, log, finishedToday] = await Promise.all([
+    calendarPromise.then(eventsOf),
+    getPlanTasks(userId),
+    getEnergyToday(userId, todayKey),
+    getDayFlag(userId, todayKey),
+    getDayLog(userId, todayKey),
+    getFinishedCount(userId, todayKey),
+  ]);
+
+  const hasEveningEvent = events.some((e) => !e.allDay && e.isEvening && eventOnDay(e, todayKey, tz));
+  // The first time an evening event is seen, remember it — that is what protects the streak.
+  if (!storedFlag && hasEveningEvent) await recordAutoOutTonight(userId, todayKey);
+  const out = outTonightState({ stored: storedFlag, hasEveningEvent });
+
+  const block = currentBlock(structure, nowMinutes);
+  const tomorrowKey = addDays(todayKey, 1);
+  const level = energy?.level ?? null;
+  const open = tasks.filter((t) => t.status === "open");
+  const plannedToday = open.filter((t) => t.plannedFor === todayKey);
+  const priority = plannedToday.find((t) => t.isPriority) ?? null;
+  const grouped = groupOpenByBucket(open, todayKey);
+  const eveningPick = plannedToday[0] ?? BUCKETS.flatMap((b) => grouped[b])[0] ?? null;
+  const lunch = pickLunchTask(open);
+  const plannedTomorrow = open.filter((t) => t.plannedFor === tomorrowKey);
+
+  const pickOf = (task: (typeof open)[number] | null) => {
+    if (!task) return null;
+    const version = versionFor(task, level);
+    return { id: task.id, title: version.title, easier: version.easier };
+  };
+
+  const card = buildNowCard({
+    structure,
+    minutes: nowMinutes,
+    habit: agenda.habit,
+    cleaning: agenda.cleaning,
+    weekly: agenda.weekly,
+    workout: agenda.workout,
+    doneToday: finishedToday,
+    priorityTask: priority ? { id: priority.id, title: priority.title } : null,
+    plannedTask: pickOf(eveningPick),
+    lunchTask: lunch ? { id: lunch.id, title: lunch.title } : null,
+    outTonight: out.on,
+    shutdown: {
+      logged: log !== null,
+      inboxCount: open.filter((t) => t.bucket === "inbox" && t.plannedFor === null).length,
+      plannedCount: plannedTomorrow.length,
+    },
+  });
+
+  const inEveningOrLater = block?.id === "evening" || block?.id === "shutdown";
+
+  if (block?.id === "transition" && !out.on) {
+    const starter = pickStarter(open);
+    return (
+      <>
+        <TransitionFlow
+          initialEnergy={level}
+          restStartedAtMs={energy?.restStartedAt ? energy.restStartedAt.getTime() : null}
+          restDone={energy?.restDone ?? false}
+          starter={starter ? { id: starter.id, title: starter.title, lowTitle: starter.lowTitle } : null}
+          serverNowMs={nowMs}
+        />
+        <OutTonightToggle />
+      </>
+    );
+  }
+
   return (
-    <section
-      aria-label="Now"
-      className="rounded-lg border border-accent px-5 py-5"
-      style={{ backgroundColor: "color-mix(in srgb, var(--color-accent) 9%, var(--color-neutral-900))" }}
-    >
-      <p className="text-xs font-medium text-accent">{card.eyebrow}</p>
-      <p className="mt-1 text-xl font-semibold leading-snug text-neutral-100">{card.title}</p>
-      {card.detail && <p className="mt-1 text-sm text-neutral-400">{card.detail}</p>}
-      {card.href && (
-        <Link
-          href={card.href}
-          className="tap mt-4 justify-center rounded-md bg-accent px-4 font-medium text-neutral-900"
-        >
-          {card.cta ?? "Open"}
-        </Link>
+    <>
+      <NowShell {...card} />
+
+      {inEveningOrLater && out.on && <OutTonightCard initialNote={log?.note ?? ""} logged={log !== null} />}
+
+      {block?.id === "evening" && !out.on && (
+        <>
+          <EveningSection
+            level={level}
+            todayKey={todayKey}
+            grouped={grouped}
+            workoutName={showExercise ? (agenda.workout?.dayName ?? null) : null}
+            cleaningNames={showCleaning ? agenda.cleaningDueNames : []}
+          />
+          <OutTonightToggle />
+        </>
       )}
+
+      {block?.id === "shutdown" && !out.on && (
+        <ShutdownSteps
+          logged={log !== null}
+          initialNote={log?.note ?? ""}
+          finishedToday={finishedToday}
+          tomorrowKey={tomorrowKey}
+          cap={capacityCap(finishedToday)}
+          tasks={open.map((t) => ({
+            id: t.id,
+            title: t.title,
+            bucket: t.bucket,
+            plannedFor: t.plannedFor,
+            isPriority: t.isPriority,
+          }))}
+        />
+      )}
+
+      {block?.id === "work" && !out.on && nowMinutes >= structure.workEndMinutes - 90 && <OutTonightToggle />}
+    </>
+  );
+}
+
+function EveningSection({
+  level,
+  todayKey,
+  grouped,
+  workoutName,
+  cleaningNames,
+}: {
+  level: Energy | null;
+  todayKey: string;
+  grouped: Record<Bucket, PlanTask[]>;
+  workoutName: string | null;
+  cleaningNames: string[];
+}) {
+  const anything =
+    BUCKETS.some((b) => grouped[b].length > 0) || workoutName !== null || cleaningNames.length > 0;
+
+  return (
+    <section aria-label="Evening build" className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-4">
+      <div className="space-y-2">
+        <h2 className="text-sm font-medium text-neutral-200">Evening build</h2>
+        <EnergyChips level={level} />
+        {level === "low" && (
+          <p className="text-xs text-neutral-500">Showing the easier versions where there are any.</p>
+        )}
+      </div>
+
+      {!anything && (
+        <p className="text-sm text-neutral-500">Nothing waiting. Capture something below, or enjoy the evening.</p>
+      )}
+
+      {BUCKETS.map((bucket) => {
+        const tasks = grouped[bucket];
+        const extraBody = bucket === "body" && workoutName !== null;
+        const extraHome = bucket === "home" && cleaningNames.length > 0;
+        if (tasks.length === 0 && !extraBody && !extraHome) return null;
+        return (
+          <div key={bucket}>
+            <h3 className="text-xs font-medium text-neutral-500">{BUCKET_LABEL[bucket]}</h3>
+            <ul className="mt-1 divide-y divide-neutral-800">
+              {tasks.map((task) => {
+                const version = versionFor(task, level);
+                return (
+                  <TaskDoneRow
+                    key={task.id}
+                    taskId={task.id}
+                    title={version.title}
+                    hint={
+                      [task.plannedFor === todayKey ? "Planned for today" : null, version.easier ? "Easier version" : null, task.minutes ? `${task.minutes} min` : null]
+                        .filter(Boolean)
+                        .join(" · ") || undefined
+                    }
+                  />
+                );
+              })}
+              {extraBody && (
+                <li>
+                  <Link href="/exercise" className="flex min-h-11 items-center justify-between text-sm text-neutral-300">
+                    <span>Workout: {workoutName}</span>
+                    <span aria-hidden className="text-neutral-600">
+                      ›
+                    </span>
+                  </Link>
+                </li>
+              )}
+              {extraHome &&
+                cleaningNames.map((name) => (
+                  <li key={name}>
+                    <Link href="/cleaning" className="flex min-h-11 items-center justify-between text-sm text-neutral-300">
+                      <span>{name}</span>
+                      <span aria-hidden className="text-neutral-600">
+                        ›
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        );
+      })}
     </section>
   );
 }
