@@ -2,17 +2,19 @@
 
 import { useEffect } from "react";
 import { buttonClass } from "@/components/ui";
-import { SECTION_LABEL, type Story } from "@/lib/newsTypes";
+import type { Story } from "@/lib/newsTypes";
 import { timeAgo } from "@/lib/timeAgo";
 
 export function StoryDetail({
   story,
+  sectionLabel,
   color,
   canPlay,
   onPlay,
   onClose,
 }: {
   story: Story;
+  sectionLabel: string;
   color: string;
   canPlay: boolean;
   onPlay: () => void;
@@ -41,7 +43,7 @@ export function StoryDetail({
         <div className="mb-3 flex items-start justify-between gap-3">
           <p className="flex items-center gap-2 text-xs text-neutral-500">
             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
-            {SECTION_LABEL[story.section]} · {story.source}
+            {sectionLabel} · {story.source}
             {story.publishedAt && (
               <>
                 {" "}

@@ -27,3 +27,9 @@ export type BriefPayload = {
   dateLabel: string;
   brief: Brief;
 };
+
+// The "chicago" section is the local one for every user; it is shown under
+// the user's own city (Settings > Daily brief city), defaulting to Chicago.
+export function sectionLabels(localLabel: string): Record<Section, string> {
+  return { ...SECTION_LABEL, chicago: localLabel };
+}

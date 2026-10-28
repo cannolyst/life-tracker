@@ -15,6 +15,7 @@ import { ModulePicker } from "./ModulePicker";
 import { BriefLinkCard } from "./BriefLinkCard";
 import {
   BriefCityForm,
+  DisplayNameForm,
   CalendarCard,
   DayForm,
   FeaturesForm,
@@ -62,6 +63,10 @@ export default async function SettingsPage() {
         <Card>
           <h2 className="mb-3 font-medium">Tabs you want to see</h2>
           <ModulePicker initialValues={settings} redirectTo="/settings" submitLabel="Save" />
+        </Card>
+        <Card>
+          <h2 className="mb-3 font-medium">Your name</h2>
+          <DisplayNameForm name={userSettings.displayName} />
         </Card>
         <Card>
           <h2 className="mb-3 font-medium">Your day</h2>

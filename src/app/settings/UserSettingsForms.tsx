@@ -16,6 +16,7 @@ import {
   previewCalendar,
   removeCalendarLink,
   saveBriefCity,
+  saveDisplayName,
   addCalendarLink,
   saveDaySettings,
   saveFeatures,
@@ -270,11 +271,26 @@ export function CalendarCard({
   );
 }
 
+export function DisplayNameForm({ name }: { name: string | null }) {
+  const [state, action, pending] = useActionState(saveDisplayName, initial);
+  return (
+    <form action={action} className="space-y-3">
+      <p className="text-sm text-neutral-400">What the home dashboard calls you in its greeting. Leave it blank for no name.</p>
+      <label className="block space-y-1">
+        <span className={labelClass}>Your name</span>
+        <input name="displayName" defaultValue={name ?? ""} maxLength={40} autoComplete="given-name" className={inputClass} />
+      </label>
+      <Status state={state} />
+      <SubmitButton pending={pending} />
+    </form>
+  );
+}
+
 export function BriefCityForm({ city }: { city: string }) {
   const [state, action, pending] = useActionState(saveBriefCity, initial);
   return (
     <form action={action} className="space-y-3">
-      <p className="text-sm text-neutral-400">The city your daily brief will use for weather.</p>
+      <p className="text-sm text-neutral-400">The city for the local section of your daily brief. Chicago uses hand-picked Chicago outlets; any other city uses a Google News search, so add the state (like Austin, TX) to avoid mix-ups.</p>
       <label className="block space-y-1">
         <span className={labelClass}>City</span>
         <input name="briefCity" defaultValue={city} maxLength={80} required className={inputClass} />

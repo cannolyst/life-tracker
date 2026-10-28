@@ -33,6 +33,7 @@ export const DEFAULT_DAY_STRUCTURE: DayStructure = {
 export type UserSettings = DayStructure & {
   timezone: string;
   briefCity: string;
+  displayName: string | null;
   notificationPrefs: NotificationPrefs;
   features: Record<string, boolean>;
 };
@@ -41,6 +42,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   ...DEFAULT_DAY_STRUCTURE,
   timezone: DEFAULT_TIMEZONE,
   briefCity: "Chicago",
+  displayName: null,
   notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
   features: {},
 };

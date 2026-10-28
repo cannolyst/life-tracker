@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { fetchAllStories } from "@/lib/news";
 import { resolveBriefUserId } from "@/lib/briefAuth";
 import { getSeenStoryIds } from "@/db/brief";
+import { getUserSettings } from "@/db/userSettings";
 import { paginate } from "@/lib/newsFeed";
 import { SECTIONS, type Section } from "@/lib/newsTypes";
 
@@ -28,8 +29,9 @@ export async function GET(request: NextRequest) {
     Math.max(1, Number.parseInt(params.get("limit") ?? String(PAGE_SIZE), 10) || PAGE_SIZE),
   );
 
+  const settings = await getUserSettings(userId);
   const [stories, seen] = await Promise.all([
-    fetchAllStories({ fresh: params.get("fresh") === "1" }),
+    fetchAllStories({ fresh: params.get("fresh") === "1", city: settings.briefCity }),
     getSeenStoryIds(userId),
   ]);
   const { page, total, nextOffset } = paginate(stories, sectionParam as Section | "all", offset, limit);

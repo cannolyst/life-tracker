@@ -887,6 +887,8 @@ export const userSettings = pgTable(
     calendarUrlEncrypted: text("calendar_url_encrypted"),
     calendarUrlHint: text("calendar_url_hint"),
     briefCity: text("brief_city").notNull().default("Chicago"),
+    // What the dashboard greeting calls the user; blank means no name.
+    displayName: text("display_name"),
     // { lunchCard, shutdownNudge, sundayReset, urgentFlags } — stored now,
     // acted on once notifications ship.
     notificationPrefs: jsonb("notification_prefs")
@@ -923,4 +925,32 @@ export const calendarLinks = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [check("calendar_links_provider_check", sql`${table.provider} in ('icloud', 'google')`)],
+).enableRLS();
+
+// --- Daily Spark (dashboard) ---
+
+// One row per user per day: which spark they were shown. Written the first
+// time the day's spark is picked, so the pick is stable all day and the
+// no-repeat-within-a-year rule has a history to check. spark_id points into
+// src/data/sparks.json.
+export const sparkDays = pgTable(
+  "spark_days",
+  {
+    userId: uuid("user_id").notNull(),
+    date: text("date").notNull(), // YYYY-MM-DD in the user's time zone
+    sparkId: text("spark_id").notNull(),
+    type: text("type").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.date] })],
+).enableRLS();
+
+// The user's Sparks collection (the "Save" tap).
+export const savedSparks = pgTable(
+  "saved_sparks",
+  {
+    userId: uuid("user_id").notNull(),
+    sparkId: text("spark_id").notNull(),
+    savedAt: timestamp("saved_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.sparkId] })],
 ).enableRLS();

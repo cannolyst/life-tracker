@@ -23,6 +23,7 @@ export const getUserSettings = cache(async (userId: string): Promise<UserSetting
     eveningStartMinutes: row.eveningStartMinutes,
     shutdownStartMinutes: row.shutdownStartMinutes,
     briefCity: row.briefCity,
+    displayName: row.displayName,
     notificationPrefs: {
       ...DEFAULT_NOTIFICATION_PREFS,
       ...(row.notificationPrefs as Partial<NotificationPrefs>),

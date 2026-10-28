@@ -41,6 +41,9 @@
   --color-amber-950: #f5efdd; /* jewel gold, soft */
   --color-amber-400: #a9822e; /* jewel gold */
   --color-orange-400: #a9822e; /* jewel gold (streak flame) */
+
+  /* the one accent: only the dashboard's Now card uses it */
+  --color-accent: #6e4e93; /* jewel amethyst */
 }
 
 /*
@@ -100,6 +103,8 @@
   --color-amber-950: rgba(216, 177, 104, 0.16);
   --color-amber-400: #d8b168;
   --color-orange-400: #d8b168;
+
+  --color-accent: #bba3dc; /* amethyst, lifted for dark backgrounds */
 }
 
 body {
@@ -184,5 +189,31 @@ main {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
+  }
+}
+
+/*
+ * Evening tone: from Shutdown until the next Launch the dashboard's users get
+ * a darker, warmer page, layered on whatever theme and background they chose.
+ * It is a fixed, click-through multiply veil rather than a filter on <html>,
+ * because a filter would turn fixed elements (the audio player bar) into
+ * scrolling ones.
+ */
+.evening-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background: #e9d5bd;
+  mix-blend-mode: multiply;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+.evening-veil[data-on="true"] {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .evening-veil {
+    transition: none;
   }
 }

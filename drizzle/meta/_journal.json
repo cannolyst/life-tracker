@@ -169,6 +169,13 @@
       "when": 1793195868852,
       "tag": "0023_calendar_links",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793197722849,
+      "tag": "0024_dashboard_sparks",
+      "breakpoints": true
     }
   ]
 }

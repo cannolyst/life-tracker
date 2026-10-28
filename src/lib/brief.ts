@@ -115,32 +115,44 @@ function storyToSpeech(story: BriefStory): string {
   return `${lead}${headline}${body ? ` ${endWithPeriod(body)}` : ""}`;
 }
 
-const SECTION_INTRO: Record<Section, { lead: string; empty: string }> = {
-  national: { lead: "In national news,", empty: "There are no national stories right now." },
-  chicago: { lead: "In Chicago news,", empty: "There are no Chicago stories right now." },
-  tech: { lead: "In tech news,", empty: "There are no tech stories right now." },
-};
+// The "chicago" section is every user's local section; it is announced by the
+// user's own city (Chicago unless they chose another in Settings).
+function sectionIntro(section: Section, localLabel: string): { lead: string; empty: string } {
+  switch (section) {
+    case "national":
+      return { lead: "In national news,", empty: "There are no national stories right now." };
+    case "chicago":
+      return { lead: `In ${localLabel} news,`, empty: `There are no ${localLabel} stories right now.` };
+    case "tech":
+      return { lead: "In tech news,", empty: "There are no tech stories right now." };
+  }
+}
 
 // One entry per natural pause: intro, then each section's lead-in plus its
 // stories. The in-app player speaks these one at a time (long single
 // utterances get cut off in some browsers); the Shortcut gets them joined.
-export function briefToSpeechParts(brief: Brief, tz: string, now: Date = new Date()): string[] {
+export function briefToSpeechParts(
+  brief: Brief,
+  tz: string,
+  now: Date = new Date(),
+  localLabel = "Chicago",
+): string[] {
   const parts = [`Here's your brief for ${formatBriefDate(tz, now)}.`];
   for (const section of SECTIONS) {
     const stories = brief[section];
     if (stories.length === 0) {
-      parts.push(SECTION_INTRO[section].empty);
+      parts.push(sectionIntro(section, localLabel).empty);
       continue;
     }
-    parts.push(`${SECTION_INTRO[section].lead}`);
+    parts.push(sectionIntro(section, localLabel).lead);
     for (const story of stories) parts.push(storyToSpeech(story));
   }
   parts.push("That's your brief.");
   return parts;
 }
 
-export function briefToSpeech(brief: Brief, tz: string, now: Date = new Date()): string {
-  return briefToSpeechParts(brief, tz, now).join(" ");
+export function briefToSpeech(brief: Brief, tz: string, now: Date = new Date(), localLabel = "Chicago"): string {
+  return briefToSpeechParts(brief, tz, now, localLabel).join(" ");
 }
 
 // Browsers cut off long utterances (notably Chrome with network voices), so

@@ -657,7 +657,7 @@ function buildAllPointsCharts(
   };
 }
 
-async function getWeeklyTasksWithStatus(userId: string) {
+export async function getWeeklyTasksWithStatus(userId: string) {
   const tz = await getUserTimezone(userId);
   const tasks = await db
     .select()
@@ -776,7 +776,7 @@ export async function getHabitDashboardData(userId: string) {
 
 // --- Cleaning tracker ---
 
-async function getCleaningTasksWithStatus(userId: string) {
+export async function getCleaningTasksWithStatus(userId: string) {
   const tz = await getUserTimezone(userId);
   const [areas, tasks, allCompletions] = await Promise.all([
     db.select().from(cleaningAreas).where(eq(cleaningAreas.userId, userId)),

@@ -7,7 +7,7 @@ import { allBriefStories, cleanForSpeech } from "@/lib/brief";
 import { timeAgo } from "@/lib/timeAgo";
 import {
   SECTIONS,
-  SECTION_LABEL,
+  sectionLabels,
   type BriefPayload,
   type FeedStory,
   type Section,
@@ -26,11 +26,6 @@ const SECTION_COLOR: Record<Section, string> = {
   chicago: JEWELS[3].color,
   tech: JEWELS[2].color,
 };
-
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: "all", label: "All" },
-  ...SECTIONS.map((section) => ({ key: section, label: SECTION_LABEL[section] })),
-];
 
 const outlineButton =
   "rounded-md border border-neutral-700 px-3 py-1.5 text-sm text-neutral-300 hover:border-neutral-500 hover:text-neutral-100 disabled:opacity-60";
@@ -63,10 +58,17 @@ function speakable(story: Story): string {
 export function NewsClient({
   initialBrief,
   initialFeed,
+  localLabel,
 }: {
+  localLabel: string;
   initialBrief: BriefPayload;
   initialFeed: FeedPage;
 }) {
+  const labels = sectionLabels(localLabel);
+  const FILTERS: { key: Filter; label: string }[] = [
+    { key: "all", label: "All" },
+    ...SECTIONS.map((section) => ({ key: section, label: labels[section] })),
+  ];
   const [briefData, setBriefData] = useState(initialBrief);
   const [stories, setStories] = useState<FeedStory[]>(initialFeed.stories);
   const [nextOffset, setNextOffset] = useState<number | null>(initialFeed.nextOffset);
@@ -206,7 +208,7 @@ export function NewsClient({
               <div key={section}>
                 <h3 className="flex items-center gap-2 text-xs font-medium text-neutral-500">
                   <Dot section={section} />
-                  {SECTION_LABEL[section]}
+                  {labels[section]}
                 </h3>
                 {items.length === 0 ? (
                   <p className="mt-1 text-sm text-neutral-500">Nothing here right now.</p>
@@ -329,6 +331,7 @@ export function NewsClient({
       {detail && (
         <StoryDetail
           story={detail}
+          sectionLabel={labels[detail.section]}
           color={SECTION_COLOR[detail.section]}
           canPlay={speech.supported}
           onPlay={() => playStory(detail)}

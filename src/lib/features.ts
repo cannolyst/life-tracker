@@ -3,9 +3,14 @@
 // feature on in Settings. Add new entries here as later phases ship.
 export const FEATURES = [
   {
+    id: "dashboard",
+    label: "Home dashboard",
+    description: "Replace Overview with a calm day-at-a-glance home: greeting, a daily spark, what to do now, your day, and what’s coming up. The classic Overview stays at /overview.",
+  },
+  {
     id: "calendar",
     label: "Calendar",
-    description: "Show your iCloud calendar events alongside your day.",
+    description: "Show your iCloud and Google calendar events alongside your day.",
   },
 ] as const;
 

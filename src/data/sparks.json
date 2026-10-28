@@ -1,0 +1,1973 @@
+[
+ {
+  "id": "q001",
+  "type": "quote",
+  "text": "The unexamined life is not worth living.",
+  "detail": "Socrates"
+ },
+ {
+  "id": "q002",
+  "type": "quote",
+  "text": "We suffer more often in imagination than in reality.",
+  "detail": "Seneca"
+ },
+ {
+  "id": "q003",
+  "type": "quote",
+  "text": "It is not that we have a short time to live, but that we waste a lot of it.",
+  "detail": "Seneca"
+ },
+ {
+  "id": "q004",
+  "type": "quote",
+  "text": "Difficulties strengthen the mind, as labor does the body.",
+  "detail": "Seneca"
+ },
+ {
+  "id": "q005",
+  "type": "quote",
+  "text": "As is a tale, so is life: not how long it is, but how good it is, is what matters.",
+  "detail": "Seneca"
+ },
+ {
+  "id": "q006",
+  "type": "quote",
+  "text": "The soul becomes dyed with the color of its thoughts.",
+  "detail": "Marcus Aurelius"
+ },
+ {
+  "id": "q007",
+  "type": "quote",
+  "text": "Waste no more time arguing about what a good man should be. Be one.",
+  "detail": "Marcus Aurelius"
+ },
+ {
+  "id": "q008",
+  "type": "quote",
+  "text": "If it is not right, do not do it; if it is not true, do not say it.",
+  "detail": "Marcus Aurelius"
+ },
+ {
+  "id": "q009",
+  "type": "quote",
+  "text": "The impediment to action advances action. What stands in the way becomes the way.",
+  "detail": "Marcus Aurelius"
+ },
+ {
+  "id": "q010",
+  "type": "quote",
+  "text": "Men are disturbed not by things, but by the views which they take of them.",
+  "detail": "Epictetus"
+ },
+ {
+  "id": "q011",
+  "type": "quote",
+  "text": "First say to yourself what you would be; and then do what you have to do.",
+  "detail": "Epictetus"
+ },
+ {
+  "id": "q012",
+  "type": "quote",
+  "text": "We are what we repeatedly do. Excellence, then, is not an act, but a habit.",
+  "detail": "Will Durant, summing up Aristotle"
+ },
+ {
+  "id": "q013",
+  "type": "quote",
+  "text": "The beginning is the most important part of the work.",
+  "detail": "Plato"
+ },
+ {
+  "id": "q014",
+  "type": "quote",
+  "text": "No man ever steps in the same river twice.",
+  "detail": "Heraclitus"
+ },
+ {
+  "id": "q015",
+  "type": "quote",
+  "text": "Do not spoil what you have by desiring what you have not.",
+  "detail": "Epicurus"
+ },
+ {
+  "id": "q016",
+  "type": "quote",
+  "text": "The journey of a thousand miles begins with a single step.",
+  "detail": "Lao Tzu"
+ },
+ {
+  "id": "q017",
+  "type": "quote",
+  "text": "It does not matter how slowly you go as long as you do not stop.",
+  "detail": "Confucius (attributed)"
+ },
+ {
+  "id": "q018",
+  "type": "quote",
+  "text": "To philosophize is to learn how to die.",
+  "detail": "Michel de Montaigne"
+ },
+ {
+  "id": "q019",
+  "type": "quote",
+  "text": "All of man's unhappiness comes from not knowing how to sit quietly in a room.",
+  "detail": "Blaise Pascal, paraphrased"
+ },
+ {
+  "id": "q020",
+  "type": "quote",
+  "text": "The price of anything is the amount of life you exchange for it.",
+  "detail": "Henry David Thoreau"
+ },
+ {
+  "id": "q021",
+  "type": "quote",
+  "text": "It's not what you look at that matters, it's what you see.",
+  "detail": "Henry David Thoreau"
+ },
+ {
+  "id": "q022",
+  "type": "quote",
+  "text": "Go confidently in the direction of your dreams. Live the life you have imagined.",
+  "detail": "Henry David Thoreau"
+ },
+ {
+  "id": "q023",
+  "type": "quote",
+  "text": "Things do not change; we change.",
+  "detail": "Henry David Thoreau"
+ },
+ {
+  "id": "q024",
+  "type": "quote",
+  "text": "Nothing great was ever achieved without enthusiasm.",
+  "detail": "Ralph Waldo Emerson"
+ },
+ {
+  "id": "q025",
+  "type": "quote",
+  "text": "Write it on your heart that every day is the best day in the year.",
+  "detail": "Ralph Waldo Emerson"
+ },
+ {
+  "id": "q026",
+  "type": "quote",
+  "text": "Nothing can bring you peace but yourself.",
+  "detail": "Ralph Waldo Emerson"
+ },
+ {
+  "id": "q027",
+  "type": "quote",
+  "text": "The only way to have a friend is to be one.",
+  "detail": "Ralph Waldo Emerson"
+ },
+ {
+  "id": "q028",
+  "type": "quote",
+  "text": "Well done is better than well said.",
+  "detail": "Benjamin Franklin"
+ },
+ {
+  "id": "q029",
+  "type": "quote",
+  "text": "Lost time is never found again.",
+  "detail": "Benjamin Franklin"
+ },
+ {
+  "id": "q030",
+  "type": "quote",
+  "text": "Early to bed and early to rise makes a man healthy, wealthy, and wise.",
+  "detail": "Benjamin Franklin"
+ },
+ {
+  "id": "q031",
+  "type": "quote",
+  "text": "To improve is to change; to be perfect is to change often.",
+  "detail": "Winston Churchill"
+ },
+ {
+  "id": "q032",
+  "type": "quote",
+  "text": "Do the best you can until you know better. Then when you know better, do better.",
+  "detail": "Maya Angelou"
+ },
+ {
+  "id": "q033",
+  "type": "quote",
+  "text": "Nothing will work unless you do.",
+  "detail": "Maya Angelou"
+ },
+ {
+  "id": "q034",
+  "type": "quote",
+  "text": "You can't use up creativity. The more you use, the more you have.",
+  "detail": "Maya Angelou"
+ },
+ {
+  "id": "q035",
+  "type": "quote",
+  "text": "If you don't like something, change it. If you can't change it, change your attitude.",
+  "detail": "Maya Angelou"
+ },
+ {
+  "id": "q036",
+  "type": "quote",
+  "text": "The time is always right to do what is right.",
+  "detail": "Martin Luther King Jr."
+ },
+ {
+  "id": "q037",
+  "type": "quote",
+  "text": "Life's most persistent and urgent question is: What are you doing for others?",
+  "detail": "Martin Luther King Jr."
+ },
+ {
+  "id": "q038",
+  "type": "quote",
+  "text": "If there is no struggle, there is no progress.",
+  "detail": "Frederick Douglass"
+ },
+ {
+  "id": "q039",
+  "type": "quote",
+  "text": "Imagination is more important than knowledge.",
+  "detail": "Albert Einstein"
+ },
+ {
+  "id": "q040",
+  "type": "quote",
+  "text": "The important thing is not to stop questioning.",
+  "detail": "Albert Einstein"
+ },
+ {
+  "id": "q041",
+  "type": "quote",
+  "text": "Be patient toward all that is unsolved in your heart and try to love the questions themselves.",
+  "detail": "Rainer Maria Rilke"
+ },
+ {
+  "id": "q042",
+  "type": "quote",
+  "text": "When we are no longer able to change a situation, we are challenged to change ourselves.",
+  "detail": "Viktor Frankl"
+ },
+ {
+  "id": "q043",
+  "type": "quote",
+  "text": "Everything can be taken from a man but one thing: the last of the human freedoms, to choose one's attitude in any given set of circumstances.",
+  "detail": "Viktor Frankl"
+ },
+ {
+  "id": "q044",
+  "type": "quote",
+  "text": "To live is the rarest thing in the world. Most people exist, that is all.",
+  "detail": "Oscar Wilde"
+ },
+ {
+  "id": "q045",
+  "type": "quote",
+  "text": "How we spend our days is, of course, how we spend our lives.",
+  "detail": "Annie Dillard"
+ },
+ {
+  "id": "q046",
+  "type": "quote",
+  "text": "Spend the afternoon. You can't take it with you.",
+  "detail": "Annie Dillard"
+ },
+ {
+  "id": "q047",
+  "type": "quote",
+  "text": "Tell me, what is it you plan to do with your one wild and precious life?",
+  "detail": "Mary Oliver"
+ },
+ {
+  "id": "q048",
+  "type": "quote",
+  "text": "Attention is the beginning of devotion.",
+  "detail": "Mary Oliver"
+ },
+ {
+  "id": "q049",
+  "type": "quote",
+  "text": "The art of being wise is the art of knowing what to overlook.",
+  "detail": "William James"
+ },
+ {
+  "id": "q050",
+  "type": "quote",
+  "text": "My experience is what I agree to attend to.",
+  "detail": "William James"
+ },
+ {
+  "id": "q051",
+  "type": "quote",
+  "text": "Nothing will ever be attempted if all possible objections must first be overcome.",
+  "detail": "Samuel Johnson"
+ },
+ {
+  "id": "q052",
+  "type": "quote",
+  "text": "The future is purchased by the present.",
+  "detail": "Samuel Johnson"
+ },
+ {
+  "id": "q053",
+  "type": "quote",
+  "text": "Knowing is not enough; we must apply. Willing is not enough; we must do.",
+  "detail": "Johann Wolfgang von Goethe"
+ },
+ {
+  "id": "q054",
+  "type": "quote",
+  "text": "Things which matter most must never be at the mercy of things which matter least.",
+  "detail": "Goethe (attributed)"
+ },
+ {
+  "id": "q055",
+  "type": "quote",
+  "text": "Life can only be understood backwards; but it must be lived forwards.",
+  "detail": "Søren Kierkegaard"
+ },
+ {
+  "id": "q056",
+  "type": "quote",
+  "text": "Anxiety is the dizziness of freedom.",
+  "detail": "Søren Kierkegaard"
+ },
+ {
+  "id": "q057",
+  "type": "quote",
+  "text": "He who has a why to live can bear almost any how.",
+  "detail": "Friedrich Nietzsche"
+ },
+ {
+  "id": "q058",
+  "type": "quote",
+  "text": "In the midst of winter, I found there was, within me, an invincible summer.",
+  "detail": "Albert Camus"
+ },
+ {
+  "id": "q059",
+  "type": "quote",
+  "text": "The struggle itself toward the heights is enough to fill a man's heart.",
+  "detail": "Albert Camus"
+ },
+ {
+  "id": "q060",
+  "type": "quote",
+  "text": "To see what is in front of one's nose needs a constant struggle.",
+  "detail": "George Orwell"
+ },
+ {
+  "id": "q061",
+  "type": "quote",
+  "text": "It is good to have an end to journey toward; but it is the journey that matters, in the end.",
+  "detail": "Ursula K. Le Guin"
+ },
+ {
+  "id": "q062",
+  "type": "quote",
+  "text": "The only thing that makes life possible is permanent, intolerable uncertainty: not knowing what comes next.",
+  "detail": "Ursula K. Le Guin"
+ },
+ {
+  "id": "q063",
+  "type": "quote",
+  "text": "All we have to decide is what to do with the time that is given us.",
+  "detail": "J.R.R. Tolkien"
+ },
+ {
+  "id": "q064",
+  "type": "quote",
+  "text": "Not all those who wander are lost.",
+  "detail": "J.R.R. Tolkien"
+ },
+ {
+  "id": "q065",
+  "type": "quote",
+  "text": "Lock up your libraries if you like; but there is no gate, no lock, no bolt that you can set upon the freedom of my mind.",
+  "detail": "Virginia Woolf"
+ },
+ {
+  "id": "q066",
+  "type": "quote",
+  "text": "Smile, breathe, and go slowly.",
+  "detail": "Thich Nhat Hanh"
+ },
+ {
+  "id": "q067",
+  "type": "quote",
+  "text": "Do what you can, with what you have, where you are.",
+  "detail": "Theodore Roosevelt"
+ },
+ {
+  "id": "q068",
+  "type": "quote",
+  "text": "You must do the thing you think you cannot do.",
+  "detail": "Eleanor Roosevelt"
+ },
+ {
+  "id": "q069",
+  "type": "quote",
+  "text": "You miss 100% of the shots you don't take.",
+  "detail": "Wayne Gretzky"
+ },
+ {
+  "id": "q070",
+  "type": "quote",
+  "text": "Whenever you find yourself on the side of the majority, it is time to pause and reflect.",
+  "detail": "Mark Twain"
+ },
+ {
+  "id": "q071",
+  "type": "quote",
+  "text": "There is no charm equal to tenderness of heart.",
+  "detail": "Jane Austen"
+ },
+ {
+  "id": "q072",
+  "type": "quote",
+  "text": "Life is either a daring adventure or nothing at all.",
+  "detail": "Helen Keller"
+ },
+ {
+  "id": "q073",
+  "type": "quote",
+  "text": "The best way out is always through.",
+  "detail": "Robert Frost"
+ },
+ {
+  "id": "a001",
+  "type": "question",
+  "text": "What would you do this week if you couldn't fail?"
+ },
+ {
+  "id": "a002",
+  "type": "question",
+  "text": "What is one thing you're tolerating that you could fix in ten minutes?"
+ },
+ {
+  "id": "a003",
+  "type": "question",
+  "text": "If today were a chapter in your life story, what would its title be?"
+ },
+ {
+  "id": "a004",
+  "type": "question",
+  "text": "What did you believe five years ago that you no longer believe?"
+ },
+ {
+  "id": "a005",
+  "type": "question",
+  "text": "Who is someone you admire, and what exactly do they do differently?"
+ },
+ {
+  "id": "a006",
+  "type": "question",
+  "text": "What would your future self thank you for starting today?"
+ },
+ {
+  "id": "a007",
+  "type": "question",
+  "text": "What is the smallest version of the thing you keep putting off?"
+ },
+ {
+  "id": "a008",
+  "type": "question",
+  "text": "Which of your current worries will matter in a year?"
+ },
+ {
+  "id": "a009",
+  "type": "question",
+  "text": "What do you do when no one is watching that you'd be proud of?"
+ },
+ {
+  "id": "a010",
+  "type": "question",
+  "text": "What are you pretending not to know?"
+ },
+ {
+  "id": "a011",
+  "type": "question",
+  "text": "If you could only keep three of your current commitments, which would they be?"
+ },
+ {
+  "id": "a012",
+  "type": "question",
+  "text": "What does a good day look like for you, specifically?"
+ },
+ {
+  "id": "a013",
+  "type": "question",
+  "text": "What is something you're good at that you rarely give yourself credit for?"
+ },
+ {
+  "id": "a014",
+  "type": "question",
+  "text": "When did you last lose track of time, and what were you doing?"
+ },
+ {
+  "id": "a015",
+  "type": "question",
+  "text": "What would you attempt if you knew you had to be bad at it first?"
+ },
+ {
+  "id": "a016",
+  "type": "question",
+  "text": "Who haven't you talked to in a while that you'd like to hear from?"
+ },
+ {
+  "id": "a017",
+  "type": "question",
+  "text": "What is a belief you hold mostly because everyone around you holds it?"
+ },
+ {
+  "id": "a018",
+  "type": "question",
+  "text": "What is one thing you could say no to this week to make room for something better?"
+ },
+ {
+  "id": "a019",
+  "type": "question",
+  "text": "What is the most useful thing you've learned from a mistake?"
+ },
+ {
+  "id": "a020",
+  "type": "question",
+  "text": "If your energy were a budget, where did it go yesterday?"
+ },
+ {
+  "id": "a021",
+  "type": "question",
+  "text": "What would you do differently if you were kinder to yourself?"
+ },
+ {
+  "id": "a022",
+  "type": "question",
+  "text": "What's a small ritual that makes your day feel better?"
+ },
+ {
+  "id": "a023",
+  "type": "question",
+  "text": "What do you want more of in your life, and what are you doing to get it?"
+ },
+ {
+  "id": "a024",
+  "type": "question",
+  "text": "What would make tonight feel like a good use of an evening?"
+ },
+ {
+  "id": "a025",
+  "type": "question",
+  "text": "What is the hardest thing you've done that you're glad you did?"
+ },
+ {
+  "id": "a026",
+  "type": "question",
+  "text": "What is something you used to love doing that you've stopped?"
+ },
+ {
+  "id": "a027",
+  "type": "question",
+  "text": "What is one thing you wish people asked you about?"
+ },
+ {
+  "id": "a028",
+  "type": "question",
+  "text": "What is a problem you keep solving the same way that might need a new approach?"
+ },
+ {
+  "id": "a029",
+  "type": "question",
+  "text": "What would your ideal Saturday morning look like?"
+ },
+ {
+  "id": "a030",
+  "type": "question",
+  "text": "What are you currently learning, and what would you like to learn next?"
+ },
+ {
+  "id": "a031",
+  "type": "question",
+  "text": "If money and time weren't constraints, what would you build?"
+ },
+ {
+  "id": "a032",
+  "type": "question",
+  "text": "What is something you could teach someone in five minutes?"
+ },
+ {
+  "id": "a033",
+  "type": "question",
+  "text": "What did you do today that was only for you?"
+ },
+ {
+  "id": "a034",
+  "type": "question",
+  "text": "Which habit is quietly shaping your days more than you realize?"
+ },
+ {
+  "id": "a035",
+  "type": "question",
+  "text": "What is the difference between busy and productive in your week?"
+ },
+ {
+  "id": "a036",
+  "type": "question",
+  "text": "What do you need to hear right now?"
+ },
+ {
+  "id": "a037",
+  "type": "question",
+  "text": "Who made your life easier recently, and have you told them?"
+ },
+ {
+  "id": "a038",
+  "type": "question",
+  "text": "What is something you're proud of that nobody knows about?"
+ },
+ {
+  "id": "a039",
+  "type": "question",
+  "text": "What would you regret not trying?"
+ },
+ {
+  "id": "a040",
+  "type": "question",
+  "text": "What is a fear that looks bigger from far away than it does up close?"
+ },
+ {
+  "id": "a041",
+  "type": "question",
+  "text": "What is something small you can finish before the day is over?"
+ },
+ {
+  "id": "a042",
+  "type": "question",
+  "text": "What does enough look like for you?"
+ },
+ {
+  "id": "a043",
+  "type": "question",
+  "text": "What is the best advice you've ignored?"
+ },
+ {
+  "id": "a044",
+  "type": "question",
+  "text": "Which of your possessions do you actually use, and which just take up space?"
+ },
+ {
+  "id": "a045",
+  "type": "question",
+  "text": "What would your life look like if you took your own advice?"
+ },
+ {
+  "id": "a046",
+  "type": "question",
+  "text": "What is a skill that would make everything else easier?"
+ },
+ {
+  "id": "a047",
+  "type": "question",
+  "text": "What did you spend time on today that you'd happily spend more time on?"
+ },
+ {
+  "id": "a048",
+  "type": "question",
+  "text": "If you wrote a letter to yourself ten years from now, what would you want them to remember?"
+ },
+ {
+  "id": "a049",
+  "type": "question",
+  "text": "What is a place you'd like to know better?"
+ },
+ {
+  "id": "a050",
+  "type": "question",
+  "text": "When do you feel most like yourself?"
+ },
+ {
+  "id": "a051",
+  "type": "question",
+  "text": "What is the next right step, even if it's a tiny one?"
+ },
+ {
+  "id": "a052",
+  "type": "question",
+  "text": "What gives you energy, and what drains it?"
+ },
+ {
+  "id": "a053",
+  "type": "question",
+  "text": "Which conversation have you been avoiding, and what's the gentlest way to begin it?"
+ },
+ {
+  "id": "a054",
+  "type": "question",
+  "text": "What are you grateful for that you usually take for granted?"
+ },
+ {
+  "id": "a055",
+  "type": "question",
+  "text": "What is something you've changed your mind about recently?"
+ },
+ {
+  "id": "a056",
+  "type": "question",
+  "text": "If you had to explain your life priorities in one sentence, what would it say?"
+ },
+ {
+  "id": "a057",
+  "type": "question",
+  "text": "What would you do with an extra hour every day?"
+ },
+ {
+  "id": "a058",
+  "type": "question",
+  "text": "What is one thing you can leave undone tonight without consequences?"
+ },
+ {
+  "id": "a059",
+  "type": "question",
+  "text": "What kind of person are you becoming, one small choice at a time?"
+ },
+ {
+  "id": "a060",
+  "type": "question",
+  "text": "Where in your life are you waiting for permission that you don't need?"
+ },
+ {
+  "id": "a061",
+  "type": "question",
+  "text": "What is the kindest thing someone has done for you?"
+ },
+ {
+  "id": "a062",
+  "type": "question",
+  "text": "What would make this week feel like a success?"
+ },
+ {
+  "id": "a063",
+  "type": "question",
+  "text": "What are you curious about right now?"
+ },
+ {
+  "id": "a064",
+  "type": "question",
+  "text": "What is something beautiful you noticed recently?"
+ },
+ {
+  "id": "a065",
+  "type": "question",
+  "text": "What do you want to be known for?"
+ },
+ {
+  "id": "a066",
+  "type": "question",
+  "text": "What is a risk worth taking this month?"
+ },
+ {
+  "id": "a067",
+  "type": "question",
+  "text": "How do you want to feel at the end of today?"
+ },
+ {
+  "id": "a068",
+  "type": "question",
+  "text": "What is something you're ready to let go of?"
+ },
+ {
+  "id": "a069",
+  "type": "question",
+  "text": "What do you know now that you wish you'd known at twenty?"
+ },
+ {
+  "id": "a070",
+  "type": "question",
+  "text": "What is a question you've been afraid to ask?"
+ },
+ {
+  "id": "a071",
+  "type": "question",
+  "text": "Who is your future self, and what would they say to you right now?"
+ },
+ {
+  "id": "a072",
+  "type": "question",
+  "text": "What is the most important thing you're not doing?"
+ },
+ {
+  "id": "a073",
+  "type": "question",
+  "text": "What small adventure could you fit into this week?"
+ },
+ {
+  "id": "t001",
+  "type": "thought",
+  "text": "Imagine every task on your list takes exactly half the time you expect. What would you do with the hours you get back?"
+ },
+ {
+  "id": "t002",
+  "type": "thought",
+  "text": "Imagine you could send one message to yourself one year ago. What would it say, and would past you listen?"
+ },
+ {
+  "id": "t003",
+  "type": "thought",
+  "text": "Suppose you had to teach a class tomorrow on the thing you know best. What would your first slide say?"
+ },
+ {
+  "id": "t004",
+  "type": "thought",
+  "text": "Picture your ideal day a year from now in full detail. Which single part of it could you start tonight?"
+ },
+ {
+  "id": "t005",
+  "type": "thought",
+  "text": "Imagine you're given a free year with no obligations except to learn one thing. What do you choose?"
+ },
+ {
+  "id": "t006",
+  "type": "thought",
+  "text": "Suppose everyone you know could see your calendar. Which commitments would you quietly cancel?"
+ },
+ {
+  "id": "t007",
+  "type": "thought",
+  "text": "Imagine you only had enough energy for three things today. Which three would you protect?"
+ },
+ {
+  "id": "t008",
+  "type": "thought",
+  "text": "Picture a version of you who already finished what you've been avoiding. What did they do first?"
+ },
+ {
+  "id": "t009",
+  "type": "thought",
+  "text": "Suppose you had to live this week on autopilot except for one deliberate choice. What would it be?"
+ },
+ {
+  "id": "t010",
+  "type": "thought",
+  "text": "Imagine your phone vanished for a day. What would you do with the attention you'd get back?"
+ },
+ {
+  "id": "t011",
+  "type": "thought",
+  "text": "Picture meeting your younger self. What's the one thing you'd want them to know about how it turns out?"
+ },
+ {
+  "id": "t012",
+  "type": "thought",
+  "text": "Imagine you could master one skill overnight. Which one makes the biggest difference to your daily life?"
+ },
+ {
+  "id": "t013",
+  "type": "thought",
+  "text": "Suppose you had to describe your week to a stranger. Which part would make you feel proud, and which would you skip?"
+ },
+ {
+  "id": "t014",
+  "type": "thought",
+  "text": "Imagine you were advising a friend with exactly your life. What would you tell them to change first?"
+ },
+ {
+  "id": "t015",
+  "type": "thought",
+  "text": "Suppose a month passes and you did nothing about your biggest worry. What actually happens?"
+ },
+ {
+  "id": "t016",
+  "type": "thought",
+  "text": "Imagine every habit you have gets a vote on who you become. Which habits are voting for the person you want to be?"
+ },
+ {
+  "id": "t017",
+  "type": "thought",
+  "text": "Picture your home with only the things you truly love or use. What's left, and what surprised you?"
+ },
+ {
+  "id": "t018",
+  "type": "thought",
+  "text": "Imagine you had a personal board of three advisors. Who would you choose, and what would you ask first?"
+ },
+ {
+  "id": "t019",
+  "type": "thought",
+  "text": "Imagine you wrote your own obituary today. Is there a line you'd want to change while you still can?"
+ },
+ {
+  "id": "t020",
+  "type": "thought",
+  "text": "Picture yourself at the end of this week, content. What happened to get you there?"
+ },
+ {
+  "id": "t021",
+  "type": "thought",
+  "text": "Suppose you could remove one source of friction from your mornings. What would it be, and why haven't you?"
+ },
+ {
+  "id": "t022",
+  "type": "thought",
+  "text": "Imagine you're a visitor in your own city for a weekend. What would you finally go see?"
+ },
+ {
+  "id": "t023",
+  "type": "thought",
+  "text": "Suppose your next hour was guaranteed to go well no matter what you chose. What would you do with it?"
+ },
+ {
+  "id": "t024",
+  "type": "thought",
+  "text": "Imagine every promise you've made to yourself came with a calendar invite. Which ones are overdue?"
+ },
+ {
+  "id": "t025",
+  "type": "thought",
+  "text": "Suppose you had to cut your belongings to what fits in one room. What comes with you?"
+ },
+ {
+  "id": "t026",
+  "type": "thought",
+  "text": "Picture a friend asking for your help with something you're good at. How would you make it easy for them?"
+ },
+ {
+  "id": "t027",
+  "type": "thought",
+  "text": "Imagine your best habit disappeared tomorrow. What would you miss, and what does that tell you?"
+ },
+ {
+  "id": "t028",
+  "type": "thought",
+  "text": "Suppose you could swap lives for a week with someone you admire. What would you want to learn from the inside?"
+ },
+ {
+  "id": "t029",
+  "type": "thought",
+  "text": "Suppose tomorrow's to-do list were written by someone who wanted you to be happy. What would be on it?"
+ },
+ {
+  "id": "t030",
+  "type": "thought",
+  "text": "Picture explaining your day to someone who doesn't know you. Which parts sound meaningful?"
+ },
+ {
+  "id": "t031",
+  "type": "thought",
+  "text": "Imagine you could instantly be fluent in any language. Which one, and what's the first conversation you'd have?"
+ },
+ {
+  "id": "t032",
+  "type": "thought",
+  "text": "Suppose you could only buy things that last a decade. How would that change what you buy?"
+ },
+ {
+  "id": "t033",
+  "type": "thought",
+  "text": "Imagine receiving a letter from the person you'll be in five years. What are they proud of you for?"
+ },
+ {
+  "id": "t034",
+  "type": "thought",
+  "text": "Picture a day where you say yes to every small invitation. What might happen?"
+ },
+ {
+  "id": "t035",
+  "type": "thought",
+  "text": "Suppose you swapped one hour of screen time for one hour of something else every day for a year. What would you do?"
+ },
+ {
+  "id": "t036",
+  "type": "thought",
+  "text": "Imagine the version of you that's patient with everyone, including yourself. What would they do next?"
+ },
+ {
+  "id": "t037",
+  "type": "thought",
+  "text": "Imagine your current job disappeared and you had to start something new. What would you try?"
+ },
+ {
+  "id": "t038",
+  "type": "thought",
+  "text": "Picture the next time you feel stuck. What would you tell a friend in the same spot?"
+ },
+ {
+  "id": "t039",
+  "type": "thought",
+  "text": "Suppose you had to finish only one thing this week and everything else could slide. What gets finished?"
+ },
+ {
+  "id": "t040",
+  "type": "thought",
+  "text": "Imagine your attention is a spotlight you can aim. What deserves it more than it's getting?"
+ },
+ {
+  "id": "t041",
+  "type": "thought",
+  "text": "Suppose each morning started with ten quiet minutes by design. What would you use them for?"
+ },
+ {
+  "id": "t042",
+  "type": "thought",
+  "text": "Imagine you were told that rest is part of the work. How would you schedule it?"
+ },
+ {
+  "id": "t043",
+  "type": "thought",
+  "text": "Picture your future home. What's the first small thing you'd do in it each morning?"
+ },
+ {
+  "id": "t044",
+  "type": "thought",
+  "text": "Suppose you could give one gift to everyone you love. What would it be?"
+ },
+ {
+  "id": "t045",
+  "type": "thought",
+  "text": "Imagine a day with no comparison to anyone else. How would it feel different?"
+ },
+ {
+  "id": "t046",
+  "type": "thought",
+  "text": "Suppose you could redo this morning with one small change. What would you change?"
+ },
+ {
+  "id": "t047",
+  "type": "thought",
+  "text": "Imagine your reputation didn't matter for a day. What would you do differently?"
+ },
+ {
+  "id": "t048",
+  "type": "thought",
+  "text": "Imagine you had to explain what you're working toward in a single sentence to a ten-year-old."
+ },
+ {
+  "id": "t049",
+  "type": "thought",
+  "text": "Suppose you never had to be productive again, only curious. What would you explore?"
+ },
+ {
+  "id": "t050",
+  "type": "thought",
+  "text": "Imagine every task you do today is for someone you love. Does anything change?"
+ },
+ {
+  "id": "t051",
+  "type": "thought",
+  "text": "Picture a bridge between where you are and where you want to be. What's the first plank?"
+ },
+ {
+  "id": "t052",
+  "type": "thought",
+  "text": "Suppose you could borrow one trait from anyone for a week. Whose, and for what?"
+ },
+ {
+  "id": "t053",
+  "type": "thought",
+  "text": "Imagine you could redesign your evenings from scratch. What stays, what goes?"
+ },
+ {
+  "id": "t054",
+  "type": "thought",
+  "text": "Suppose you had a mentor who believed in you completely. What would they push you to try?"
+ },
+ {
+  "id": "t055",
+  "type": "thought",
+  "text": "Imagine the problem you're stuck on belongs to someone else. What would you suggest?"
+ },
+ {
+  "id": "t056",
+  "type": "thought",
+  "text": "Picture a normal day in which nothing is urgent. What would you actually choose to do?"
+ },
+ {
+  "id": "t057",
+  "type": "thought",
+  "text": "Suppose you had to leave your home for a year. What would you take, and what does that say about what matters?"
+ },
+ {
+  "id": "t058",
+  "type": "thought",
+  "text": "Imagine you could talk to the person you were at your lowest. What would you say?"
+ },
+ {
+  "id": "t059",
+  "type": "thought",
+  "text": "Suppose each good habit were a tiny seed. Which ones have you been watering lately?"
+ },
+ {
+  "id": "t060",
+  "type": "thought",
+  "text": "Imagine today is the first day of the rest of your routine. What's the first thing you'd keep?"
+ },
+ {
+  "id": "t061",
+  "type": "thought",
+  "text": "Picture a room where you do your best thinking. What makes it work?"
+ },
+ {
+  "id": "t062",
+  "type": "thought",
+  "text": "Suppose your phone gave you one notification a day, and it was perfectly chosen. What would it say?"
+ },
+ {
+  "id": "t063",
+  "type": "thought",
+  "text": "Imagine you could instantly know whether a choice is a good one. Which decision would you check first?"
+ },
+ {
+  "id": "t064",
+  "type": "thought",
+  "text": "Suppose you had a free coffee with anyone in history. What would you ask?"
+ },
+ {
+  "id": "t065",
+  "type": "thought",
+  "text": "Picture the last time you were proud of a small thing. How would you create another moment like it?"
+ },
+ {
+  "id": "t066",
+  "type": "thought",
+  "text": "Suppose you could share one small kindness with a stranger today. What would it be?"
+ },
+ {
+  "id": "t067",
+  "type": "thought",
+  "text": "The Ship of Theseus: if every plank of a ship is replaced over the years, is it still the same ship? Which parts of you have been replaced and are still you?"
+ },
+ {
+  "id": "t068",
+  "type": "thought",
+  "text": "Rawls' veil of ignorance: design a fair world without knowing who you'll be in it. What changes about how you'd build it?"
+ },
+ {
+  "id": "t069",
+  "type": "thought",
+  "text": "Hilbert's Hotel: a hotel with infinitely many rooms is full, yet it can still fit one more guest by shifting everyone over a room. What in your life seems full but could shift to make room?"
+ },
+ {
+  "id": "t070",
+  "type": "thought",
+  "text": "Nozick's experience machine: you could plug into a machine that gives you any experiences you choose, but it isn't real. Would you go in? What does your answer say about what you value?"
+ },
+ {
+  "id": "t071",
+  "type": "thought",
+  "text": "Buridan's donkey: a donkey placed exactly between two identical piles of hay starves because it can't choose. When is picking either option better than not picking?"
+ },
+ {
+  "id": "t072",
+  "type": "thought",
+  "text": "Zeno's arrow: at any single instant an arrow in flight is motionless, so how does it move? What progress of yours is invisible one moment at a time?"
+ },
+ {
+  "id": "t073",
+  "type": "thought",
+  "text": "The thousand-year-old tree: you plant a tree you will never sit under. What would you plant, and for whom?"
+ },
+ {
+  "id": "w001",
+  "type": "word",
+  "text": "Petrichor",
+  "detail": "noun. The pleasant, earthy smell after rain falls on dry ground."
+ },
+ {
+  "id": "w002",
+  "type": "word",
+  "text": "Serendipity",
+  "detail": "noun. Finding something good by chance while looking for something else."
+ },
+ {
+  "id": "w003",
+  "type": "word",
+  "text": "Ephemeral",
+  "detail": "adjective. Lasting only a very short time."
+ },
+ {
+  "id": "w004",
+  "type": "word",
+  "text": "Equanimity",
+  "detail": "noun. Calm, even-tempered composure, especially under stress."
+ },
+ {
+  "id": "w005",
+  "type": "word",
+  "text": "Ineffable",
+  "detail": "adjective. Too great or extreme to be put into words."
+ },
+ {
+  "id": "w006",
+  "type": "word",
+  "text": "Halcyon",
+  "detail": "adjective. Peaceful and happy, often used of days gone by."
+ },
+ {
+  "id": "w007",
+  "type": "word",
+  "text": "Sanguine",
+  "detail": "adjective. Optimistic, especially in a difficult situation."
+ },
+ {
+  "id": "w008",
+  "type": "word",
+  "text": "Liminal",
+  "detail": "adjective. Relating to a threshold or in-between state."
+ },
+ {
+  "id": "w009",
+  "type": "word",
+  "text": "Perspicacious",
+  "detail": "adjective. Having a ready insight into things; shrewd."
+ },
+ {
+  "id": "w010",
+  "type": "word",
+  "text": "Mellifluous",
+  "detail": "adjective. Sweet-sounding and smooth to the ear."
+ },
+ {
+  "id": "w011",
+  "type": "word",
+  "text": "Quixotic",
+  "detail": "adjective. Idealistic to an impractical degree."
+ },
+ {
+  "id": "w012",
+  "type": "word",
+  "text": "Ennui",
+  "detail": "noun. A feeling of listlessness and dissatisfaction from lack of occupation."
+ },
+ {
+  "id": "w013",
+  "type": "word",
+  "text": "Eudaimonia",
+  "detail": "noun. A Greek word for flourishing; a life well lived."
+ },
+ {
+  "id": "w014",
+  "type": "word",
+  "text": "Saudade",
+  "detail": "noun. A Portuguese word for a deep, wistful longing for something absent."
+ },
+ {
+  "id": "w015",
+  "type": "word",
+  "text": "Kintsugi",
+  "detail": "noun. The Japanese art of repairing broken pottery with gold, so the cracks become part of the design."
+ },
+ {
+  "id": "w016",
+  "type": "word",
+  "text": "Wabi-sabi",
+  "detail": "noun. A Japanese aesthetic that finds beauty in imperfection and impermanence."
+ },
+ {
+  "id": "w017",
+  "type": "word",
+  "text": "Ubiquitous",
+  "detail": "adjective. Present, appearing, or found everywhere."
+ },
+ {
+  "id": "w018",
+  "type": "word",
+  "text": "Lucid",
+  "detail": "adjective. Clear and easy to understand; also, thinking clearly."
+ },
+ {
+  "id": "w019",
+  "type": "word",
+  "text": "Sonorous",
+  "detail": "adjective. Having a deep, full, rich sound."
+ },
+ {
+  "id": "w020",
+  "type": "word",
+  "text": "Gregarious",
+  "detail": "adjective. Fond of company; sociable."
+ },
+ {
+  "id": "w021",
+  "type": "word",
+  "text": "Pragmatic",
+  "detail": "adjective. Dealing with things sensibly and practically rather than ideally."
+ },
+ {
+  "id": "w022",
+  "type": "word",
+  "text": "Resilient",
+  "detail": "adjective. Able to recover quickly from difficulties."
+ },
+ {
+  "id": "w023",
+  "type": "word",
+  "text": "Magnanimous",
+  "detail": "adjective. Generous and forgiving, especially toward a rival."
+ },
+ {
+  "id": "w024",
+  "type": "word",
+  "text": "Inchoate",
+  "detail": "adjective. Just begun and not yet fully formed."
+ },
+ {
+  "id": "w025",
+  "type": "word",
+  "text": "Alacrity",
+  "detail": "noun. Brisk and cheerful readiness."
+ },
+ {
+  "id": "w026",
+  "type": "word",
+  "text": "Equivocal",
+  "detail": "adjective. Open to more than one interpretation; ambiguous."
+ },
+ {
+  "id": "w027",
+  "type": "word",
+  "text": "Verdant",
+  "detail": "adjective. Green with grass or other lush vegetation."
+ },
+ {
+  "id": "w028",
+  "type": "word",
+  "text": "Tenacious",
+  "detail": "adjective. Holding firmly to a goal or belief; persistent."
+ },
+ {
+  "id": "w029",
+  "type": "word",
+  "text": "Hubris",
+  "detail": "noun. Excessive pride or self-confidence."
+ },
+ {
+  "id": "w030",
+  "type": "word",
+  "text": "Aplomb",
+  "detail": "noun. Self-confidence and composure in a demanding situation."
+ },
+ {
+  "id": "w031",
+  "type": "word",
+  "text": "Lacuna",
+  "detail": "noun. A gap or missing part, as in a manuscript or an argument."
+ },
+ {
+  "id": "w032",
+  "type": "word",
+  "text": "Panacea",
+  "detail": "noun. A solution or remedy supposed to cure all difficulties."
+ },
+ {
+  "id": "w033",
+  "type": "word",
+  "text": "Iconoclast",
+  "detail": "noun. A person who challenges cherished beliefs or institutions."
+ },
+ {
+  "id": "w034",
+  "type": "word",
+  "text": "Paradigm",
+  "detail": "noun. A typical model or pattern of how something works."
+ },
+ {
+  "id": "w035",
+  "type": "word",
+  "text": "Acumen",
+  "detail": "noun. The ability to make good judgments and quick decisions."
+ },
+ {
+  "id": "w036",
+  "type": "word",
+  "text": "Zenith",
+  "detail": "noun. The highest point reached; the peak."
+ },
+ {
+  "id": "w037",
+  "type": "word",
+  "text": "Nadir",
+  "detail": "noun. The lowest point of a situation."
+ },
+ {
+  "id": "w038",
+  "type": "word",
+  "text": "Ameliorate",
+  "detail": "verb. To make something bad a little better."
+ },
+ {
+  "id": "w039",
+  "type": "word",
+  "text": "Sagacious",
+  "detail": "adjective. Having keen judgment and wisdom."
+ },
+ {
+  "id": "w040",
+  "type": "word",
+  "text": "Convivial",
+  "detail": "adjective. Friendly, lively, and enjoyable in atmosphere."
+ },
+ {
+  "id": "w041",
+  "type": "word",
+  "text": "Laconic",
+  "detail": "adjective. Using very few words."
+ },
+ {
+  "id": "w042",
+  "type": "word",
+  "text": "Garrulous",
+  "detail": "adjective. Excessively talkative."
+ },
+ {
+  "id": "w043",
+  "type": "word",
+  "text": "Bucolic",
+  "detail": "adjective. Relating to the pleasant aspects of country life."
+ },
+ {
+  "id": "w044",
+  "type": "word",
+  "text": "Mercurial",
+  "detail": "adjective. Subject to sudden, unpredictable changes of mood."
+ },
+ {
+  "id": "w045",
+  "type": "word",
+  "text": "Salient",
+  "detail": "adjective. Most noticeable or important."
+ },
+ {
+  "id": "w046",
+  "type": "word",
+  "text": "Ebullient",
+  "detail": "adjective. Cheerful and full of energy."
+ },
+ {
+  "id": "w047",
+  "type": "word",
+  "text": "Prescient",
+  "detail": "adjective. Having knowledge of events before they take place."
+ },
+ {
+  "id": "w048",
+  "type": "word",
+  "text": "Obfuscate",
+  "detail": "verb. To make something unclear or hard to understand."
+ },
+ {
+  "id": "w049",
+  "type": "word",
+  "text": "Perennial",
+  "detail": "adjective. Lasting or recurring through the years."
+ },
+ {
+  "id": "w050",
+  "type": "word",
+  "text": "Evanescent",
+  "detail": "adjective. Soon passing out of sight or memory."
+ },
+ {
+  "id": "w051",
+  "type": "word",
+  "text": "Cogent",
+  "detail": "adjective. Clear, logical, and convincing."
+ },
+ {
+  "id": "w052",
+  "type": "word",
+  "text": "Fastidious",
+  "detail": "adjective. Very attentive to accuracy and detail."
+ },
+ {
+  "id": "w053",
+  "type": "word",
+  "text": "Surreptitious",
+  "detail": "adjective. Kept secret, especially because it would not be approved of."
+ },
+ {
+  "id": "w054",
+  "type": "word",
+  "text": "Sycophant",
+  "detail": "noun. A person who flatters someone important to gain advantage."
+ },
+ {
+  "id": "w055",
+  "type": "word",
+  "text": "Esoteric",
+  "detail": "adjective. Intended for or understood by only a small group with specialized knowledge."
+ },
+ {
+  "id": "w056",
+  "type": "word",
+  "text": "Ephemera",
+  "detail": "noun. Things that exist or are used only briefly, like tickets and flyers."
+ },
+ {
+  "id": "w057",
+  "type": "word",
+  "text": "Dalliance",
+  "detail": "noun. A casual or lighthearted involvement; idle trifling."
+ },
+ {
+  "id": "w058",
+  "type": "word",
+  "text": "Eloquent",
+  "detail": "adjective. Fluent and persuasive in speaking or writing."
+ },
+ {
+  "id": "w059",
+  "type": "word",
+  "text": "Fortuitous",
+  "detail": "adjective. Happening by a lucky chance."
+ },
+ {
+  "id": "w060",
+  "type": "word",
+  "text": "Imbue",
+  "detail": "verb. To inspire or permeate with a feeling or quality."
+ },
+ {
+  "id": "w061",
+  "type": "word",
+  "text": "Juxtapose",
+  "detail": "verb. To place close together for contrasting effect."
+ },
+ {
+  "id": "w062",
+  "type": "word",
+  "text": "Nostalgia",
+  "detail": "noun. A sentimental longing for the past."
+ },
+ {
+  "id": "w063",
+  "type": "word",
+  "text": "Palimpsest",
+  "detail": "noun. Something reused or altered but still bearing traces of its earlier form."
+ },
+ {
+  "id": "w064",
+  "type": "word",
+  "text": "Quotidian",
+  "detail": "adjective. Of or occurring every day; ordinary."
+ },
+ {
+  "id": "w065",
+  "type": "word",
+  "text": "Reverie",
+  "detail": "noun. A state of being pleasantly lost in one's thoughts."
+ },
+ {
+  "id": "w066",
+  "type": "word",
+  "text": "Solace",
+  "detail": "noun. Comfort in a time of distress or sadness."
+ },
+ {
+  "id": "w067",
+  "type": "word",
+  "text": "Tranquil",
+  "detail": "adjective. Free from disturbance; calm."
+ },
+ {
+  "id": "w068",
+  "type": "word",
+  "text": "Unfathomable",
+  "detail": "adjective. Impossible to understand or measure."
+ },
+ {
+  "id": "w069",
+  "type": "word",
+  "text": "Vicissitude",
+  "detail": "noun. A change of circumstances or fortune, typically unwelcome."
+ },
+ {
+  "id": "w070",
+  "type": "word",
+  "text": "Wanderlust",
+  "detail": "noun. A strong desire to travel and explore."
+ },
+ {
+  "id": "w071",
+  "type": "word",
+  "text": "Zeitgeist",
+  "detail": "noun. The defining spirit or mood of a particular period."
+ },
+ {
+  "id": "w072",
+  "type": "word",
+  "text": "Mettle",
+  "detail": "noun. A person's ability to cope well with difficulties; spirit and courage."
+ },
+ {
+  "id": "w073",
+  "type": "word",
+  "text": "Bonhomie",
+  "detail": "noun. Cheerful friendliness; geniality."
+ },
+ {
+  "id": "f001",
+  "type": "fact",
+  "text": "Octopuses have three hearts: two pump blood through the gills and one pumps it to the rest of the body."
+ },
+ {
+  "id": "f002",
+  "type": "fact",
+  "text": "A day on Venus is longer than its year: it takes about 243 Earth days to rotate once, but about 225 to orbit the Sun."
+ },
+ {
+  "id": "f003",
+  "type": "fact",
+  "text": "Oxford University was already teaching before the Aztec city of Tenochtitlan was founded."
+ },
+ {
+  "id": "f004",
+  "type": "fact",
+  "text": "Sharks have been around longer than trees; the first sharks appeared roughly 450 million years ago."
+ },
+ {
+  "id": "f005",
+  "type": "fact",
+  "text": "Cleopatra lived closer in time to the Moon landing than to the building of the Great Pyramid of Giza."
+ },
+ {
+  "id": "f006",
+  "type": "fact",
+  "text": "Bananas are berries in the botanical sense, but strawberries are not."
+ },
+ {
+  "id": "f007",
+  "type": "fact",
+  "text": "Wombats produce cube-shaped droppings, which helps them stay put when they mark their territory."
+ },
+ {
+  "id": "f008",
+  "type": "fact",
+  "text": "Sunlight takes about eight minutes and twenty seconds to reach Earth."
+ },
+ {
+  "id": "f009",
+  "type": "fact",
+  "text": "Tardigrades, microscopic animals also called water bears, have survived exposure to the vacuum of space."
+ },
+ {
+  "id": "f010",
+  "type": "fact",
+  "text": "The shortest war on record, between Britain and Zanzibar in 1896, lasted somewhere between 38 and 45 minutes."
+ },
+ {
+  "id": "f011",
+  "type": "fact",
+  "text": "Russia spans eleven time zones."
+ },
+ {
+  "id": "f012",
+  "type": "fact",
+  "text": "Antarctica is the largest desert on Earth, because it receives so little precipitation."
+ },
+ {
+  "id": "f013",
+  "type": "fact",
+  "text": "Venus spins in the opposite direction from most planets in the solar system."
+ },
+ {
+  "id": "f014",
+  "type": "fact",
+  "text": "Sea otters sometimes hold hands while they sleep so they don't drift apart."
+ },
+ {
+  "id": "f015",
+  "type": "fact",
+  "text": "Dolphins sleep with one half of their brain at a time, so they can keep surfacing to breathe."
+ },
+ {
+  "id": "f016",
+  "type": "fact",
+  "text": "A group of crows is called a murder, and a group of owls is called a parliament."
+ },
+ {
+  "id": "f017",
+  "type": "fact",
+  "text": "Crows can recognize individual human faces and remember them for years."
+ },
+ {
+  "id": "f018",
+  "type": "fact",
+  "text": "Honeybees communicate the location of flowers to each other with a waggle dance."
+ },
+ {
+  "id": "f019",
+  "type": "fact",
+  "text": "The human body contains about 37 trillion cells."
+ },
+ {
+  "id": "f020",
+  "type": "fact",
+  "text": "Your stomach lining replaces itself every few days."
+ },
+ {
+  "id": "f021",
+  "type": "fact",
+  "text": "There are more ways to shuffle a deck of 52 cards than there are atoms on Earth."
+ },
+ {
+  "id": "f022",
+  "type": "fact",
+  "text": "Lightning strikes the Earth roughly 100 times every second."
+ },
+ {
+  "id": "f023",
+  "type": "fact",
+  "text": "The Pacific Ocean covers more area than all of Earth's land combined."
+ },
+ {
+  "id": "f024",
+  "type": "fact",
+  "text": "A teaspoon of material from a neutron star would weigh billions of tons."
+ },
+ {
+  "id": "f025",
+  "type": "fact",
+  "text": "Honey stored in sealed containers can last for an extremely long time because of its low moisture and acidity."
+ },
+ {
+  "id": "f026",
+  "type": "fact",
+  "text": "Saturn's rings are mostly water ice, and are astonishingly thin compared to how wide they are."
+ },
+ {
+  "id": "f027",
+  "type": "fact",
+  "text": "The Great Wall of China is not visible to the naked eye from the Moon."
+ },
+ {
+  "id": "f028",
+  "type": "fact",
+  "text": "Wolves in a pack will often follow in each other's footprints through deep snow to save energy."
+ },
+ {
+  "id": "f029",
+  "type": "fact",
+  "text": "Cats have a specialized reflective layer in the eye that helps them see in dim light."
+ },
+ {
+  "id": "f030",
+  "type": "fact",
+  "text": "A single bolt of lightning can heat the air around it to about five times hotter than the surface of the Sun."
+ },
+ {
+  "id": "f031",
+  "type": "fact",
+  "text": "The first email was sent in 1971 by Ray Tomlinson, who also chose the @ symbol for addresses."
+ },
+ {
+  "id": "f032",
+  "type": "fact",
+  "text": "The word \"robot\" comes from a Czech word meaning forced labor, from a 1920 play."
+ },
+ {
+  "id": "f033",
+  "type": "fact",
+  "text": "The inventor of the Frisbee, Walter Morrison, was cremated, and some of his ashes were reportedly made into a Frisbee."
+ },
+ {
+  "id": "f034",
+  "type": "fact",
+  "text": "Coffee beans are actually the seeds of a fruit called a coffee cherry."
+ },
+ {
+  "id": "f035",
+  "type": "fact",
+  "text": "Peanuts are not nuts; they are legumes, related to beans and lentils."
+ },
+ {
+  "id": "f036",
+  "type": "fact",
+  "text": "Mount Everest grows by a few millimeters each year as the Indian plate keeps pushing into Asia."
+ },
+ {
+  "id": "f037",
+  "type": "fact",
+  "text": "The Atlantic Ocean is getting wider by a couple of centimeters every year."
+ },
+ {
+  "id": "f038",
+  "type": "fact",
+  "text": "The Dead Sea is so salty that people float easily on its surface."
+ },
+ {
+  "id": "f039",
+  "type": "fact",
+  "text": "It rains diamonds on Neptune and Uranus, according to some laboratory experiments and models."
+ },
+ {
+  "id": "f040",
+  "type": "fact",
+  "text": "A cloud can weigh more than a million pounds."
+ },
+ {
+  "id": "f041",
+  "type": "fact",
+  "text": "The longest recorded flight of a chicken is thirteen seconds."
+ },
+ {
+  "id": "f042",
+  "type": "fact",
+  "text": "Most of the dust in your home is made of dead skin, textile fibers, and outdoor soil."
+ },
+ {
+  "id": "f043",
+  "type": "fact",
+  "text": "A sneeze can travel at tens of miles per hour."
+ },
+ {
+  "id": "f044",
+  "type": "fact",
+  "text": "Pineapples take about two years to grow to maturity."
+ },
+ {
+  "id": "f045",
+  "type": "fact",
+  "text": "Polar bear fur is actually transparent, not white; it only appears white because it scatters light."
+ },
+ {
+  "id": "f046",
+  "type": "fact",
+  "text": "Hummingbirds are the only birds that can fly backwards."
+ },
+ {
+  "id": "f047",
+  "type": "fact",
+  "text": "The smell of freshly cut grass is a chemical distress signal from the plant."
+ },
+ {
+  "id": "f048",
+  "type": "fact",
+  "text": "Elephants can recognize themselves in a mirror, a sign of self-awareness."
+ },
+ {
+  "id": "f049",
+  "type": "fact",
+  "text": "Jellyfish have existed for more than 500 million years and have no brain."
+ },
+ {
+  "id": "f050",
+  "type": "fact",
+  "text": "The Library of Alexandria was one of the largest and most significant libraries of the ancient world."
+ },
+ {
+  "id": "f051",
+  "type": "fact",
+  "text": "A leap year is added so the calendar stays aligned with Earth's orbit around the Sun, which takes about 365.25 days."
+ },
+ {
+  "id": "f052",
+  "type": "fact",
+  "text": "Bamboo can grow almost a meter in a single day under the right conditions."
+ },
+ {
+  "id": "f053",
+  "type": "fact",
+  "text": "The Eiffel Tower can be about fifteen centimeters taller in summer because metal expands in the heat."
+ },
+ {
+  "id": "f054",
+  "type": "fact",
+  "text": "The human brain uses roughly twenty percent of the body's energy while being about two percent of its weight."
+ },
+ {
+  "id": "f055",
+  "type": "fact",
+  "text": "Your bones are constantly being broken down and rebuilt throughout life."
+ },
+ {
+  "id": "f056",
+  "type": "fact",
+  "text": "Giraffes have the same number of neck vertebrae as humans: seven."
+ },
+ {
+  "id": "f057",
+  "type": "fact",
+  "text": "An ostrich's eye is bigger than its brain."
+ },
+ {
+  "id": "f058",
+  "type": "fact",
+  "text": "Butterflies taste with their feet."
+ },
+ {
+  "id": "f059",
+  "type": "fact",
+  "text": "A flamingo's pink color comes from pigments in the algae and crustaceans it eats."
+ },
+ {
+  "id": "f060",
+  "type": "fact",
+  "text": "The unicorn is the national animal of Scotland."
+ },
+ {
+  "id": "f061",
+  "type": "fact",
+  "text": "In 1969 the Apollo 11 guidance computer had far less memory than a modern phone."
+ },
+ {
+  "id": "f062",
+  "type": "fact",
+  "text": "The first photograph of a human being was taken in 1838, in a Paris street scene, by Louis Daguerre."
+ },
+ {
+  "id": "f063",
+  "type": "fact",
+  "text": "Pi has been calculated to trillions of digits, yet no pattern has ever appeared in them."
+ },
+ {
+  "id": "f064",
+  "type": "fact",
+  "text": "The deepest known part of the ocean, the Challenger Deep, is deeper than Mount Everest is tall."
+ },
+ {
+  "id": "f065",
+  "type": "fact",
+  "text": "Water is densest at about four degrees Celsius, which is why ice floats and lakes freeze from the top down."
+ },
+ {
+  "id": "f066",
+  "type": "fact",
+  "text": "Sound travels about four times faster through water than through air."
+ },
+ {
+  "id": "f067",
+  "type": "fact",
+  "text": "A year on Mercury lasts just 88 Earth days."
+ },
+ {
+  "id": "f068",
+  "type": "fact",
+  "text": "The Moon is slowly drifting away from Earth by about 3.8 centimeters each year."
+ },
+ {
+  "id": "f069",
+  "type": "fact",
+  "text": "Venus is the hottest planet in the solar system, even though Mercury is closer to the Sun."
+ },
+ {
+  "id": "f070",
+  "type": "fact",
+  "text": "The Sun holds about 99.8 percent of the total mass of the solar system."
+ },
+ {
+  "id": "f071",
+  "type": "fact",
+  "text": "Sloths can hold their breath underwater for up to about 40 minutes by slowing their heart rate."
+ },
+ {
+  "id": "f072",
+  "type": "fact",
+  "text": "A group of flamingos is called a flamboyance."
+ },
+ {
+  "id": "f073",
+  "type": "fact",
+  "text": "Olympus Mons, a volcano on Mars, is about two and a half times as tall as Mount Everest."
+ }
+]

@@ -1,7 +1,7 @@
 "use server";
 
 import { requireUserId } from "@/lib/session";
-import { getUserTimezone } from "@/db/userSettings";
+import { getUserSettings } from "@/db/userSettings";
 import { fetchAllStories } from "@/lib/news";
 import { getSeenStoryIds, recordSeen } from "@/db/brief";
 import { allBriefStories, briefToSpeechParts, buildBrief } from "@/lib/brief";
@@ -22,7 +22,8 @@ export async function playBrief(
   selection: { id: string; earlier: boolean }[],
 ): Promise<{ parts: string[] }> {
   const userId = await requireUserId();
-  const stories = await fetchAllStories();
+  const settings = await getUserSettings(userId);
+  const stories = await fetchAllStories({ city: settings.briefCity });
   const byId = new Map(stories.map((s) => [s.id, s]));
 
   const chosen: BriefStory[] = selection
@@ -44,5 +45,5 @@ export async function playBrief(
     userId,
     allBriefStories(brief).map((s) => ({ storyId: s.id, title: s.title, section: s.section })),
   );
-  return { parts: briefToSpeechParts(brief, await getUserTimezone(userId)) };
+  return { parts: briefToSpeechParts(brief, settings.timezone, new Date(), settings.briefCity.trim() || "Chicago") };
 }

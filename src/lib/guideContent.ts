@@ -5,6 +5,11 @@ export type WhatsNewEntry = { date: string; title: string; body: string };
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    date: "2026-10-29",
+    title: "A new home dashboard (optional)",
+    body: "Turn on “Home dashboard” in Settings and your home page becomes a calm view of your day: a greeting, a daily spark, one thing to do right now, your daily brief, today’s timeline, what’s coming up, and a short list of things worth a look. After 8pm the page warms and darkens. Your daily brief’s local section now follows the city you set in Settings. The classic Overview is always still at /overview.",
+  },
+  {
     date: "2026-10-28",
     title: "Link Google calendars too",
     body: "Settings > Calendar now takes more than one link. Add your iCloud calendar and any Google calendars (using Google’s “secret address in iCal format”) and they’re shown together.",
@@ -26,6 +31,21 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     points: [
       "Shows only the tabs you’ve turned on in Settings.",
       "Tap “View all” on any card to open that tab.",
+    ],
+  },
+  {
+    id: "dashboard",
+    title: "Home dashboard",
+    summary: "An optional new home page, switched on in Settings → New features. Your classic Overview stays at /overview.",
+    points: [
+      "Greeting: one sentence that changes through the day — your workout, an evening plan, or how many things are on deck.",
+      "Daily spark: a quote, question, thought experiment, word or fact, new each day and never repeated within a year. Tap Save to keep it in Saved sparks; over time you’ll see a little more of the kinds you save.",
+      "Now: the one next thing for this part of your day (Launch, Work, Transition, Evening or Shutdown). Only this card carries the accent color.",
+      "Daily brief: open before work, folded into one line after. Tap Play to listen. Your alarm Shortcut keeps working as before.",
+      "Today: your day’s blocks with calendar events in between. Finished parts fade.",
+      "Coming up: the next few days — events, bills and cleaning — with a note on what each needs.",
+      "Worth a look: at most three gentle nudges, like a bill due soon or a streak waiting on one habit.",
+      "After 8pm (or whenever your Shutdown time is) the page turns darker and warmer until Launch.",
     ],
   },
   {
@@ -114,6 +134,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "Appearance: light or dark, and the background color.",
       "Your day: your time zone and the times your day shifts gears. Everything in the app uses this time zone to decide what “today” means.",
       "Calendar: link iCloud and Google calendars (stored encrypted, read-only), name them, and preview your next 7 days with everything merged.",
+      "Your name: what the dashboard greeting calls you.",
+      "Daily brief city: the local section of your brief. Chicago uses hand-picked Chicago outlets; any other city uses a Google News search, so add the state (for example “Austin, TX”) to avoid mix-ups.",
       "New features start switched off for everyone — turn them on here when you want them.",
     ],
   },

@@ -1,5 +1,5 @@
 import { requireUserId } from "@/lib/session";
-import { getUserTimezone } from "@/db/userSettings";
+import { getUserSettings } from "@/db/userSettings";
 import { Nav } from "@/components/Nav";
 import { fetchAllStories } from "@/lib/news";
 import { getSeenStoryIds } from "@/db/brief";
@@ -13,7 +13,12 @@ const PAGE_SIZE = 20;
 
 export default async function NewsPage() {
   const userId = await requireUserId();
-  const [stories, seen] = await Promise.all([fetchAllStories(), getSeenStoryIds(userId)]);
+  const settings = await getUserSettings(userId);
+  const localLabel = settings.briefCity.trim() || "Chicago";
+  const [stories, seen] = await Promise.all([
+    fetchAllStories({ city: settings.briefCity }),
+    getSeenStoryIds(userId),
+  ]);
 
   const brief = buildBrief(stories, seen);
   const { page, nextOffset } = paginate(stories, "all", 0, PAGE_SIZE);
@@ -24,7 +29,8 @@ export default async function NewsPage() {
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-xl font-semibold">News</h1>
         <NewsClient
-          initialBrief={{ dateLabel: formatBriefDate(await getUserTimezone(userId)), brief }}
+          localLabel={localLabel}
+          initialBrief={{ dateLabel: formatBriefDate(settings.timezone), brief }}
           initialFeed={{
             stories: page.map((story) => ({ ...story, seen: seen.has(story.id) })),
             nextOffset,

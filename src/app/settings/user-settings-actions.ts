@@ -120,6 +120,17 @@ export async function previewCalendar(): Promise<CalendarPreview> {
   return { ok: true, events: result.events, warnings: result.warnings, timezone };
 }
 
+export async function saveDisplayName(
+  _prev: SettingsActionState,
+  formData: FormData,
+): Promise<SettingsActionState> {
+  const name = text(formData, "displayName").trim();
+  if (name.length > 40) return { error: "That name is too long (40 characters at most)." };
+  const userId = await requireUserId();
+  await saveSettings(userId, { displayName: name || null });
+  return { saved: true };
+}
+
 export async function saveBriefCity(
   _prev: SettingsActionState,
   formData: FormData,
