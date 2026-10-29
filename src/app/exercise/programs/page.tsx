@@ -25,13 +25,13 @@ export default async function ProgramsPage() {
           </Link>
         </div>
 
-        <Board pageId="programs" columnCount={2} saved={settings.layouts.programs}>
+        <Board pageId="programs" columnCount={3} saved={settings.layouts.programs}>
           {programsWithDays.map(({ program, days }) => (
-            <W key={program.id} id={`program-${program.id}`} label={program.name} col={0}>
+            <W key={program.id} id={`program-${program.id}`} label={program.name}>
               <ProgramRow program={program} days={days} />
             </W>
           ))}
-          <W id="new-program" label="New program" col={1}>
+          <W id="new-program" label="New program" col={2}>
             <Card>
               <ProgramPresetPicker redirectTo="/exercise/programs" heading="New program" />
             </Card>

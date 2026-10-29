@@ -52,7 +52,7 @@ export default async function PointsPage() {
     <div className="flex min-h-full flex-col">
       <Nav />
       <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-8 px-4 py-8">
-        <Board pageId="points" columnCount={2} saved={settings.layouts.points}>
+        <Board pageId="points" columnCount={3} saved={settings.layouts.points}>
         <W id="totals" label="Totals">
         <Card>
           <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">

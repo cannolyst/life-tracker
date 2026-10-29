@@ -33,7 +33,7 @@ export default async function ListsPage() {
       <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-xl font-semibold">Lists</h1>
 
-        <Board pageId="lists" columnCount={2} saved={settings.layouts.lists}>
+        <Board pageId="lists" columnCount={3} saved={settings.layouts.lists}>
         <W id="todo" label="To-do" col={0}>
           <TodoSection todos={todos} />
         </W>

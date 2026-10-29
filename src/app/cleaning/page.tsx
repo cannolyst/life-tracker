@@ -78,7 +78,7 @@ export default async function CleaningPage() {
       <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-8 px-4 py-8">
         <h1 className="text-xl font-semibold">Cleaning</h1>
 
-        <Board pageId="cleaning" columnCount={2} saved={settings.layouts.cleaning}>
+        <Board pageId="cleaning" columnCount={3} saved={settings.layouts.cleaning}>
           <W id="tasks" label="Tasks" col={0}>
             <CleaningTasksView categoryGroups={categoryGroups} timeframeGroups={timeframeGroups} />
           </W>
@@ -88,7 +88,7 @@ export default async function CleaningPage() {
               <AddAreaForm />
             </Card>
           </W>
-          <W id="add-task" label="Add task" col={1}>
+          <W id="add-task" label="Add task" col={2}>
             <Card>
               <h2 className="mb-3 font-medium">Add task</h2>
               <AddTaskForm areas={areas} />

@@ -147,7 +147,7 @@ header {
 /* Pages built on a Board keep a comfortable width next to the sidebar. */
 @media (min-width: 1280px) {
   body:has(.app-sidebar) main.board-page {
-    max-width: 76rem;
+    max-width: 88rem;
   }
 }
 
@@ -171,10 +171,16 @@ header {
   display: none;
 }
 @media (min-width: 1280px) {
+  /* Columns share the width equally, however many there are. */
   body:has(.app-sidebar) .board {
     display: grid;
-    grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     align-items: start;
+  }
+  /* A column with nothing to show drops out (unless you are customizing), so two columns fill the screen. */
+  body:has(.app-sidebar) .board-col:empty:not(.board-col-editing) {
+    display: none;
   }
   body:has(.app-sidebar) .board-col {
     display: flex;

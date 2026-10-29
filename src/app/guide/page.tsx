@@ -24,7 +24,7 @@ export default async function GuidePage() {
           </form>
         )}
 
-        <Board pageId="guide" columnCount={2} saved={settings.layouts.guide}>
+        <Board pageId="guide" columnCount={3} saved={settings.layouts.guide}>
         <W id="whats-new" label="What’s new" col={0}>
         <Card>
           <h2 className="mb-3 font-medium">What’s new</h2>

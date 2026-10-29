@@ -85,7 +85,7 @@ export default async function ExercisePage({
 
         <ProgramSwitcher programs={programs} />
 
-        <Board pageId="exercise" columnCount={2} saved={settings.layouts.exercise}>
+        <Board pageId="exercise" columnCount={3} saved={settings.layouts.exercise}>
         <W id="week" label="This week" col={0}>
         <Card>
           <h2 className="mb-3 font-medium">
@@ -168,7 +168,7 @@ export default async function ExercisePage({
         </div>
         </W>
 
-        <W id="add-exercise" label="Add exercise" col={1}>
+        <W id="add-exercise" label="Add exercise" col={2}>
         <Card>
           <h2 className="mb-3 font-medium">Add exercise to {day.name}</h2>
           <AddExerciseForm dayId={day.id} />

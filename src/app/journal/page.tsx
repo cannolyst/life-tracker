@@ -101,7 +101,7 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
           </p>
         </div>
 
-        <Board pageId="journal" columnCount={2} saved={settings.layouts.journal}>
+        <Board pageId="journal" columnCount={3} saved={settings.layouts.journal}>
         <W id="today" label="Today’s entry" col={0}>
         <Link
           href={`/journal?date=${todayKey}`}

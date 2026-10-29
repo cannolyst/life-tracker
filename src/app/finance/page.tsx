@@ -57,7 +57,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        <Board pageId="finance" columnCount={2} saved={userSettings.layouts.finance}>
+        <Board pageId="finance" columnCount={3} saved={userSettings.layouts.finance}>
         <W id="paycheck" label="Paycheck plan" col={0}>
         <PaycheckPlanCard
           key={`${currentPeriodKey}-${currentMonthKey}`}
@@ -113,13 +113,13 @@ export default async function DashboardPage() {
         </Card>
         </W>
 
-        <W id="chart" label="Chart" col={1}>
+        <W id="chart" label="Chart" col={2}>
         <Card>
           <FinanceChart data={stats.chartData} />
         </Card>
         </W>
 
-        <W id="savings" label="Savings goals" col={0}>
+        <W id="savings" label="Savings goals" col={1}>
         <section>
           <h2 className="mb-3 text-lg font-semibold">Savings goals</h2>
           {savingsSummaries.length === 0 ? (
@@ -163,7 +163,7 @@ export default async function DashboardPage() {
         </section>
         </W>
 
-        <W id="credit" label="Credit card" col={1}>
+        <W id="credit" label="Credit card" col={2}>
         <section>
           <h2 className="mb-3 text-lg font-semibold">Credit card</h2>
           {debtSummaries.length === 0 ? (

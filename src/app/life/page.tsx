@@ -49,7 +49,7 @@ export default async function LifePage() {
           </p>
         </div>
 
-        <Board pageId="life" columnCount={2} saved={settings.layouts.life}>
+        <Board pageId="life" columnCount={3} saved={settings.layouts.life}>
         <W id="recurring" label="Recurring" col={0}>
         <Card>
           <h2 className="mb-1 font-medium">Recurring</h2>
@@ -70,7 +70,7 @@ export default async function LifePage() {
         </Card>
         </W>
 
-        <W id="people" label="People" col={0}>
+        <W id="people" label="People" col={2}>
         <Card>
           <h2 className="mb-1 font-medium">People</h2>
           <p className="mb-3 text-sm text-neutral-500">

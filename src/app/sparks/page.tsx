@@ -39,7 +39,7 @@ export default async function SparksPage() {
             Nothing saved yet. Tap Save on a spark you want to keep, and it will live here.
           </p>
         ) : (
-          <Board pageId="sparks" columnCount={2} saved={settings.layouts.sparks}>
+          <Board pageId="sparks" columnCount={3} saved={settings.layouts.sparks}>
             {saved.map(({ spark }) => (
               <W key={spark.id} id={`spark-${spark.id}`} label={SPARK_TYPE_LABEL[spark.type]}>
               <div className="rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-4">

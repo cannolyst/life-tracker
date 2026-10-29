@@ -69,7 +69,7 @@ export default async function PlanPage() {
           </Card>
         )}
 
-        <Board pageId="plan" columnCount={2} saved={settings.layouts.plan}>
+        <Board pageId="plan" columnCount={3} saved={settings.layouts.plan}>
         <W id="add" label="Add a task">
         <Card>
           <h2 className="mb-3 font-medium">Add a task</h2>

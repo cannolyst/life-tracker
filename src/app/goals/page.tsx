@@ -69,7 +69,7 @@ export default async function GoalsPage() {
           </p>
         </div>
 
-        <Board pageId="goals" columnCount={2} saved={settings.layouts.goals}>
+        <Board pageId="goals" columnCount={3} saved={settings.layouts.goals}>
         {recent.map((g) => (
           <W key={g.id} id={`done-${g.id}`} label="Goal complete">
           <section

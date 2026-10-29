@@ -75,7 +75,7 @@ export default async function DebtDetailPage({
           </div>
           <DeleteAccountButton accountId={account.id} accountName={account.name} />
         </div>
-        <Board pageId="debt" columnCount={2} saved={settings.layouts.debt}>
+        <Board pageId="debt" columnCount={3} saved={settings.layouts.debt}>
         <W id="chart" label="Balance chart" col={0}>
         <Card>
           <BalanceChart points={points} />
@@ -130,7 +130,7 @@ export default async function DebtDetailPage({
         </Card>
         </W>
 
-        <W id="goal" label="Payoff goal" col={0}>
+        <W id="goal" label="Payoff goal" col={2}>
         <Card>
           <h2 className="mb-3 font-medium">Payoff goal</h2>
           {goal?.targetDate ? (
@@ -174,14 +174,14 @@ export default async function DebtDetailPage({
           </Card>
         </W>
 
-        <W id="log-statement" label="Log statement" col={0}>
+        <W id="log-statement" label="Log statement" col={2}>
           <Card>
             <h2 className="mb-3 font-medium">Log monthly statement</h2>
             <StatementForm accountId={account.id} today={dateKeyIn(tz)} />
           </Card>
         </W>
 
-        <W id="settings" label="Card settings" col={1}>
+        <W id="settings" label="Card settings" col={0}>
         <Card>
           <h2 className="mb-3 font-medium">Card settings</h2>
           <SettingsForm

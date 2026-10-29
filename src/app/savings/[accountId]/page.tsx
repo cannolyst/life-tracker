@@ -51,7 +51,7 @@ export default async function SavingsDetailPage({
           </div>
           <DeleteAccountButton accountId={account.id} accountName={account.name} />
         </div>
-        <Board pageId="savings" columnCount={2} saved={settings.layouts.savings}>
+        <Board pageId="savings" columnCount={3} saved={settings.layouts.savings}>
         <W id="chart" label="Balance chart" col={0}>
         <Card>
           <BalanceChart points={points} />
@@ -76,7 +76,7 @@ export default async function SavingsDetailPage({
         )}
         </W>
 
-        <W id="add-transaction" label="Add transaction" col={0}>
+        <W id="add-transaction" label="Add transaction" col={2}>
           <Card>
             <h2 className="mb-3 font-medium">Add transaction</h2>
             <AddTransactionForm accountId={account.id} today={dateKeyIn(tz)} />

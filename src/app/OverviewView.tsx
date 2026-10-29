@@ -99,7 +99,7 @@ export async function OverviewView() {
           </Card>
         )}
 
-        <Board pageId="overview" columnCount={2} saved={userSettings.layouts.overview}>
+        <Board pageId="overview" columnCount={3} saved={userSettings.layouts.overview}>
         {settings.showPoints && pointsSummary && (
           <W id="points" label="Points" col={0}>
           <Link href="/points" className="block">
@@ -197,7 +197,7 @@ export async function OverviewView() {
         )}
 
         {settings.showFinance && (
-          <W id="payments" label="Payments due" col={1}>
+          <W id="payments" label="Payments due" col={2}>
           <section className="space-y-3">
             <div className="flex items-baseline justify-between">
               <h2 className="text-lg font-semibold">Payments due</h2>

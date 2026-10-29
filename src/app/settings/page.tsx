@@ -49,7 +49,7 @@ export default async function SettingsPage() {
       <Nav />
       <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-xl font-semibold">Settings</h1>
-        <Board pageId="settings" columnCount={2} saved={userSettings.layouts.settings}>
+        <Board pageId="settings" columnCount={3} saved={userSettings.layouts.settings}>
         <W id="appearance" label="Appearance">
         <Card>
           <h2 className="mb-3 font-medium">Appearance</h2>

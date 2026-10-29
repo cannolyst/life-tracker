@@ -66,7 +66,7 @@ export default async function YearReviewPage({
           </div>
         </div>
 
-        <Board pageId="year-review" columnCount={2} saved={settings.layouts["year-review"]}>
+        <Board pageId="year-review" columnCount={3} saved={settings.layouts["year-review"]}>
         {categoriesWithItems.length > 0 && (
           <W id="totals" label="Totals">
           <Card>
