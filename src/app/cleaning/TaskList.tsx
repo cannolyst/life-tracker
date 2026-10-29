@@ -1,5 +1,4 @@
 import { formatDate } from "@/components/ui";
-import { jewelChipStyle } from "@/lib/jewels";
 import { JEWELS } from "@/lib/jewels";
 import { markDone, archiveTask } from "./actions";
 import type { CleaningStatus, CleaningTimeframeBucket } from "@/lib/cleaningStatus";
@@ -48,45 +47,41 @@ export function TaskList({
   showTimeframe?: boolean;
 }) {
   return (
-    <ul className="space-y-2">
+    <ul>
       {tasks.map((task) => {
         const statusJewel = STATUS_JEWEL[task.status];
         const timeframeSuffix =
           showTimeframe && task.status === "upcoming" ? ` · ${TIMEFRAME_LABEL[task.timeframe]}` : "";
         return (
-          <li key={task.id} className="flex items-center justify-between gap-3">
-            <form action={markDone.bind(null, task.id)} className="flex-1">
-              <button
-                type="submit"
-                className="flex w-full flex-col items-start gap-1 rounded-md border px-3 py-2 text-left text-sm border-neutral-800 text-neutral-300 sm:flex-row sm:items-center sm:justify-between"
-                style={
-                  task.doneToday
-                    ? jewelChipStyle(jewel)
-                    : statusJewel
-                      ? jewelChipStyle(statusJewel)
-                      : undefined
-                }
-              >
-                <span>
-                  {task.doneToday ? "✓ " : ""}
-                  {task.name}
-                  {showArea && task.areaName ? ` · ${task.areaName}` : ""}
+          <li key={task.id} className="flex items-center gap-1 border-t border-neutral-800 first:border-t-0">
+            <form action={markDone.bind(null, task.id)} className="min-w-0 flex-1">
+              <button type="submit" className="flex min-h-11 w-full items-center gap-3 text-left text-sm">
+                <span
+                  aria-hidden
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] ${task.doneToday ? "text-white" : "border-neutral-600 text-transparent"}`}
+                  style={task.doneToday ? { backgroundColor: jewel.color, borderColor: jewel.color } : undefined}
+                >
+                  ✓
                 </span>
-                <span className={task.doneToday || statusJewel ? "text-xs" : "text-xs text-neutral-500"}>
-                  {task.doneToday
-                    ? "Done today"
-                    : `${STATUS_LABEL[task.status]} ${formatDate(task.dueDate)}${timeframeSuffix}`}
-                  {" · "}
-                  {task.points} pts
+                <span className="min-w-0 flex-1">
+                  <span className={`block ${task.doneToday ? "text-neutral-500 line-through" : "text-neutral-200"}`}>
+                    {task.name}
+                    {showArea && task.areaName ? ` · ${task.areaName}` : ""}
+                  </span>
+                  <span
+                    className="block text-xs text-neutral-500"
+                    style={!task.doneToday && statusJewel ? { color: statusJewel.color } : undefined}
+                  >
+                    {task.doneToday
+                      ? "Done today"
+                      : `${STATUS_LABEL[task.status]} ${formatDate(task.dueDate)}${timeframeSuffix}`}
+                  </span>
                 </span>
+                <span className="shrink-0 text-xs text-neutral-500">{task.points} pts</span>
               </button>
             </form>
             <form action={archiveTask.bind(null, task.id)}>
-              <button
-                type="submit"
-                aria-label="Archive task"
-                className="text-neutral-600 hover:text-red-400"
-              >
+              <button type="submit" aria-label="Archive task" className="text-neutral-600 hover:text-red-400">
                 ✕
               </button>
             </form>

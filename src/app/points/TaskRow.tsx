@@ -10,7 +10,6 @@ import {
   type ActionState,
 } from "./actions";
 import { inputClass, labelClass, buttonClass } from "@/components/ui";
-import { jewelChipStyle } from "@/lib/jewels";
 import { BLOCK_IDS } from "@/lib/planning";
 
 type Task = {
@@ -123,49 +122,53 @@ export function TaskRow({
   }
 
   return (
-    <li className="flex items-center justify-between gap-3">
+    <li className="flex items-center gap-1 border-t border-neutral-800 first:border-t-0">
       {task.repeatable ? (
-        <div
-          className="flex flex-1 flex-col gap-2 rounded-md border px-3 py-2 text-sm text-neutral-300 sm:flex-row sm:items-center sm:justify-between"
-          style={count > 0 ? jewelChipStyle(jewel) : undefined}
-        >
-          <span>{task.name}</span>
-          <div className="flex items-center gap-3">
-            <span className={count > 0 ? "" : "text-neutral-500"}>
-              {count > 0 ? `${count}× today · ` : ""}
-              {task.points} pts
-            </span>
-            <form action={undoRepeatableCompletion.bind(null, task.id)}>
-              <button
-                type="submit"
-                disabled={count === 0}
-                className="rounded border border-neutral-700 px-2 text-neutral-400 disabled:opacity-40"
-              >
-                −
-              </button>
-            </form>
-            <form action={logRepeatableCompletion.bind(null, task.id)}>
-              <button
-                type="submit"
-                className="rounded border border-neutral-700 px-2 text-neutral-400 hover:text-neutral-100"
-              >
-                +
-              </button>
-            </form>
-          </div>
+        <div className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-sm">
+          <span
+            aria-hidden
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px]"
+            style={count > 0 ? { backgroundColor: jewel.color, borderColor: jewel.color, color: "#fff" } : { borderColor: "#999" }}
+          >
+            {count > 0 ? count : ""}
+          </span>
+          <span className="min-w-0 flex-1 text-neutral-200">{task.name}</span>
+          <span className="shrink-0 text-xs text-neutral-500">
+            {count > 0 ? `${count}× today · ` : ""}
+            {task.points} pts
+          </span>
+          <form action={undoRepeatableCompletion.bind(null, task.id)}>
+            <button
+              type="submit"
+              disabled={count === 0}
+              aria-label={`Undo ${task.name}`}
+              className="rounded border border-neutral-700 px-2 text-neutral-400 disabled:opacity-40"
+            >
+              −
+            </button>
+          </form>
+          <form action={logRepeatableCompletion.bind(null, task.id)}>
+            <button
+              type="submit"
+              aria-label={`Log ${task.name}`}
+              className="rounded border border-neutral-700 px-2 text-neutral-400 hover:text-neutral-100"
+            >
+              +
+            </button>
+          </form>
         </div>
       ) : (
-        <form action={toggleTaskCompletion.bind(null, task.id)} className="flex-1">
-          <button
-            type="submit"
-            className="flex w-full flex-col items-start gap-1 rounded-md border px-3 py-2 text-left text-sm border-neutral-800 text-neutral-300 hover:border-neutral-600 sm:flex-row sm:items-center sm:justify-between"
-            style={count > 0 ? jewelChipStyle(jewel) : undefined}
-          >
-            <span>
-              {count > 0 ? "✓ " : ""}
-              {task.name}
+        <form action={toggleTaskCompletion.bind(null, task.id)} className="min-w-0 flex-1">
+          <button type="submit" className="flex min-h-11 w-full items-center gap-3 text-left text-sm">
+            <span
+              aria-hidden
+              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] ${count > 0 ? "text-white" : "border-neutral-600 text-transparent"}`}
+              style={count > 0 ? { backgroundColor: jewel.color, borderColor: jewel.color } : undefined}
+            >
+              ✓
             </span>
-            <span className={count > 0 ? "" : "text-neutral-500"}>{task.points} pts</span>
+            <span className={`min-w-0 flex-1 ${count > 0 ? "text-neutral-500 line-through" : "text-neutral-200"}`}>{task.name}</span>
+            <span className="shrink-0 text-xs text-neutral-500">{task.points} pts</span>
           </button>
         </form>
       )}

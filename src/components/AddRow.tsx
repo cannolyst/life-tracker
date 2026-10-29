@@ -6,15 +6,18 @@ export function AddRow({
   title,
   hint,
   defaultOpen = false,
+  bare = false,
   children,
 }: {
   title: string;
   hint?: string;
   defaultOpen?: boolean;
+  /** Sits inside a card as a plain row instead of being a card itself. */
+  bare?: boolean;
   children: ReactNode;
 }) {
   return (
-    <details open={defaultOpen} className="group rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-1">
+    <details open={defaultOpen} className={`group ${bare ? "border-t border-neutral-800" : "rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-1"}`}>
       <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-medium text-neutral-200">
         <span aria-hidden className="text-neutral-500 transition-transform group-open:rotate-45">
           +
