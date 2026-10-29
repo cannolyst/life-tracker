@@ -70,14 +70,14 @@ export default async function PlanPage() {
         )}
 
         <Board pageId="plan" columnCount={3} saved={settings.layouts.plan}>
-        <W id="add" label="Add a task">
+        <W id="add" label="Add a task" col={0}>
         <Card>
           <h2 className="mb-3 font-medium">Add a task</h2>
           <AddTaskForm />
         </Card>
         </W>
 
-        <W id="tomorrow" label="Tomorrow">
+        <W id="tomorrow" label="Tomorrow" col={0}>
         <Card>
           <h2 className="mb-1 font-medium">Tomorrow</h2>
           <p className="mb-2 text-sm text-neutral-500">
@@ -97,7 +97,7 @@ export default async function PlanPage() {
         </W>
 
         {BUCKETS.map((bucket) => (
-          <W key={bucket} id={`area-${bucket}`} label={BUCKET_LABEL[bucket]}>
+          <W key={bucket} id={`area-${bucket}`} label={BUCKET_LABEL[bucket]} col={bucket === "inbox" ? 0 : 1}>
           <Card>
             <h2 className="mb-1 font-medium">{BUCKET_LABEL[bucket]}</h2>
             {grouped[bucket].length === 0 ? (
@@ -117,7 +117,7 @@ export default async function PlanPage() {
           </W>
         ))}
 
-        <W id="someday" label="Someday">
+        <W id="someday" label="Someday" col={2}>
         <Card>
           <h2 className="mb-1 font-medium">Someday</h2>
           {someday.length === 0 ? (
@@ -133,7 +133,7 @@ export default async function PlanPage() {
         </W>
 
         {doneToday.length > 0 && (
-          <W id="done" label="Done today">
+          <W id="done" label="Done today" col={2}>
           <Card>
             <h2 className="mb-1 font-medium">Done today</h2>
             <ul className="divide-y divide-neutral-800">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AddRow } from "@/components/AddRow";
 import { getYearReviewData } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
 import { dateKeyIn } from "@/lib/timezone";
@@ -68,7 +69,7 @@ export default async function YearReviewPage({
 
         <Board pageId="year-review" columnCount={3} saved={settings.layouts["year-review"]}>
         {categoriesWithItems.length > 0 && (
-          <W id="totals" label="Totals">
+          <W id="totals" label="Totals" col={1}>
           <Card>
             <h2 className="mb-3 font-medium">Totals for {year}</h2>
             <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
@@ -89,7 +90,7 @@ export default async function YearReviewPage({
         )}
 
         {numbers && (
-          <W id="numbers" label="In numbers">
+          <W id="numbers" label="In numbers" col={0}>
           <Card>
             <h2 className="mb-3 font-medium">Your {year} in numbers</h2>
             <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
@@ -193,11 +194,10 @@ export default async function YearReviewPage({
           </W>
         )}
 
-        <W id="add-category" label="Add category">
-        <Card>
-          <h2 className="mb-3 font-medium">Add category</h2>
-          <AddYearReviewCategoryForm />
-        </Card>
+        <W id="add-category" label="Add category" col={1}>
+        <AddRow title="Add category">
+<AddYearReviewCategoryForm />
+</AddRow>
         </W>
 
         {categoriesWithItems.length === 0 ? (

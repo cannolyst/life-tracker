@@ -50,7 +50,7 @@ export default async function SettingsPage() {
       <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-xl font-semibold">Settings</h1>
         <Board pageId="settings" columnCount={3} saved={userSettings.layouts.settings}>
-        <W id="appearance" label="Appearance">
+        <W id="appearance" label="Appearance" col={0}>
         <Card>
           <h2 className="mb-3 font-medium">Appearance</h2>
           <div className="space-y-4">
@@ -65,25 +65,25 @@ export default async function SettingsPage() {
           </div>
         </Card>
         </W>
-        <W id="tabs-you-want-to-see" label="Tabs you want to see">
+        <W id="tabs-you-want-to-see" label="Tabs you want to see" col={0}>
         <Card>
           <h2 className="mb-3 font-medium">Tabs you want to see</h2>
           <ModulePicker initialValues={settings} redirectTo="/settings" submitLabel="Save" />
         </Card>
         </W>
-        <W id="your-name" label="Your name">
+        <W id="your-name" label="Your name" col={0}>
         <Card>
           <h2 className="mb-3 font-medium">Your name</h2>
           <DisplayNameForm name={userSettings.displayName} />
         </Card>
         </W>
-        <W id="your-day" label="Your day">
+        <W id="your-day" label="Your day" col={0}>
         <Card>
           <h2 className="mb-3 font-medium">Your day</h2>
           <DayForm day={userSettings} timezone={tz} zones={listTimezones()} />
         </Card>
         </W>
-        <W id="calendar" label="Calendar">
+        <W id="calendar" label="Calendar" col={1}>
         <Card>
           <h2 className="mb-3 font-medium">Calendar</h2>
           <CalendarCard
@@ -92,7 +92,7 @@ export default async function SettingsPage() {
           />
         </Card>
         </W>
-        <W id="daily-brief-link" label="Daily brief link">
+        <W id="daily-brief-link" label="Daily brief link" col={1}>
         <Card>
           <h2 className="mb-3 font-medium">Daily brief link</h2>
           <BriefLinkCard
@@ -100,13 +100,13 @@ export default async function SettingsPage() {
           />
         </Card>
         </W>
-        <W id="daily-brief-city" label="Daily brief city">
+        <W id="daily-brief-city" label="Daily brief city" col={1}>
         <Card>
           <h2 className="mb-3 font-medium">Daily brief city</h2>
           <BriefCityForm city={userSettings.briefCity} />
         </Card>
         </W>
-        <W id="notifications" label="Notifications">
+        <W id="notifications" label="Notifications" col={2}>
         <Card>
           <h2 className="mb-3 font-medium">Notifications</h2>
           <div className="space-y-4">
@@ -115,7 +115,7 @@ export default async function SettingsPage() {
           </div>
         </Card>
         </W>
-        <W id="new-features" label="New features">
+        <W id="new-features" label="New features" col={2}>
         <Card>
           <h2 className="mb-3 font-medium">New features</h2>
           <FeaturesForm features={userSettings.features} />

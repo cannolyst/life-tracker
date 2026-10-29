@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { AddRow } from "@/components/AddRow";
 import { dateKeyIn } from "@/lib/timezone";
 import { getUserSettings } from "@/db/userSettings";
 import { Board, W } from "@/components/Board";
@@ -58,7 +59,7 @@ export default async function SavingsDetailPage({
         </Card>
         </W>
 
-        <W id="goal" label="Goal" col={1}>
+        <W id="goal" label="Goal" col={0}>
         {goal && (
           <Card>
             <div className="mb-2 flex justify-between text-sm text-neutral-400">
@@ -76,14 +77,13 @@ export default async function SavingsDetailPage({
         )}
         </W>
 
-        <W id="add-transaction" label="Add transaction" col={2}>
-          <Card>
-            <h2 className="mb-3 font-medium">Add transaction</h2>
-            <AddTransactionForm accountId={account.id} today={dateKeyIn(tz)} />
-          </Card>
+        <W id="add-transaction" label="Add transaction" col={1}>
+          <AddRow title="Add transaction">
+<AddTransactionForm accountId={account.id} today={dateKeyIn(tz)} />
+</AddRow>
         </W>
 
-        <W id="settings" label="Goal settings" col={1}>
+        <W id="settings" label="Goal settings" col={2}>
           <Card>
             <h2 className="mb-3 font-medium">Goal settings</h2>
             <GoalForm
@@ -95,7 +95,7 @@ export default async function SavingsDetailPage({
           </Card>
         </W>
 
-        <W id="transactions" label="Transactions" col={0}>
+        <W id="transactions" label="Transactions" col={1}>
         <Card>
           <h2 className="mb-3 font-medium">Transactions</h2>
           {transactions.length === 0 ? (

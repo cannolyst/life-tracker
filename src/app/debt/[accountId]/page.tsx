@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { AddRow } from "@/components/AddRow";
 import { dateKeyIn } from "@/lib/timezone";
 import { getUserSettings } from "@/db/userSettings";
 import { Board, W } from "@/components/Board";
@@ -82,7 +83,7 @@ export default async function DebtDetailPage({
         </Card>
         </W>
 
-        <W id="stats" label="Stats" col={1}>
+        <W id="stats" label="Stats" col={0}>
         <Card>
           <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
             <div>
@@ -130,7 +131,7 @@ export default async function DebtDetailPage({
         </Card>
         </W>
 
-        <W id="goal" label="Payoff goal" col={2}>
+        <W id="goal" label="Payoff goal" col={0}>
         <Card>
           <h2 className="mb-3 font-medium">Payoff goal</h2>
           {goal?.targetDate ? (
@@ -168,32 +169,29 @@ export default async function DebtDetailPage({
         </W>
 
         <W id="add-transaction" label="Add transaction" col={1}>
-          <Card>
-            <h2 className="mb-3 font-medium">Add transaction</h2>
-            <AddTransactionForm accountId={account.id} today={dateKeyIn(tz)} />
-          </Card>
+          <AddRow title="Add transaction">
+<AddTransactionForm accountId={account.id} today={dateKeyIn(tz)} />
+</AddRow>
         </W>
 
-        <W id="log-statement" label="Log statement" col={2}>
-          <Card>
-            <h2 className="mb-3 font-medium">Log monthly statement</h2>
-            <StatementForm accountId={account.id} today={dateKeyIn(tz)} />
-          </Card>
+        <W id="log-statement" label="Log statement" col={1}>
+          <AddRow title="Log monthly statement">
+<StatementForm accountId={account.id} today={dateKeyIn(tz)} />
+</AddRow>
         </W>
 
-        <W id="settings" label="Card settings" col={0}>
-        <Card>
-          <h2 className="mb-3 font-medium">Card settings</h2>
-          <SettingsForm
+        <W id="settings" label="Card settings" col={2}>
+        <AddRow title="Card settings">
+<SettingsForm
             accountId={account.id}
             aprPercent={(Number(details?.apr) || 0) * 100}
             dailyMicropaymentGoal={Number(details?.dailyMicropaymentGoal ?? 0)}
             statementDay={details?.statementDay ?? 1}
           />
-        </Card>
+</AddRow>
         </W>
 
-        <W id="statements" label="Statement history" col={0}>
+        <W id="statements" label="Statement history" col={2}>
         <Card>
           <h2 className="mb-3 font-medium">Statement history</h2>
           {statements.length === 0 ? (

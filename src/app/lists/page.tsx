@@ -1,9 +1,9 @@
 import { getListsData, getTodos } from "@/db/queries";
+import { AddRow } from "@/components/AddRow";
 import { requireUserId } from "@/lib/session";
 import { getUserSettings } from "@/db/userSettings";
 import { isFeatureOn } from "@/lib/features";
 import { Nav } from "@/components/Nav";
-import { Card } from "@/components/ui";
 import { Board, W } from "@/components/Board";
 import { AddListCategoryForm, AddListItemForm } from "./ListsForms";
 import { setListItemDone, deleteListItem } from "./actions";
@@ -46,10 +46,9 @@ export default async function ListsPage() {
                 Lists you keep for reference — groceries, movies, books, gift ideas. Things to do live on the Plan page.
               </p>
             )}
-            <Card>
-              <h3 className="mb-3 font-medium">Add list</h3>
+            <AddRow title="Add list">
               <AddListCategoryForm />
-            </Card>
+            </AddRow>
           </div>
         </W>
 

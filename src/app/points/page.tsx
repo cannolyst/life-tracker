@@ -1,4 +1,5 @@
 import { getHabitDashboardData } from "@/db/queries";
+import { AddRow } from "@/components/AddRow";
 import { getUserSettings } from "@/db/userSettings";
 import { isFeatureOn } from "@/lib/features";
 import { requireUserId } from "@/lib/session";
@@ -53,7 +54,7 @@ export default async function PointsPage() {
       <Nav />
       <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-8 px-4 py-8">
         <Board pageId="points" columnCount={3} saved={settings.layouts.points}>
-        <W id="totals" label="Totals">
+        <W id="totals" label="Totals" col={0}>
         <Card>
           <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
             <div>
@@ -81,13 +82,13 @@ export default async function PointsPage() {
         </Card>
         </W>
 
-        <W id="chart" label="Chart">
+        <W id="chart" label="Chart" col={2}>
         <Card>
           <PointsChart data={chartData} />
         </Card>
         </W>
 
-        <W id="today" label="Today’s tasks">
+        <W id="today" label="Today’s tasks" col={0}>
         <section className="space-y-4">
           <h2 className="text-lg font-semibold">Today&apos;s tasks</h2>
           {categoriesWithTasks.map(
@@ -147,7 +148,7 @@ export default async function PointsPage() {
         </section>
         </W>
 
-        <W id="weekly" label="Weekly tasks">
+        <W id="weekly" label="Weekly tasks" col={1}>
         <section className="space-y-4">
           <h2 className="text-lg font-semibold">
             Weekly tasks <span className="text-sm font-normal text-neutral-500">(resets weekly)</span>
@@ -192,20 +193,18 @@ export default async function PointsPage() {
         </section>
         </W>
 
-        <W id="add-category" label="Add category">
-          <Card>
-            <h2 className="mb-3 font-medium">Add category</h2>
-            <AddCategoryForm />
-          </Card>
+        <W id="add-category" label="Add category" col={0}>
+          <AddRow title="Add category">
+<AddCategoryForm />
+</AddRow>
         </W>
-        <W id="add-task" label="Add task">
-          <Card>
-            <h2 className="mb-3 font-medium">Add task</h2>
-            <AddTaskForm categories={categories} />
-          </Card>
+        <W id="add-task" label="Add task" col={0}>
+          <AddRow title="Add task">
+<AddTaskForm categories={categories} />
+</AddRow>
         </W>
 
-        <W id="rewards" label="Rewards">
+        <W id="rewards" label="Rewards" col={1}>
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Rewards</h2>
           {activeRewards.length === 0 ? (
@@ -263,15 +262,14 @@ export default async function PointsPage() {
               })}
             </div>
           )}
-          <Card>
-            <h3 className="mb-3 font-medium">Add reward</h3>
-            <AddRewardForm />
-          </Card>
+          <AddRow title="Add reward">
+<AddRewardForm />
+</AddRow>
         </section>
         </W>
 
         {recentRedemptions.length > 0 && (
-          <W id="redemptions" label="Recent redemptions">
+          <W id="redemptions" label="Recent redemptions" col={2}>
           <section>
             <h2 className="mb-3 text-lg font-semibold">Recent redemptions</h2>
             <Card>

@@ -64,13 +64,15 @@ import { Nav } from "@/components/Nav";
 import { SparkCard } from "./SparkCard";
 import { Walkthrough } from "./Walkthrough";
 import { Board } from "@/components/Board";
+import { getTodayBoard } from "@/db/todayBoard";
+import { CaptureBar, DoneToday, TodaysList } from "./TodayCards";
 import { DashboardBrief } from "./DashboardBrief";
 import { NowShell } from "./NowShell";
 import { TransitionFlow } from "./TransitionFlow";
 import { ShutdownSteps } from "./ShutdownSteps";
 import { RecurringActions } from "./LifeControls";
 import { GoalStrip } from "./GoalStrip";
-import { ContextItems, EnergyChips, OutTonightCard, OutTonightToggle, QuickAdd, TaskDoneRow } from "./PlanControls";
+import { ContextItems, EnergyChips, OutTonightCard, OutTonightToggle, TaskDoneRow } from "./PlanControls";
 
 const COMING_UP_DAYS = 4;
 const NO_LIFE_ADMIN: LifeAdmin = { recurring: [], subscriptions: [], people: [] };
@@ -190,6 +192,10 @@ export async function Dashboard({ userId }: { userId: string }) {
 
         {!settings.walkthroughSeen && <Walkthrough />}
 
+        <Suspense fallback={<CaptureBar done={null} left={null} />}>
+          <CaptureSection userId={userId} todayKey={todayKey} withHabits={modules.showPoints} withCleaning={modules.showCleaning} />
+        </Suspense>
+
         <Board
           pageId="home"
           columnCount={3}
@@ -198,7 +204,7 @@ export async function Dashboard({ userId }: { userId: string }) {
             {
               id: "now",
               label: "Now",
-              mobileOrder: 2,
+              mobileOrder: 1,
               defaultColumn: 0,
               defaultOrder: 1,
               node: (
@@ -224,17 +230,33 @@ export async function Dashboard({ userId }: { userId: string }) {
               ),
             },
             {
-              id: "capture",
-              label: "Capture",
-              mobileOrder: 10,
+              id: "list",
+              label: "Today’s list",
+              mobileOrder: 2,
               defaultColumn: 0,
               defaultOrder: 2,
-              node: <QuickAdd />,
+              node: (
+                <Suspense fallback={<SectionShell title="Today’s list" note="Loading…" />}>
+                  <TodaysListSection userId={userId} todayKey={todayKey} withHabits={modules.showPoints} withCleaning={modules.showCleaning} />
+                </Suspense>
+              ),
+            },
+            {
+              id: "done",
+              label: "Done today",
+              mobileOrder: 9,
+              defaultColumn: 2,
+              defaultOrder: 1,
+              node: (
+                <Suspense fallback={<SectionShell title="Done today" note="Loading…" />}>
+                  <DoneTodaySection userId={userId} todayKey={todayKey} withHabits={modules.showPoints} withCleaning={modules.showCleaning} />
+                </Suspense>
+              ),
             },
             {
               id: "today",
               label: "Today",
-              mobileOrder: 6,
+              mobileOrder: 7,
               defaultColumn: 1,
               defaultOrder: 1,
               node: (
@@ -252,7 +274,7 @@ export async function Dashboard({ userId }: { userId: string }) {
             {
               id: "coming-up",
               label: "Coming up",
-              mobileOrder: 7,
+              mobileOrder: 8,
               defaultColumn: 1,
               defaultOrder: 2,
               node: (
@@ -273,9 +295,9 @@ export async function Dashboard({ userId }: { userId: string }) {
                   {
                     id: "brief",
                     label: "Today’s Brief",
-                    mobileOrder: 5,
-                    defaultColumn: 1,
-                    defaultOrder: 3,
+                    mobileOrder: 11,
+                    defaultColumn: 2,
+                    defaultOrder: 7,
                     node: (
                       <Suspense fallback={<SectionShell title="Today’s Brief" note="Loading…" />}>
                         <BriefSection
@@ -294,9 +316,9 @@ export async function Dashboard({ userId }: { userId: string }) {
                   {
                     id: "flags",
                     label: "Worth a look",
-                    mobileOrder: 9,
+                    mobileOrder: 6,
                     defaultColumn: 2,
-                    defaultOrder: 1,
+                    defaultOrder: 2,
                     node: (
                       <section aria-label="Flags" className="space-y-1">
                         <h2 className="px-1 text-xs font-medium text-neutral-500">Worth a look</h2>
@@ -322,9 +344,9 @@ export async function Dashboard({ userId }: { userId: string }) {
                   {
                     id: "spark",
                     label: "Daily spark",
-                    mobileOrder: 1,
+                    mobileOrder: 3,
                     defaultColumn: 2,
-                    defaultOrder: 2,
+                    defaultOrder: 5,
                     node: <SparkCard spark={todaysSpark.spark} saved={todaysSpark.saved} />,
                   },
                 ]
@@ -332,7 +354,7 @@ export async function Dashboard({ userId }: { userId: string }) {
             {
               id: "goals",
               label: "Goals",
-              mobileOrder: 3,
+              mobileOrder: 4,
               defaultColumn: 2,
               defaultOrder: 3,
               node: <GoalStrip goals={activeGoals} />,
@@ -342,7 +364,7 @@ export async function Dashboard({ userId }: { userId: string }) {
                   {
                     id: "reset",
                     label: "Sunday reset",
-                    mobileOrder: 4,
+                    mobileOrder: 5,
                     defaultColumn: 2,
                     defaultOrder: 4,
                     node: (
@@ -369,9 +391,9 @@ export async function Dashboard({ userId }: { userId: string }) {
                   {
                     id: "journal",
                     label: "Journal",
-                    mobileOrder: 8,
+                    mobileOrder: 10,
                     defaultColumn: 2,
-                    defaultOrder: 5,
+                    defaultOrder: 6,
                     node: (
                       <div className="space-y-5">
                         <Suspense fallback={null}>
@@ -395,6 +417,24 @@ export async function Dashboard({ userId }: { userId: string }) {
       </main>
     </div>
   );
+}
+
+type TodayProps = { userId: string; todayKey: string; withHabits: boolean; withCleaning: boolean };
+
+async function CaptureSection({ userId, todayKey, withHabits, withCleaning }: TodayProps) {
+  const board = await getTodayBoard(userId, todayKey, withHabits, withCleaning);
+  const left = board.todo.filter((i) => !(i.kind === "habit" && i.repeatable)).length;
+  return <CaptureBar done={board.done.length} left={left} />;
+}
+
+async function TodaysListSection({ userId, todayKey, withHabits, withCleaning }: TodayProps) {
+  const board = await getTodayBoard(userId, todayKey, withHabits, withCleaning);
+  return <TodaysList items={board.todo} />;
+}
+
+async function DoneTodaySection({ userId, todayKey, withHabits, withCleaning }: TodayProps) {
+  const board = await getTodayBoard(userId, todayKey, withHabits, withCleaning);
+  return <DoneToday items={board.done} points={board.pointsToday} />;
 }
 
 // Morning: finish last night's entry if it is still open, and look back at "on this day".

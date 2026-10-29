@@ -1,10 +1,11 @@
 import { getCleaningDashboardData } from "@/db/queries";
+import { AddRow } from "@/components/AddRow";
 import { requireUserId } from "@/lib/session";
 import { getUserSettings } from "@/db/userSettings";
 import { getTimeframeBoundaries, type CleaningTimeframeBucket } from "@/lib/cleaningStatus";
 import { Nav } from "@/components/Nav";
 import { Board, W } from "@/components/Board";
-import { Card, formatDateRange, formatMonthName } from "@/components/ui";
+import { formatDateRange, formatMonthName } from "@/components/ui";
 import { AddAreaForm, AddTaskForm } from "./CleaningForms";
 import { CleaningTasksView, type TaskGroup } from "./CleaningTasksView";
 import { jewelFor, NEUTRAL_JEWEL } from "@/lib/jewels";
@@ -83,16 +84,14 @@ export default async function CleaningPage() {
             <CleaningTasksView categoryGroups={categoryGroups} timeframeGroups={timeframeGroups} />
           </W>
           <W id="add-area" label="Add area" col={1}>
-            <Card>
-              <h2 className="mb-3 font-medium">Add area</h2>
-              <AddAreaForm />
-            </Card>
+            <AddRow title="Add area">
+<AddAreaForm />
+</AddRow>
           </W>
-          <W id="add-task" label="Add task" col={2}>
-            <Card>
-              <h2 className="mb-3 font-medium">Add task</h2>
-              <AddTaskForm areas={areas} />
-            </Card>
+          <W id="add-task" label="Add task" col={1}>
+            <AddRow title="Add task">
+<AddTaskForm areas={areas} />
+</AddRow>
           </W>
         </Board>
       </main>

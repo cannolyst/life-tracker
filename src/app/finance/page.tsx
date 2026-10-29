@@ -72,7 +72,7 @@ export default async function DashboardPage() {
         />
         </W>
 
-        <W id="month" label="This month" col={1}>
+        <W id="month" label="This month" col={2}>
         <Card>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-medium">{stats.monthLabel}</h2>
@@ -163,7 +163,7 @@ export default async function DashboardPage() {
         </section>
         </W>
 
-        <W id="credit" label="Credit card" col={2}>
+        <W id="credit" label="Credit card" col={1}>
         <section>
           <h2 className="mb-3 text-lg font-semibold">Credit card</h2>
           {debtSummaries.length === 0 ? (

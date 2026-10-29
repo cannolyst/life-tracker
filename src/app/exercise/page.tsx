@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AddRow } from "@/components/AddRow";
 import {
   getWorkoutPrograms,
   getWorkoutDays,
@@ -86,7 +87,7 @@ export default async function ExercisePage({
         <ProgramSwitcher programs={programs} />
 
         <Board pageId="exercise" columnCount={3} saved={settings.layouts.exercise}>
-        <W id="week" label="This week" col={0}>
+        <W id="week" label="This week" col={1}>
         <Card>
           <h2 className="mb-3 font-medium">
             This week&apos;s workouts ({formatDateRange(weekProgress.weekStart, weekProgress.weekEnd)})
@@ -168,11 +169,10 @@ export default async function ExercisePage({
         </div>
         </W>
 
-        <W id="add-exercise" label="Add exercise" col={2}>
-        <Card>
-          <h2 className="mb-3 font-medium">Add exercise to {day.name}</h2>
+        <W id="add-exercise" label="Add exercise" col={0}>
+        <AddRow title={`Add exercise to ${day.name}`}>
           <AddExerciseForm dayId={day.id} />
-        </Card>
+        </AddRow>
         </W>
         </Board>
       </main>
