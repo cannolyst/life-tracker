@@ -15,7 +15,7 @@ import {
   type NotificationPrefs,
   type NotificationToggles,
 } from "@/lib/userSettingsDefaults";
-import { FEATURES } from "@/lib/features";
+import { DASHBOARD_PARTS, FEATURES } from "@/lib/features";
 import { PROVIDER_LABEL, calendarUrlHint, normalizeCalendarUrl } from "@/lib/calendarUrl";
 import { encryptSecret, isEncryptionConfigured } from "@/lib/calendarCrypto";
 import { getCalendarEvents, type MergedCalendarEvent } from "@/lib/calendarService";
@@ -171,7 +171,7 @@ export async function saveFeatures(
   _prev: SettingsActionState,
   formData: FormData,
 ): Promise<SettingsActionState> {
-  const features = Object.fromEntries(FEATURES.map((f) => [f.id, formData.get(f.id) === "on"]));
+  const features = Object.fromEntries([...FEATURES, ...DASHBOARD_PARTS].map((f) => [f.id, formData.get(f.id) === "on"]));
   const userId = await requireUserId();
   // Merge over what's stored so switches for features this form doesn't
   // know about (from later phases) are never wiped.

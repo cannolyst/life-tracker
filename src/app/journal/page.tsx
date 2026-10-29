@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireUserId } from "@/lib/session";
 import { getUserSettings } from "@/db/userSettings";
 import { entryIsOpen, getEntry, listEntries, type JournalEntry } from "@/db/journal";
-import { isFeatureOn } from "@/lib/features";
+import { isPartOn } from "@/lib/features";
 import { completeUntil } from "@/lib/journal";
 import { dateKeyIn } from "@/lib/timezone";
 import { Nav } from "@/components/Nav";
@@ -23,7 +23,7 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
   const tz = settings.timezone;
   const todayKey = dateKeyIn(tz);
 
-  if (!isFeatureOn(settings.features, "dashboard")) {
+  if (!isPartOn(settings.features, "journal")) {
     return (
       <div className="flex min-h-full flex-col">
         <Nav />
@@ -31,7 +31,7 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
           <h1 className="text-xl font-semibold">Journal</h1>
           <Card>
             <p className="text-sm text-neutral-400">
-              The journal is part of the home dashboard, which is switched off.{" "}
+              The journal is switched off.{" "}
               <Link href="/settings" className="underline">
                 Turn it on in Settings
               </Link>

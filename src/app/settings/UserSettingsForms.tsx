@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { buttonClass, inputClass, labelClass } from "@/components/ui";
-import { FEATURES } from "@/lib/features";
+import { DASHBOARD_PARTS, FEATURES } from "@/lib/features";
 import {
   minutesToTimeInput,
   type DayStructure,
@@ -375,6 +375,28 @@ export function FeaturesForm({ features }: { features: Record<string, boolean> }
             <span>
               <span className="block text-neutral-200">{feature.label}</span>
               <span className="block text-neutral-500">{feature.description}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+      <div className="space-y-2">
+        <p className="pt-1 text-sm text-neutral-400">
+          Parts of the home dashboard. These come on with it; switch off any you don’t want.
+        </p>
+        {DASHBOARD_PARTS.map((part) => (
+          <label
+            key={part.id}
+            className="flex min-h-11 items-start gap-3 rounded-md border border-neutral-800 px-3 py-3 text-sm"
+          >
+            <input
+              type="checkbox"
+              name={part.id}
+              defaultChecked={features[part.id] !== false}
+              className="mt-0.5 h-4 w-4 rounded border-neutral-700 bg-neutral-800"
+            />
+            <span>
+              <span className="block text-neutral-200">{part.label}</span>
+              <span className="block text-neutral-500">{part.description}</span>
             </span>
           </label>
         ))}

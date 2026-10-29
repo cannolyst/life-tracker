@@ -232,6 +232,13 @@
       "when": 1793292114760,
       "tag": "0032_push_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793294769825,
+      "tag": "0033_walkthrough_seen",
+      "breakpoints": true
     }
   ]
 }

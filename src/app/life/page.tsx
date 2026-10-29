@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireUserId } from "@/lib/session";
 import { getUserSettings } from "@/db/userSettings";
 import { getLifeAdmin } from "@/db/lifeAdmin";
-import { isFeatureOn } from "@/lib/features";
+import { isPartOn } from "@/lib/features";
 import { dateKeyIn } from "@/lib/timezone";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
@@ -15,7 +15,7 @@ export default async function LifePage() {
   const settings = await getUserSettings(userId);
   const todayKey = dateKeyIn(settings.timezone);
 
-  if (!isFeatureOn(settings.features, "dashboard")) {
+  if (!isPartOn(settings.features, "lifeAdmin")) {
     return (
       <div className="flex min-h-full flex-col">
         <Nav />
@@ -23,7 +23,7 @@ export default async function LifePage() {
           <h1 className="text-xl font-semibold">Life admin</h1>
           <Card>
             <p className="text-sm text-neutral-400">
-              Life admin is part of the home dashboard, which is switched off.{" "}
+              Life admin is switched off.{" "}
               <Link href="/settings" className="underline">
                 Turn it on in Settings
               </Link>

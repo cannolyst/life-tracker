@@ -5,6 +5,11 @@ export type WhatsNewEntry = { date: string; title: string; body: string };
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    date: "2026-11-07",
+    title: "A tour, a complete Guide, and switches for each part",
+    body: "The first time you open the new home page, a short welcome tour walks you through it (skip it, or replay it from the top of the Guide). The Guide now has a section for every page, each one saying what it’s for, how to use it and whether it earns points. In Settings → New features you can switch off any part of the dashboard you don’t want: Daily spark, Evening tone, Sunday reset, Life admin, Goals and Photo journal. They come on with the dashboard, and switching one off hides it everywhere — pages, menu links, home-page cards and notifications — without deleting anything you’ve saved.",
+  },
+  {
     date: "2026-11-06",
     title: "Home Screen app and notifications",
     body: "Life Tracker can now live on your iPhone Home Screen and open full screen, and it can send a few gentle notifications — never more than four a day: urgent flags (bills or free trials about to charge), the Sunday reset, a lunch check-in on weekdays when there’s a small task waiting, and a Shutdown nudge at 8:30pm. Each has its own switch and time in Settings, and “Out tonight” silences the evening one. Turn them on per device in Settings → Notifications. The Guide now has step-by-step instructions for an iPhone Shortcuts automation that opens the app at the start of your Transition.",
@@ -71,6 +76,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     points: [
       "Shows only the tabs you’ve turned on in Settings.",
       "Tap “View all” on any card to open that tab.",
+      "Points: this page only shows what you’ve earned; nothing here earns points itself.",
     ],
   },
   {
@@ -86,6 +92,19 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "Coming up: the next few days — events, bills and cleaning — with a note on what each needs.",
       "Worth a look: at most three gentle nudges, like a bill due soon or a streak waiting on one habit.",
       "After 8pm (or whenever your Shutdown time is) the page turns darker and warmer until Launch.",
+      "Points: the dashboard itself earns nothing. What you do from it — starting and finishing tasks, ticking habits — earns points as described in Points and Plan.",
+      "The first time you open the dashboard a short welcome tour walks through the home page. You can skip it, and replay it any time from the button at the top of this Guide.",
+    ],
+  },
+  {
+    id: "sparks",
+    title: "Daily spark",
+    summary: "One small thing each morning, under your greeting (home dashboard on; can be switched off in Settings).",
+    points: [
+      "Each day brings a quote, a word worth knowing, a question, a tiny challenge, or an idea to try. You won’t see the same one twice within a year.",
+      "Tap Save on any you like. Saved sparks collect on the Saved sparks page, and saving also nudges the kinds you like toward the top over time.",
+      "In your journal you can swap in the prompt “Where did today’s spark take you?” on days you opened the spark.",
+      "Points: none. The spark is just for you.",
     ],
   },
   {
@@ -141,6 +160,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "Subscriptions & trials: add what you pay for, how often, the next charge, and whether it pays itself. Ones you pay by hand are flagged three days before they charge. Mark something as a free trial and you’re flagged two days before it starts charging, with the price. Your Finance bills stay separate from this list.",
       "Bills: on the Finance page each bill has an Auto / Manual switch. Manual bills are flagged three days before they’re due; autopay ones aren’t.",
       "People: add a birthday (and year, if you like) and it shows in Coming up a week ahead, with your saved gift ideas. Start a gift-ideas list for anyone. Set “see them every X weeks” and you’ll get a gentle nudge when it’s been a while; it resets when a calendar event mentions their name, or tap “I saw them today”.",
+      "Points: none. Life admin is housekeeping, so it never earns or costs points.",
     ],
   },
   {
@@ -169,6 +189,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "Tomorrow shows what’s planned and how much room is left. Someday holds anything you want to keep but not do soon.",
       "Use More… on a task to move it, plan it for tomorrow, make it tomorrow’s lead, save it for Someday, or remove it.",
       "Your habits, cleaning, weekly tasks and workouts stay in their own tabs; due ones also show in the Body and Home buckets.",
+      "Points: starting a task (the 5-minute Start) earns +1, up to three different tasks a day. Finishing earns +2 for ten minutes or less, +3 up to 30, +5 up to an hour, +8 beyond that, and the easier low-energy version pays the same. After two or more days with no points, your first start or finish also earns a one-time +5 welcome back.",
     ],
   },
   {
@@ -204,6 +225,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "Build programs made of days, and days made of exercises.",
       "Log weight and reps (or time) for each set; once you’re hitting your target reps, the exercise tells you it’s ready for a heavier weight.",
       "Tag exercises with muscle groups and filter by them; reorder exercises with the arrows.",
+      "Points: logging sets doesn’t earn points by itself. If you keep a “Workout” habit on the Points page, ticking it does.",
     ],
   },
   {
@@ -214,6 +236,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "Add accounts and log payments or deposits to see projected payoff and savings dates.",
       "The paycheck plan splits each paycheck into bills, savings and spending, with a checklist.",
       "Marking a bill linked to a debt account paid also logs the payment on that account.",
+      "Points: none. Money pages never earn or cost points.",
     ],
   },
   {
@@ -224,6 +247,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "Create lists, give them categories, and drag them into the order you like.",
       "Check items off; finished items stay out of the way.",
       "With the home dashboard on, tell each list what it’s for — Groceries, Movies & shows, or Books — so it appears at the right moment. Things to do live on the Plan page instead.",
+      "Points: none. Checking things off a list is just for you.",
     ],
   },
   {
@@ -234,6 +258,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "With the home dashboard on, a “your year in numbers” card shows tasks started and finished, comebacks, Out tonight nights, how often each part of the day’s habits got done, goals completed, and your Sunday-reset highlights. Goals you’ve finished are counted and listed here too, along with journal highlights: how many nights you wrote, how many had a photo, your most common mood, and a few memorable days.",
       "Create categories (trips, books, concerts…) and add entries with dates, people and places.",
       "Switch years with the pills at the top.",
+      "Points: none. It’s a record of your year, not a score.",
     ],
   },
   {
@@ -253,6 +278,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "Open any story for a summary and a link to the full article.",
       "Play the daily brief for a spoken run-through; stories you’ve heard won’t repeat.",
       "In Settings you can make a private link so an iPhone Shortcut reads your brief when your alarm stops.",
+      "Points: none. Reading or listening to the brief never earns or costs points.",
     ],
   },
   {
@@ -266,6 +292,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "“Out tonight” silences anything scheduled for the evening, whether you set it yourself or your calendar did. Tapping a notification opens the right page.",
       "Notifications are checked every 15 minutes, so one can arrive a few minutes after its time.",
       "Open the app at the start of Transition (iPhone Shortcuts): 1) Open the Shortcuts app and tap Automation, then the + button. 2) Choose Time of Day. 3) Set the time to a few minutes after your Transition begins (4:05 PM if yours starts at 4:00), choose Weekly, and pick Monday to Friday. 4) Tap Next, then Add Action, search for Open App, and choose Life Tracker (the Home Screen app). 5) Tap Next, set it to Run Immediately instead of Ask Before Running, and tap Done. If Life Tracker isn’t in the app list, add it to the Home Screen first and try again.",
+      "Points: none. A notification never earns or costs points, and nothing is lost if you ignore one.",
     ],
   },
   {
@@ -280,6 +307,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "Daily brief city: the local section of your brief. Chicago uses hand-picked Chicago outlets; any other city uses a Google News search, so add the state (for example “Austin, TX”) to avoid mix-ups.",
       "Notifications: choose what you’d like to hear about and when, and turn them on for each device. See Home Screen and notifications.",
       "New features start switched off for everyone — turn them on here when you want them.",
+      "Points: none. Changing a setting never affects your points or history.",
     ],
   },
 ];

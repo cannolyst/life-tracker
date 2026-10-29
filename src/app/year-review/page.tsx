@@ -8,7 +8,7 @@ import { getJournalYear } from "@/db/journal";
 import { moodLabel } from "@/lib/journal";
 import { formatDay } from "../journal/EntryView";
 import { getCompletedGoals } from "@/db/goals";
-import { isFeatureOn } from "@/lib/features";
+import { isFeatureOn, isPartOn } from "@/lib/features";
 import { BLOCK_LABELS, percent } from "@/lib/yearNumbers";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
@@ -37,8 +37,8 @@ export default async function YearReviewPage({
   const [numbers, completedGoals, journalYear] = dashboardOn
     ? await Promise.all([
         getYearNumbers(userId, year, settings.timezone),
-        getCompletedGoals(userId, year),
-        getJournalYear(userId, String(year)),
+        isPartOn(settings.features, "goals") ? getCompletedGoals(userId, year) : Promise.resolve([]),
+        isPartOn(settings.features, "journal") ? getJournalYear(userId, String(year)) : Promise.resolve(null),
       ])
     : [null, [], null];
 

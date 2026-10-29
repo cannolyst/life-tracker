@@ -315,9 +315,11 @@ function BillRow({
   const textStyle = paid ? "text-neutral-500 line-through" : "";
 
   return (
-    <div className="flex items-center gap-3 border-b border-neutral-800 py-2 last:border-b-0">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-neutral-800 py-2 last:border-b-0">
+      <label className="-m-2 flex min-h-11 min-w-11 shrink-0 items-center justify-center">
       <input
         type="checkbox"
+        aria-label={`${bill.name} paid`}
         checked={paid}
         disabled={isPending}
         title={bill.accountId ? "Logs a real payment against this account when checked" : undefined}
@@ -327,11 +329,12 @@ function BillRow({
         }}
         className="h-4 w-4 shrink-0 rounded border-neutral-600 bg-neutral-800"
       />
+      </label>
       <InlineEditableAmount
         value={bill.name}
         display={bill.name}
         inputMode="text"
-        className={`flex-1 ${textStyle}`}
+        className={`min-w-[7rem] flex-1 ${textStyle}`}
         onSave={(v) => updateBillLineItemField(bill.id, "name", v)}
       />
       <div className="w-20 shrink-0">
@@ -364,7 +367,7 @@ function BillRow({
       <button
         type="button"
         onClick={() => deleteBillLineItem(bill.id)}
-        className="text-neutral-600 hover:text-red-400"
+        className="min-h-11 min-w-11 text-neutral-600 hover:text-red-400"
         aria-label={`Delete ${bill.name}`}
       >
         ✕

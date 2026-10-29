@@ -1,13 +1,27 @@
 import { Nav } from "@/components/Nav";
+import { requireUserId } from "@/lib/session";
+import { getUserSettings } from "@/db/userSettings";
+import { isFeatureOn } from "@/lib/features";
+import { replayWalkthroughAction } from "../dashboard/walkthrough-actions";
 import { Card } from "@/components/ui";
 import { GUIDE_SECTIONS, WHATS_NEW } from "@/lib/guideContent";
 
-export default function GuidePage() {
+export default async function GuidePage() {
+  const settings = await getUserSettings(await requireUserId());
+  const dashboardOn = isFeatureOn(settings.features, "dashboard");
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-xl font-semibold">Guide</h1>
+
+        {dashboardOn && (
+          <form action={replayWalkthroughAction}>
+            <button type="submit" className="tap text-sm text-neutral-400 underline">
+              Replay the welcome tour
+            </button>
+          </form>
+        )}
 
         <Card>
           <h2 className="mb-3 font-medium">What’s new</h2>

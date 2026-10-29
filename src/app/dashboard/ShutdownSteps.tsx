@@ -57,7 +57,9 @@ export function ShutdownSteps({
   journal,
   journalStatus,
   journalDone,
+  journalOn,
 }: {
+  journalOn: boolean;
   logged: boolean;
   initialNote: string;
   finishedToday: number;
@@ -200,14 +202,16 @@ export function ShutdownSteps({
         {message && <p className="text-sm text-neutral-400">{message}</p>}
       </Step>
 
-      <Step
-        number={4}
-        title="Photo journal"
-        status={journalStatus}
-        open={savedLog && inbox.length === 0 && planned.length > 0 && !journalDone}
-      >
-        {journal}
-      </Step>
+      {journalOn && (
+        <Step
+          number={4}
+          title="Photo journal"
+          status={journalStatus}
+          open={savedLog && inbox.length === 0 && planned.length > 0 && !journalDone}
+        >
+          {journal}
+        </Step>
+      )}
     </section>
   );
 }

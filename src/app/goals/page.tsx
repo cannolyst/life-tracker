@@ -5,7 +5,7 @@ import { habitTasks } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { getUserSettings } from "@/db/userSettings";
 import { getGoals } from "@/db/goals";
-import { isFeatureOn } from "@/lib/features";
+import { isPartOn } from "@/lib/features";
 import { MAX_ACTIVE_GOALS } from "@/lib/goals";
 import { dateKeyIn } from "@/lib/timezone";
 import { Nav } from "@/components/Nav";
@@ -21,7 +21,7 @@ export default async function GoalsPage() {
   const settings = await getUserSettings(userId);
   const todayKey = dateKeyIn(settings.timezone);
 
-  if (!isFeatureOn(settings.features, "dashboard")) {
+  if (!isPartOn(settings.features, "goals")) {
     return (
       <div className="flex min-h-full flex-col">
         <Nav />
@@ -29,7 +29,7 @@ export default async function GoalsPage() {
           <h1 className="text-xl font-semibold">Goals</h1>
           <Card>
             <p className="text-sm text-neutral-400">
-              Goals are part of the home dashboard, which is switched off.{" "}
+              Goals are switched off.{" "}
               <Link href="/settings" className="underline">
                 Turn it on in Settings
               </Link>

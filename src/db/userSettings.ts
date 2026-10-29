@@ -33,6 +33,7 @@ export const getUserSettings = cache(async (userId: string): Promise<UserSetting
       },
     },
     features: (row.features ?? {}) as Record<string, boolean>,
+    walkthroughSeen: row.walkthroughSeenAt !== null,
   };
 });
 

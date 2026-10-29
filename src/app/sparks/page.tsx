@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireUserId } from "@/lib/session";
 import { getSavedSparks } from "@/db/sparks";
 import { getUserSettings } from "@/db/userSettings";
-import { isFeatureOn } from "@/lib/features";
+import { isPartOn } from "@/lib/features";
 import { SPARK_TYPE_LABEL } from "@/lib/sparks";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export default async function SparksPage() {
   const userId = await requireUserId();
   const [settings, saved] = await Promise.all([getUserSettings(userId), getSavedSparks(userId)]);
-  const enabled = isFeatureOn(settings.features, "dashboard");
+  const enabled = isPartOn(settings.features, "spark");
 
   return (
     <div className="flex min-h-full flex-col">
@@ -24,7 +24,7 @@ export default async function SparksPage() {
         {!enabled && (
           <Card>
             <p className="text-sm text-neutral-400">
-              Daily sparks are part of the home dashboard, which is switched off.{" "}
+              Daily sparks are switched off.{" "}
               <Link href="/settings" className="underline">
                 Turn it on in Settings
               </Link>

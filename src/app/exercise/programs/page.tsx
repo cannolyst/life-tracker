@@ -18,7 +18,7 @@ export default async function ProgramsPage() {
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">Manage programs</h1>
-          <Link href="/exercise" className="text-sm text-neutral-500 hover:text-neutral-100">
+          <Link href="/exercise" className="tap text-sm text-neutral-500 hover:text-neutral-100">
             Back to Exercise
           </Link>
         </div>

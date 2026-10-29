@@ -30,7 +30,7 @@ export function ProgramSwitcher({ programs }: { programs: Program[] }) {
       ))}
       <Link
         href="/exercise/programs"
-        className="rounded-md px-3 py-1.5 text-sm text-neutral-500 hover:text-neutral-100"
+        className="inline-flex min-h-11 items-center rounded-md px-3 text-sm text-neutral-500 hover:text-neutral-100"
       >
         Manage
       </Link>

@@ -3,7 +3,7 @@ import { requireUserId } from "@/lib/session";
 import { getModuleSettings } from "@/db/queries";
 import { getUserSettings } from "@/db/userSettings";
 import { MODULES } from "@/lib/modules";
-import { isFeatureOn } from "@/lib/features";
+import { isFeatureOn, isPartOn } from "@/lib/features";
 import { isEveningTone } from "@/lib/dayBlocks";
 import { minutesIntoDayIn } from "@/lib/timezone";
 import { NavClient } from "./NavClient";
@@ -28,9 +28,18 @@ export async function Nav() {
 
   // The darker, warmer evening tone belongs to the new dashboard — users who
   // haven't switched it on see no change.
-  const eveningTone = isFeatureOn(userSettings.features, "dashboard");
+  const dashboardOn = isFeatureOn(userSettings.features, "dashboard");
+  const eveningTone = isPartOn(userSettings.features, "evening");
   // Planning (tomorrow, buckets, Someday) comes with the dashboard too.
-  const links = eveningTone ? [{ href: "/plan", label: "Plan" }, { href: "/life", label: "Life admin" }, { href: "/goals", label: "Goals" }, { href: "/journal", label: "Journal" }, ...tabs] : tabs;
+  const links = dashboardOn
+    ? [
+        { href: "/plan", label: "Plan" },
+        ...(isPartOn(userSettings.features, "lifeAdmin") ? [{ href: "/life", label: "Life admin" }] : []),
+        ...(isPartOn(userSettings.features, "goals") ? [{ href: "/goals", label: "Goals" }] : []),
+        ...(isPartOn(userSettings.features, "journal") ? [{ href: "/journal", label: "Journal" }] : []),
+        ...tabs,
+      ]
+    : tabs;
 
   return (
     <>

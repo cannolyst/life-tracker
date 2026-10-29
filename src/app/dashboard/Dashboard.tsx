@@ -27,7 +27,7 @@ import { getTodaysSpark } from "@/db/sparks";
 import { getCalendarEvents, type CalendarResult } from "@/lib/calendarService";
 import { fetchAllStories } from "@/lib/news";
 import { buildBrief, formatBriefDate } from "@/lib/brief";
-import { isFeatureOn } from "@/lib/features";
+import { isFeatureOn, isPartOn } from "@/lib/features";
 import { dateKeyIn, minutesIntoDayIn } from "@/lib/timezone";
 import { currentBlock } from "@/lib/dayBlocks";
 import {
@@ -62,6 +62,7 @@ import type { Section } from "@/lib/newsTypes";
 import type { DayStructure } from "@/lib/userSettingsDefaults";
 import { Nav } from "@/components/Nav";
 import { SparkCard } from "./SparkCard";
+import { Walkthrough } from "./Walkthrough";
 import { DashboardBrief } from "./DashboardBrief";
 import { NowShell } from "./NowShell";
 import { TransitionFlow } from "./TransitionFlow";
@@ -71,6 +72,7 @@ import { GoalStrip } from "./GoalStrip";
 import { ContextItems, EnergyChips, OutTonightCard, OutTonightToggle, QuickAdd, TaskDoneRow } from "./PlanControls";
 
 const COMING_UP_DAYS = 4;
+const NO_LIFE_ADMIN: LifeAdmin = { recurring: [], subscriptions: [], people: [] };
 
 function eventsOf(result: CalendarResult | null): CalendarEvent[] {
   return result && result.status === "ok" ? result.events : [];
@@ -90,6 +92,13 @@ export async function Dashboard({ userId }: { userId: string }) {
     ? getCalendarEvents(userId, { days: COMING_UP_DAYS + 1, daysBack: 3 })
     : Promise.resolve(null);
 
+  // Parts of the dashboard a user can switch off in Settings.
+  const sparkOn = isPartOn(settings.features, "spark");
+  const resetOn = isPartOn(settings.features, "reset");
+  const lifeOn = isPartOn(settings.features, "lifeAdmin");
+  const goalsOn = isPartOn(settings.features, "goals");
+  const journalOn = isPartOn(settings.features, "journal");
+
   const [agenda, todaysSpark, storedFlag, resetState, life, allGoals] = await Promise.all([
     getDayAgenda(userId, tz, {
       points: modules.showPoints,
@@ -97,12 +106,12 @@ export async function Dashboard({ userId }: { userId: string }) {
       exercise: modules.showExercise,
       finance: modules.showFinance,
     }),
-    getTodaysSpark(userId, todayKey),
+    sparkOn ? getTodaysSpark(userId, todayKey) : Promise.resolve(null),
     getDayFlag(userId, todayKey),
     // Only Sundays show the reset card, so only Sundays pay for the lookup.
-    isSunday(todayKey) ? getResetState(userId, resetWeekKey(todayKey)) : Promise.resolve(null),
-    getLifeAdmin(userId, tz, todayKey),
-    getGoals(userId, todayKey),
+    resetOn && isSunday(todayKey) ? getResetState(userId, resetWeekKey(todayKey)) : Promise.resolve(null),
+    lifeOn ? getLifeAdmin(userId, tz, todayKey) : Promise.resolve(NO_LIFE_ADMIN),
+    goalsOn ? getGoals(userId, todayKey) : Promise.resolve([]),
   ]);
   const activeGoals = allGoals.filter((g) => g.status === "active");
 
@@ -178,6 +187,8 @@ export async function Dashboard({ userId }: { userId: string }) {
           />
         </Suspense>
 
+        {!settings.walkthroughSeen && <Walkthrough />}
+
         {todaysSpark && <SparkCard spark={todaysSpark.spark} saved={todaysSpark.saved} />}
 
         <Suspense fallback={<NowShell {...basicNowCard} />}>
@@ -194,6 +205,7 @@ export async function Dashboard({ userId }: { userId: string }) {
             calendarPromise={calendarPromise}
             showExercise={modules.showExercise}
             showCleaning={modules.showCleaning}
+            journalOn={journalOn}
           />
         </Suspense>
 
@@ -248,9 +260,11 @@ export async function Dashboard({ userId }: { userId: string }) {
           />
         </Suspense>
 
+        {journalOn && (
         <Suspense fallback={null}>
           <JournalNudges userId={userId} tz={tz} todayKey={todayKey} nowMs={now.getTime()} />
         </Suspense>
+        )}
 
         {flags.length > 0 && (
           <section aria-label="Flags" className="space-y-1">
@@ -373,7 +387,9 @@ async function NowArea({
   calendarPromise,
   showExercise,
   showCleaning,
+  journalOn,
 }: {
+  journalOn: boolean;
   userId: string;
   tz: string;
   structure: DayStructure;
@@ -394,7 +410,7 @@ async function NowArea({
     getDayFlag(userId, todayKey),
     getDayLog(userId, todayKey),
     getFinishedCount(userId, todayKey),
-    getEntry(userId, todayKey),
+    journalOn ? getEntry(userId, todayKey) : Promise.resolve(null),
   ]);
 
   const hasEveningEvent = events.some((e) => !e.allDay && e.isEvening && eventOnDay(e, todayKey, tz));
@@ -453,7 +469,7 @@ async function NowArea({
       logged: log !== null,
       inboxCount: open.filter((t) => t.bucket === "inbox" && t.plannedFor === null).length,
       plannedCount: plannedTomorrow.length,
-      journalDone: journalEntry?.completed ?? false,
+      journalDone: journalOn ? (journalEntry?.completed ?? false) : undefined,
     },
   });
 
@@ -546,6 +562,7 @@ async function NowArea({
           tomorrowKey={tomorrowKey}
           cap={capacityCap(finishedToday)}
           collections={collections}
+          journalOn={journalOn}
           journalDone={journalEntry?.completed ?? false}
           journalStatus={journalEntry?.completed ? "Done ✓" : journalEntry ? "Draft" : "Not yet"}
           journal={

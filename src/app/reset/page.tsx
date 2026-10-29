@@ -14,7 +14,7 @@ import { PhotoGrid } from "../journal/EntryView";
 import { auditTotals, dueLabel, monthlyEquivalent } from "@/lib/lifeAdmin";
 import { formatPrice } from "@/lib/dashboard";
 import { getCalendarEvents } from "@/lib/calendarService";
-import { isFeatureOn } from "@/lib/features";
+import { isFeatureOn, isPartOn } from "@/lib/features";
 import { addDays, weekdayLong } from "@/lib/dashboard";
 import { dateKeyIn } from "@/lib/timezone";
 import {
@@ -77,7 +77,7 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
   const weekKey = resetWeekKey(todayKey);
   const nowMs = new Date().getTime();
 
-  if (!isFeatureOn(settings.features, "dashboard")) {
+  if (!isPartOn(settings.features, "reset")) {
     return (
       <div className="flex min-h-full flex-col">
         <Nav />
@@ -85,7 +85,7 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
           <h1 className="text-xl font-semibold">Sunday reset</h1>
           <Card>
             <p className="text-sm text-neutral-400">
-              The Sunday reset is part of the home dashboard, which is switched off.{" "}
+              The Sunday reset is switched off.{" "}
               <Link href="/settings" className="underline">
                 Turn it on in Settings
               </Link>
@@ -109,7 +109,7 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
     getGroceryList(userId),
     getMarkedOutDates(userId, todayKey, addDays(todayKey, 6)),
     calendarOn ? getCalendarEvents(userId, { days: 7 }) : Promise.resolve(null),
-    getGoals(userId, todayKey),
+    isPartOn(settings.features, "goals") ? getGoals(userId, todayKey) : Promise.resolve([]),
   ]);
   // Goals under about 60 days are checked every Sunday; longer ones in the monthly review.
   const activeGoals = allGoals.filter((g) => g.status === "active");
@@ -121,9 +121,9 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
     ? await Promise.all([
         getAreaPoints(userId, addDays(todayKey, -30), addDays(todayKey, -1)),
         getAreaPoints(userId, addDays(todayKey, -60), addDays(todayKey, -31)),
-        getLifeAdmin(userId, tz, todayKey),
+        isPartOn(settings.features, "lifeAdmin") ? getLifeAdmin(userId, tz, todayKey) : Promise.resolve(null),
         getBillsLineItems(userId),
-        getMonthEntries(userId, previousMonthKey(todayKey)),
+        isPartOn(settings.features, "journal") ? getMonthEntries(userId, previousMonthKey(todayKey)) : Promise.resolve([]),
       ])
     : [null, null, null, null, []];
   const areaTrends = thisStretch && lastStretch ? compareAreas(thisStretch, lastStretch) : [];

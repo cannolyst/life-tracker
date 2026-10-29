@@ -925,13 +925,15 @@ export const userSettings = pgTable(
     briefCity: text("brief_city").notNull().default("Chicago"),
     // What the dashboard greeting calls the user; blank means no name.
     displayName: text("display_name"),
-    // { lunchCard, shutdownNudge, sundayReset, urgentFlags } — stored now,
-    // acted on once notifications ship.
+    // { lunchCard, shutdownNudge, sundayReset, urgentFlags, times } — read by the
+    // notification cron job.
     notificationPrefs: jsonb("notification_prefs")
       .notNull()
       .default(sql`'{"lunchCard":true,"shutdownNudge":true,"sundayReset":true,"urgentFlags":true}'::jsonb`),
+    // When the user finished or skipped the first-run dashboard walkthrough.
+    walkthroughSeenAt: timestamp("walkthrough_seen_at", { withTimezone: true }),
     // Feature switches keyed by id (see src/lib/features.ts). A missing key
-    // means off — new features are opt-in for everyone.
+    // means off for the dashboard and calendar, on for its parts.
     features: jsonb("features").notNull().default(sql`'{}'::jsonb`),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

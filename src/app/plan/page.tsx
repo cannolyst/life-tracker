@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireUserId } from "@/lib/session";
 import { getUserSettings } from "@/db/userSettings";
 import { getCollectionChoices, getFinishedCount, getPlanTasks } from "@/db/planning";
-import { isFeatureOn } from "@/lib/features";
+import { isFeatureOn, isPartOn } from "@/lib/features";
 import { addDays } from "@/lib/dashboard";
 import { dateKeyIn } from "@/lib/timezone";
 import { BUCKETS, BUCKET_LABEL, capacityCap, groupOpenByBucket } from "@/lib/planning";
@@ -49,9 +49,11 @@ export default async function PlanPage() {
       <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-8">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-xl font-semibold">Plan</h1>
-          <Link href="/reset" className="tap rounded-md border border-neutral-700 px-3 text-sm text-neutral-300">
-            Sunday reset
-          </Link>
+          {isPartOn(settings.features, "reset") && (
+            <Link href="/reset" className="tap rounded-md border border-neutral-700 px-3 text-sm text-neutral-300">
+              Sunday reset
+            </Link>
+          )}
         </div>
 
         {!isFeatureOn(settings.features, "dashboard") && (

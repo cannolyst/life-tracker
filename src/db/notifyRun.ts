@@ -6,7 +6,7 @@ import { getLifeAdmin } from "./lifeAdmin";
 import { claimNotification, releaseNotification, sendToUser, subscribedUserIds } from "./notifications";
 import { getCalendarEvents } from "@/lib/calendarService";
 import { buildFlags, eventOnDay } from "@/lib/dashboard";
-import { isFeatureOn } from "@/lib/features";
+import { isFeatureOn, isPartOn } from "@/lib/features";
 import {
   flagsMessage,
   kindsDue,
@@ -32,10 +32,10 @@ async function isOutTonight(userId: string, tz: string, todayKey: string, calend
 }
 
 // Only the sharp edges: bills and subscriptions due soon, and free trials about to convert.
-async function urgentFlags(userId: string, tz: string, todayKey: string) {
+async function urgentFlags(userId: string, tz: string, todayKey: string, lifeAdminOn: boolean) {
   const [agenda, life] = await Promise.all([
     getDayAgenda(userId, tz, { points: false, cleaning: false, exercise: false, finance: true }),
-    getLifeAdmin(userId, tz, todayKey),
+    lifeAdminOn ? getLifeAdmin(userId, tz, todayKey) : Promise.resolve({ recurring: [], subscriptions: [], people: [] }),
   ]);
   return buildFlags({
     streak: 0,
@@ -59,6 +59,7 @@ async function messageFor(
   kind: NotificationKind,
   tz: string,
   todayKey: string,
+  features: Record<string, boolean>,
 ): Promise<PushMessage | null> {
   switch (kind) {
     case "lunch": {
@@ -69,9 +70,10 @@ async function messageFor(
       // Already logged the day: nothing to nudge about.
       return (await getDayLog(userId, todayKey)) ? null : shutdownMessage();
     case "sunday":
+      if (!isPartOn(features, "reset")) return null;
       return (await getResetState(userId, resetWeekKey(todayKey))).completed ? null : sundayMessage();
     case "flags": {
-      const flags = await urgentFlags(userId, tz, todayKey);
+      const flags = await urgentFlags(userId, tz, todayKey, isPartOn(features, "lifeAdmin"));
       return flags.length > 0 ? flagsMessage(flags) : null;
     }
   }
@@ -103,7 +105,7 @@ export async function runNotifications(now: Date = new Date()): Promise<RunSumma
 
       for (const kind of due) {
         if (out && silencedByOutTonight(kind, settings.notificationPrefs, settings.eveningStartMinutes)) continue;
-        const message = await messageFor(userId, kind, tz, todayKey);
+        const message = await messageFor(userId, kind, tz, todayKey, settings.features);
         if (!message) continue;
         if (!(await claimNotification(userId, kind, todayKey))) continue;
         const delivered = await sendToUser(userId, message);
