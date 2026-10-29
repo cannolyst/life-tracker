@@ -1283,3 +1283,32 @@ export const journalEntries = pgTable(
     ),
   ],
 ).enableRLS();
+
+// Phase 10: web push. One row per installed device a user has allowed
+// notifications on; `endpoint` is the push service address for that device.
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    endpoint: text("endpoint").notNull(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    userAgent: text("user_agent").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("push_subscriptions_endpoint_unique").on(table.endpoint)],
+).enableRLS();
+
+// What was already sent, so a kind goes out at most once per user per local day.
+export const notificationLog = pgTable(
+  "notification_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    kind: text("kind").notNull(), // lunch | shutdown | sunday | flags
+    date: text("date").notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("notification_log_user_kind_date_unique").on(table.userId, table.kind, table.date)],
+).enableRLS();

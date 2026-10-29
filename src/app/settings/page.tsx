@@ -1,3 +1,4 @@
+import { PushSetup } from "./PushSetup";
 import { cookies } from "next/headers";
 import { getModuleSettings } from "@/db/queries";
 import { getBriefTokenCreatedAt } from "@/db/brief";
@@ -91,7 +92,10 @@ export default async function SettingsPage() {
         </Card>
         <Card>
           <h2 className="mb-3 font-medium">Notifications</h2>
-          <NotificationsForm prefs={userSettings.notificationPrefs} />
+          <div className="space-y-4">
+            <PushSetup />
+            <NotificationsForm prefs={userSettings.notificationPrefs} />
+          </div>
         </Card>
         <Card>
           <h2 className="mb-3 font-medium">New features</h2>

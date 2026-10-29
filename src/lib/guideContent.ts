@@ -5,6 +5,11 @@ export type WhatsNewEntry = { date: string; title: string; body: string };
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    date: "2026-11-06",
+    title: "Home Screen app and notifications",
+    body: "Life Tracker can now live on your iPhone Home Screen and open full screen, and it can send a few gentle notifications — never more than four a day: urgent flags (bills or free trials about to charge), the Sunday reset, a lunch check-in on weekdays when there’s a small task waiting, and a Shutdown nudge at 8:30pm. Each has its own switch and time in Settings, and “Out tonight” silences the evening one. Turn them on per device in Settings → Notifications. The Guide now has step-by-step instructions for an iPhone Shortcuts automation that opens the app at the start of your Transition.",
+  },
+  {
     date: "2026-11-05",
     title: "A photo journal",
     body: "The last step of Shutdown is now a short journal entry: the day’s facts drafted for you (your events, what you finished, your workout, points, the weather and one headline), one photo from your camera roll, one prompt, and an optional mood. If the photo isn’t from today you’ll get a gentle note, and with no photo you can use the weather or a map instead. Photos are shrunk on your phone before they upload and are stored privately — they can only be opened while you’re signed in. Journal entries earn no points. An unfinished entry can be finished until noon the next day, and your Journal page shows every month as a photo grid. “On this day” looks back a month and a year on your home page, the monthly review shows last month’s photos, and your Year in review gets journal highlights. (With the home dashboard on.)",
@@ -251,6 +256,19 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     ],
   },
   {
+    id: "notifications",
+    title: "Home Screen and notifications",
+    summary: "Install the app on your iPhone, turn on a few gentle reminders, and open it automatically each afternoon.",
+    points: [
+      "Install: open Life Tracker in Safari, tap the Share button, choose Add to Home Screen, then open it from the new icon. iPhone only allows notifications for apps added this way.",
+      "Turn on: in the installed app, go to Settings → Notifications and tap “Turn on notifications for this device”. Allow when your phone asks. “Send a test” confirms it works. Each phone or computer is turned on separately.",
+      "What you can get — never more than four a day, each with its own switch and time: urgent flags (8:00am, only bills and free trials about to charge), Sunday reset (10:00am Sundays, if it isn’t done), lunch check-in (12:15pm weekdays, only when there’s a small task), Shutdown nudge (8:30pm, skipped if you already logged the day).",
+      "“Out tonight” silences anything scheduled for the evening, whether you set it yourself or your calendar did. Tapping a notification opens the right page.",
+      "Notifications are checked every 15 minutes, so one can arrive a few minutes after its time.",
+      "Open the app at the start of Transition (iPhone Shortcuts): 1) Open the Shortcuts app and tap Automation, then the + button. 2) Choose Time of Day. 3) Set the time to a few minutes after your Transition begins (4:05 PM if yours starts at 4:00), choose Weekly, and pick Monday to Friday. 4) Tap Next, then Add Action, search for Open App, and choose Life Tracker (the Home Screen app). 5) Tap Next, set it to Run Immediately instead of Ask Before Running, and tap Done. If Life Tracker isn’t in the app list, add it to the Home Screen first and try again.",
+    ],
+  },
+  {
     id: "settings",
     title: "Settings",
     summary: "Make the app yours.",
@@ -260,6 +278,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "Calendar: link iCloud and Google calendars (stored encrypted, read-only), name them, and preview your next 7 days with everything merged.",
       "Your name: what the dashboard greeting calls you.",
       "Daily brief city: the local section of your brief. Chicago uses hand-picked Chicago outlets; any other city uses a Google News search, so add the state (for example “Austin, TX”) to avoid mix-ups.",
+      "Notifications: choose what you’d like to hear about and when, and turn them on for each device. See Home Screen and notifications.",
       "New features start switched off for everyone — turn them on here when you want them.",
     ],
   },

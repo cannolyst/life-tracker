@@ -23,6 +23,8 @@ const leagueSpartan = League_Spartan({
 export const metadata: Metadata = {
   title: "Life Tracker",
   description: "Points, cleaning, and finance tracking in one place",
+  icons: { apple: "/pwa-icon?size=180" },
+  appleWebApp: { capable: true, title: "Life Tracker", statusBarStyle: "default" },
 };
 
 // viewport-fit=cover lets the page extend under the iPhone notch and home

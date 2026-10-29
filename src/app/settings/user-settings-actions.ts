@@ -7,10 +7,13 @@ import { calendarLinks, userSettings } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { isValidTimezone } from "@/lib/timezone";
 import {
-  DEFAULT_NOTIFICATION_PREFS,
+  DEFAULT_NOTIFICATION_TIMES,
+  DEFAULT_NOTIFICATION_TOGGLES,
   timeInputToMinutes,
   validateDayStructure,
+  type NotificationKind,
   type NotificationPrefs,
+  type NotificationToggles,
 } from "@/lib/userSettingsDefaults";
 import { FEATURES } from "@/lib/features";
 import { PROVIDER_LABEL, calendarUrlHint, normalizeCalendarUrl } from "@/lib/calendarUrl";
@@ -147,12 +150,18 @@ export async function saveNotificationPrefs(
   _prev: SettingsActionState,
   formData: FormData,
 ): Promise<SettingsActionState> {
-  const prefs = Object.fromEntries(
-    (Object.keys(DEFAULT_NOTIFICATION_PREFS) as (keyof NotificationPrefs)[]).map((key) => [
+  const toggles = Object.fromEntries(
+    (Object.keys(DEFAULT_NOTIFICATION_TOGGLES) as (keyof NotificationToggles)[]).map((key) => [
       key,
       formData.get(key) === "on",
     ]),
-  ) as NotificationPrefs;
+  ) as NotificationToggles;
+  const times = { ...DEFAULT_NOTIFICATION_TIMES };
+  for (const kind of Object.keys(times) as NotificationKind[]) {
+    const minutes = timeInputToMinutes(String(formData.get(`time-${kind}`) ?? ""));
+    if (minutes !== null && minutes < 24 * 60) times[kind] = minutes;
+  }
+  const prefs: NotificationPrefs = { ...toggles, times };
   const userId = await requireUserId();
   await saveSettings(userId, { notificationPrefs: prefs });
   return { saved: true };

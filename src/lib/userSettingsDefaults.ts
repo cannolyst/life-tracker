@@ -1,17 +1,36 @@
 import { DEFAULT_TIMEZONE } from "./timezone";
 
-export type NotificationPrefs = {
+export type NotificationKind = "lunch" | "shutdown" | "sunday" | "flags";
+
+// Minutes after midnight, in the user's own time zone.
+export type NotificationTimes = Record<NotificationKind, number>;
+
+export const DEFAULT_NOTIFICATION_TIMES: NotificationTimes = {
+  lunch: 12 * 60 + 15,
+  shutdown: 20 * 60 + 30,
+  sunday: 10 * 60,
+  flags: 8 * 60,
+};
+
+export type NotificationToggles = {
   lunchCard: boolean;
   shutdownNudge: boolean;
   sundayReset: boolean;
   urgentFlags: boolean;
 };
 
-export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+export type NotificationPrefs = NotificationToggles & { times: NotificationTimes };
+
+export const DEFAULT_NOTIFICATION_TOGGLES: NotificationToggles = {
   lunchCard: true,
   shutdownNudge: true,
   sundayReset: true,
   urgentFlags: true,
+};
+
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  ...DEFAULT_NOTIFICATION_TOGGLES,
+  times: DEFAULT_NOTIFICATION_TIMES,
 };
 
 export type DayStructure = {

@@ -6,7 +6,9 @@ import { FEATURES } from "@/lib/features";
 import {
   minutesToTimeInput,
   type DayStructure,
+  type NotificationKind,
   type NotificationPrefs,
+  type NotificationToggles,
 } from "@/lib/userSettingsDefaults";
 import { timezoneLabel } from "@/lib/timezoneOptions";
 import type { CalendarEvent } from "@/lib/calendarParse";
@@ -301,35 +303,48 @@ export function BriefCityForm({ city }: { city: string }) {
   );
 }
 
-const NOTIFICATION_LABELS: Record<keyof NotificationPrefs, string> = {
-  lunchCard: "Lunch check-in",
-  shutdownNudge: "Shutdown nudge",
-  sundayReset: "Sunday reset",
-  urgentFlags: "Urgent flags",
-};
+const NOTIFICATIONS: { toggle: keyof NotificationToggles; kind: NotificationKind; label: string; hint: string }[] = [
+  { toggle: "urgentFlags", kind: "flags", label: "Urgent flags", hint: "Only bills and free trials about to charge" },
+  { toggle: "sundayReset", kind: "sunday", label: "Sunday reset", hint: "Sundays, if you haven’t done it yet" },
+  { toggle: "lunchCard", kind: "lunch", label: "Lunch check-in", hint: "Weekdays, when there’s a small task" },
+  { toggle: "shutdownNudge", kind: "shutdown", label: "Shutdown nudge", hint: "Skipped when you’re out tonight" },
+];
 
 export function NotificationsForm({ prefs }: { prefs: NotificationPrefs }) {
   const [state, action, pending] = useActionState(saveNotificationPrefs, initial);
   return (
     <form action={action} className="space-y-3">
       <p className="text-sm text-neutral-400">
-        Choose what you’d like to hear about. Notifications themselves arrive in a later update — your
-        choices are saved now so they’re ready.
+        At most four a day, each at a time you choose, in your time zone. Nothing arrives unless you turn it on
+        for this device above.
       </p>
       <div className="space-y-2">
-        {(Object.keys(NOTIFICATION_LABELS) as (keyof NotificationPrefs)[]).map((key) => (
-          <label
-            key={key}
-            className="flex min-h-11 items-center gap-3 rounded-md border border-neutral-800 px-3 text-sm"
+        {NOTIFICATIONS.map(({ toggle, kind, label, hint }) => (
+          <div
+            key={toggle}
+            className="flex min-h-11 items-center justify-between gap-3 rounded-md border border-neutral-800 px-3 py-2 text-sm"
           >
+            <label className="flex min-w-0 items-center gap-3">
+              <input
+                type="checkbox"
+                name={toggle}
+                defaultChecked={prefs[toggle]}
+                className="h-4 w-4 shrink-0 rounded border-neutral-700 bg-neutral-800"
+              />
+              <span className="min-w-0">
+                {label}
+                <span className="block text-xs text-neutral-500">{hint}</span>
+              </span>
+            </label>
             <input
-              type="checkbox"
-              name={key}
-              defaultChecked={prefs[key]}
-              className="h-4 w-4 rounded border-neutral-700 bg-neutral-800"
+              type="time"
+              name={`time-${kind}`}
+              aria-label={`${label} time`}
+              defaultValue={minutesToTimeInput(prefs.times[kind])}
+              required
+              className="min-h-11 shrink-0 rounded-md border border-neutral-700 bg-neutral-800 px-2 text-neutral-100"
             />
-            {NOTIFICATION_LABELS[key]}
-          </label>
+          </div>
         ))}
       </div>
       <Status state={state} />

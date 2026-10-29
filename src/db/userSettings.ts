@@ -27,6 +27,10 @@ export const getUserSettings = cache(async (userId: string): Promise<UserSetting
     notificationPrefs: {
       ...DEFAULT_NOTIFICATION_PREFS,
       ...(row.notificationPrefs as Partial<NotificationPrefs>),
+      times: {
+        ...DEFAULT_NOTIFICATION_PREFS.times,
+        ...(row.notificationPrefs as Partial<NotificationPrefs>).times,
+      },
     },
     features: (row.features ?? {}) as Record<string, boolean>,
   };
