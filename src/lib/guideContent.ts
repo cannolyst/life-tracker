@@ -5,6 +5,11 @@ export type WhatsNewEntry = { date: string; title: string; body: string };
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    date: "2026-11-03",
+    title: "Life admin: chores that recur, subscriptions, and people",
+    body: "A new Life admin page keeps track of the things that come around on their own. Recurring items (renew registration, change the furnace filter) show up in Coming up two weeks ahead, then become an evening card; Done resets the clock. Subscriptions and free trials are flagged before they charge — manual ones three days out, trials two days before they convert. People get birthdays in Coming up a week ahead, their own gift-ideas list, and an optional “see them every X weeks” nudge that resets itself when a calendar event mentions their name. On the first Sunday of the month the reset adds a monthly review: points by area, next month’s life admin and bills, and a subscription audit. Your Finance bills can be marked Auto or Manual. (With the home dashboard on.)",
+  },
+  {
     date: "2026-11-02",
     title: "The Sunday reset, and more in your Year in review",
     body: "On Sundays your home page offers a ten-minute reset: look back at the week, look ahead at your calendar (with Out tonight nights flagged and open evenings marked), give your bigger tasks a home on those evenings, check the groceries, and clear the decks — sort the Inbox, review Someday, and drop anything that’s gone stale. Finishing earns +5 points, once a week. Your Year in review has a new “in numbers” card: tasks started and finished, comebacks, Out tonight nights, how often each part of the day’s habits got done, and the highlight from each reset. (With the home dashboard on.)",
@@ -86,6 +91,17 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     ],
   },
   {
+    id: "life-admin",
+    title: "Life admin",
+    summary: "The things that come around on their own. Open it from the menu (home dashboard on).",
+    points: [
+      "Recurring: things like “renew registration” or “change the furnace filter”, with how often they come around and when you last did them. Two weeks before one is due it appears in Coming up; once it’s due it becomes your evening card. Done resets the clock; Not tonight lets it wait until tomorrow.",
+      "Subscriptions & trials: add what you pay for, how often, the next charge, and whether it pays itself. Ones you pay by hand are flagged three days before they charge. Mark something as a free trial and you’re flagged two days before it starts charging, with the price. Your Finance bills stay separate from this list.",
+      "Bills: on the Finance page each bill has an Auto / Manual switch. Manual bills are flagged three days before they’re due; autopay ones aren’t.",
+      "People: add a birthday (and year, if you like) and it shows in Coming up a week ahead, with your saved gift ideas. Start a gift-ideas list for anyone. Set “see them every X weeks” and you’ll get a gentle nudge when it’s been a while; it resets when a calendar event mentions their name, or tap “I saw them today”.",
+    ],
+  },
+  {
     id: "sunday-reset",
     title: "Sunday reset",
     summary: "About ten minutes to close one week and set up the next. It shows on your home page on Sundays and is always at Plan → Sunday reset.",
@@ -96,6 +112,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "Groceries: check off what you have and add what you need. Mark one of your lists as Groceries on the Lists page.",
       "Clear the decks: sort the Inbox, bring back or drop Someday items, and keep, shelve or drop anything that’s sat untouched for three weeks.",
       "Finishing is worth +5 points, once a week. You can finish without doing every step.",
+      "Monthly review: on the first Sunday of the month the reset adds three steps — your points by area for the last 30 days compared with the 30 before, next month’s life admin, bills and subscription charges, and a subscription audit (keep or cancel each one). Open it any other time with “Add the monthly review”.",
     ],
   },
   {

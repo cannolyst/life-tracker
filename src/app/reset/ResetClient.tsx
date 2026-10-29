@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { deletePlanTask, restoreFromSomeday, sendToSomeday, unplanTask } from "../plan/actions";
 import { InboxItem } from "../plan/InboxItem";
 import { setListItemDone } from "../lists/actions";
+import { archiveSubscription } from "../life/actions";
 import { addGroceryItem, assignToEvening, finishReset, keepTask, saveResetHighlight } from "./actions";
 
 const inputClass =
@@ -328,5 +329,55 @@ export function FinishReset({ completed, points }: { completed: boolean; points:
       </button>
       <p className="text-center text-xs text-neutral-500">Skipped a step? That’s fine — finish whenever you’re ready.</p>
     </div>
+  );
+}
+
+/* ---------- monthly review: subscription audit ---------- */
+
+export type AuditSub = { id: string; name: string; label: string; monthly: number };
+
+export function SubscriptionAudit({ subs }: { subs: AuditSub[] }) {
+  const [kept, setKept] = useState<Set<string>>(() => new Set());
+  const [gone, setGone] = useState<Set<string>>(() => new Set());
+  const [pending, startTransition] = useTransition();
+
+  if (subs.length === 0) return <p className="text-sm text-neutral-500">No subscriptions to review.</p>;
+
+  return (
+    <ul className="divide-y divide-neutral-800">
+      {subs.map((s) => (
+        <li key={s.id} className={`space-y-2 py-2 ${gone.has(s.id) ? "opacity-40" : ""}`}>
+          <p className="text-sm text-neutral-200">
+            {s.name}
+            <span className="block text-xs text-neutral-500">{s.label}</span>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={gone.has(s.id)}
+              aria-pressed={kept.has(s.id)}
+              onClick={() => setKept((prev) => new Set(prev).add(s.id))}
+              className={small}
+            >
+              {kept.has(s.id) ? "Keeping it ✓" : "Still using it"}
+            </button>
+            <button
+              type="button"
+              disabled={pending || gone.has(s.id)}
+              onClick={() =>
+                confirm(`Take “${s.name}” off the list? Remember to cancel it with the company too.`) &&
+                startTransition(async () => {
+                  setGone((prev) => new Set(prev).add(s.id));
+                  await archiveSubscription(s.id);
+                })
+              }
+              className={small}
+            >
+              {gone.has(s.id) ? "Removed" : "Cancel it"}
+            </button>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

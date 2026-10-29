@@ -270,6 +270,49 @@ describe("coming up", () => {
   });
 });
 
+describe("coming up: birthdays and subscription charges", () => {
+  const base = { todayKey: "2026-10-29", structure: S, events: [], bills: [], cleaning: [], tz: TZ };
+
+  it("shows birthdays a week ahead, past the four-day horizon of everything else", () => {
+    const days = buildComingUp({
+      ...base,
+      birthdays: [
+        { name: "Sam", dateKey: "2026-11-04", turning: 31, giftIdeas: 2 },
+        { name: "Priya", dateKey: "2026-11-07", turning: null, giftIdeas: 0 },
+      ],
+    });
+    expect(days.map((d) => d.label)).toEqual(["Wednesday"]);
+    expect(days[0].items[0].title).toBe("Sam's birthday · turning 31");
+    expect(days[0].items[0].prep).toBe("2 gift ideas saved.");
+  });
+
+  it("mentions a gift idea nudge when none are saved", () => {
+    const [day] = buildComingUp({ ...base, birthdays: [{ name: "Priya", dateKey: "2026-10-31", turning: null, giftIdeas: 0 }] });
+    expect(day.items[0].title).toBe("Priya's birthday");
+    expect(day.items[0].prep).toMatch(/card or a message/);
+  });
+
+  it("lists subscription charges, and says what a trial will cost", () => {
+    const days = buildComingUp({
+      ...base,
+      charges: [
+        { name: "Streamly", amount: 15.99, dateKey: "2026-10-31", autopay: true, trial: true },
+        { name: "Cloud storage", amount: 3, dateKey: "2026-10-31", autopay: false, trial: false },
+      ],
+    });
+    const items = days[0].items;
+    expect(items[0].title).toBe("Streamly free trial ends · then $15.99");
+    expect(items[0].prep).toMatch(/Cancel before then/);
+    expect(items[1].title).toBe("Cloud storage · $3");
+    expect(items[1].prep).toBe("Pay this one yourself.");
+  });
+
+  it("says autopay bills pay themselves", () => {
+    const [day] = buildComingUp({ ...base, bills: [{ name: "Rent", dueDay: 31, amount: 1200, autopay: true }] });
+    expect(day.items[0].prep).toBe("Pays automatically.");
+  });
+});
+
 describe("billDueOn / eventOnDay", () => {
   it("clamps a 31st due day to short months", () => {
     expect(billDueOn(31, "2026-02-28")).toBe(true);
@@ -318,6 +361,26 @@ describe("flags", () => {
     });
     expect(flags).toHaveLength(3);
     expect(flags.map((f) => f.text)).toEqual(["Rent is due today.", "Power is due tomorrow.", "Phone is due in 2 days."]);
+  });
+
+  it("flags manual bills three days out, but not four", () => {
+    expect(buildFlags({ ...base, streak: 0, bills: [{ name: "Water", daysUntil: 3 }] }).map((f) => f.text)).toEqual(["Water is due in 3 days."]);
+    expect(buildFlags({ ...base, streak: 0, bills: [{ name: "Water", daysUntil: 4 }] })).toEqual([]);
+  });
+
+  it("flags free trials two days before they convert, ahead of bills, and says what it will cost", () => {
+    const flags = buildFlags({
+      ...base,
+      streak: 0,
+      bills: [{ name: "Rent", daysUntil: 0 }],
+      trials: [
+        { name: "Streamly", daysUntil: 2, amount: 15.99 },
+        { name: "Later", daysUntil: 3, amount: 5 },
+      ],
+    });
+    expect(flags.map((f) => f.key)).toEqual(["trial-Streamly", "bill-Rent"]);
+    expect(flags[0].text).toBe("Streamly's free trial ends in 2 days — then $15.99.");
+    expect(flags[0].href).toBe("/life");
   });
 
   it("uses calm wording", () => {

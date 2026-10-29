@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   paycheckPlan,
@@ -135,6 +135,17 @@ export async function updateBillLineItemField(
     .where(and(eq(billsLineItems.id, id), eq(billsLineItems.userId, userId)));
 
   revalidateFinance();
+}
+
+// Autopay bills need no reminder; manual ones are flagged a few days before they're due.
+export async function toggleBillAutopay(id: string) {
+  const userId = await requireUserId();
+  await db
+    .update(billsLineItems)
+    .set({ autopay: sql`not ${billsLineItems.autopay}` })
+    .where(and(eq(billsLineItems.id, id), eq(billsLineItems.userId, userId)));
+  revalidateFinance();
+  revalidatePath("/");
 }
 
 export async function deleteBillLineItem(id: string) {

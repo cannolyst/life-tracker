@@ -9,6 +9,7 @@ import {
   addBillLineItem,
   updateBillLineItemField,
   deleteBillLineItem,
+  toggleBillAutopay,
   toggleChecklistItem,
   markBillPaid,
 } from "./plan-actions";
@@ -85,7 +86,9 @@ export function PaycheckPlanCard({
   currentMonthKey,
   debtSummaries,
   savingsSummaries,
+  showAutopay = false,
 }: {
+  showAutopay?: boolean;
   plan: Plan | null;
   billsLineItems: BillItem[];
   checkedItemKeys: string[];
@@ -269,6 +272,7 @@ export function PaycheckPlanCard({
             <BillRow
               key={bill.id}
               bill={bill}
+              showAutopay={showAutopay}
               paid={isChecked(`bill_${bill.id}`)}
               onTogglePaid={(v) =>
                 bill.accountId ? setBillPaid(bill.id, v) : setBillChecked(`bill_${bill.id}`, v)
@@ -300,7 +304,9 @@ function BillRow({
   bill,
   paid,
   onTogglePaid,
+  showAutopay,
 }: {
+  showAutopay: boolean;
   bill: BillItem;
   paid: boolean;
   onTogglePaid: (value: boolean) => void;
@@ -345,6 +351,16 @@ function BillRow({
           onSave={(v) => updateBillLineItemField(bill.id, "monthlyAmount", v)}
         />
       </div>
+      {showAutopay && (
+        <button
+          type="button"
+          onClick={() => toggleBillAutopay(bill.id)}
+          aria-label={`${bill.name}: ${bill.autopay ? "autopay on" : "paid manually"}. Tap to switch.`}
+          className="min-h-11 shrink-0 rounded-md border border-neutral-700 px-2 text-xs text-neutral-400"
+        >
+          {bill.autopay ? "Auto" : "Manual"}
+        </button>
+      )}
       <button
         type="button"
         onClick={() => deleteBillLineItem(bill.id)}

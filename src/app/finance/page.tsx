@@ -7,6 +7,8 @@ import {
   getChecklistChecks,
 } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
+import { getUserSettings } from "@/db/userSettings";
+import { isFeatureOn } from "@/lib/features";
 import { getCurrentPeriodKey, getCurrentMonthKey } from "@/lib/paycheckPeriod";
 
 export const dynamic = "force-dynamic";
@@ -20,11 +22,12 @@ import { PaycheckPlanCard } from "./PaycheckPlanCard";
 
 export default async function DashboardPage() {
   const userId = await requireUserId();
-  const [{ savingsSummaries, debtSummaries }, stats, plan, billsLineItems] = await Promise.all([
+  const [{ savingsSummaries, debtSummaries }, stats, plan, billsLineItems, userSettings] = await Promise.all([
     listAccountsSummary(userId),
     getGamificationStats(userId),
     getPaycheckPlan(userId),
     getBillsLineItems(userId),
+    getUserSettings(userId),
   ]);
 
   const currentPeriodKey = getCurrentPeriodKey(plan?.payDay1 ?? 15, plan?.payDay2 ?? 30);
@@ -62,6 +65,7 @@ export default async function DashboardPage() {
           currentMonthKey={currentMonthKey}
           debtSummaries={debtSummaries}
           savingsSummaries={savingsSummaries}
+          showAutopay={isFeatureOn(userSettings.features, "dashboard")}
         />
 
         <Card>

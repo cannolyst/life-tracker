@@ -24,7 +24,7 @@ export const MAX_CALENDAR_DAYS = 14;
 /** Events from the start of the user's today through `days` days ahead, merged across all linked calendars. */
 export async function getCalendarEvents(
   userId: string,
-  opts: { days?: number; fresh?: boolean; ignoreFeatureSwitch?: boolean } = {},
+  opts: { days?: number; daysBack?: number; fresh?: boolean; ignoreFeatureSwitch?: boolean } = {},
 ): Promise<CalendarResult> {
   const settings = await getUserSettings(userId);
   if (!opts.ignoreFeatureSwitch && !isFeatureOn(settings.features, "calendar")) {
@@ -45,7 +45,8 @@ export async function getCalendarEvents(
 
   const days = Math.max(1, Math.min(MAX_CALENDAR_DAYS, Math.floor(opts.days ?? 7)));
   const { year, month, day } = zonedParts(settings.timezone, new Date());
-  const rangeStart = zonedTimeToUtc(settings.timezone, year, month, day);
+  const daysBack = Math.max(0, Math.min(7, Math.floor(opts.daysBack ?? 0)));
+  const rangeStart = zonedTimeToUtc(settings.timezone, year, month, day - daysBack);
   const rangeEnd = zonedTimeToUtc(settings.timezone, year, month, day + days);
 
   const loaded = await Promise.all(

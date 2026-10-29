@@ -3,6 +3,8 @@ import {
   RESET_POINTS,
   STALE_DAYS,
   buildLookAhead,
+  compareAreas,
+  isFirstSundayOfMonth,
   isSunday,
   resetWeekKey,
   staleTasks,
@@ -146,5 +148,36 @@ describe("staleTasks", () => {
   it("stops counting as stale once it's been kept", () => {
     const kept = { id: "kept", ...base, createdAt: daysAgo(60), reviewedAt: daysAgo(2) };
     expect(staleTasks([kept], now)).toEqual([]);
+  });
+});
+
+describe("isFirstSundayOfMonth", () => {
+  it("is a Sunday in the first seven days of a month", () => {
+    expect(isFirstSundayOfMonth("2026-11-01")).toBe(true); // Sunday, the 1st
+    expect(isFirstSundayOfMonth("2026-10-04")).toBe(true);
+    expect(isFirstSundayOfMonth("2026-10-25")).toBe(false); // a later Sunday
+    expect(isFirstSundayOfMonth("2026-11-02")).toBe(false); // not a Sunday
+    expect(isFirstSundayOfMonth("2026-12-06")).toBe(true);
+  });
+});
+
+describe("compareAreas", () => {
+  it("compares this stretch to the last, biggest areas first, including areas in only one", () => {
+    const trends = compareAreas(
+      new Map([["Health", 30], ["Home care", 12], ["Mind", 4]]),
+      new Map([["Health", 20], ["Home care", 12], ["Hobbies", 6]]),
+    );
+    expect(trends.map((t) => [t.area, t.current, t.previous, t.direction])).toEqual([
+      ["Health", 30, 20, "up"],
+      ["Home care", 12, 12, "same"],
+      ["Hobbies", 0, 6, "down"],
+      ["Mind", 4, 0, "up"],
+    ].sort((a, b) => (b[1] as number) - (a[1] as number) || (b[2] as number) - (a[2] as number)));
+    expect(trends[0]).toMatchObject({ area: "Health", delta: 10 });
+  });
+
+  it("returns nothing when there's nothing to compare", () => {
+    expect(compareAreas(new Map(), new Map())).toEqual([]);
+    expect(compareAreas(new Map([["Empty", 0]]), new Map())).toEqual([]);
   });
 });

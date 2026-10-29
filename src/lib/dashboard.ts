@@ -1,6 +1,7 @@
 import type { CalendarEvent } from "./calendarParse";
 import { currentBlock, dayBlocks, formatMinutes, type BlockId, type DayBlock } from "./dayBlocks";
 import { inLunchWindow } from "./planning";
+import { BIRTHDAY_COMING_UP_DAYS, MANUAL_CHARGE_FLAG_DAYS, TRIAL_FLAG_DAYS } from "./lifeAdmin";
 import { minutesIntoDayIn, zonedParts } from "./timezone";
 import type { DayStructure } from "./userSettingsDefaults";
 
@@ -388,7 +389,7 @@ function stateOf(block: DayBlock, nowMinutes: number): TimelineRow["state"] {
 /* ---------- Coming up ---------- */
 
 export type ComingUpItem = {
-  kind: "event" | "bill" | "cleaning";
+  kind: "event" | "bill" | "cleaning" | "birthday" | "charge";
   title: string;
   time?: string;
   prep?: string;
@@ -396,7 +397,9 @@ export type ComingUpItem = {
 
 export type ComingUpDay = { dateKey: string; label: string; items: ComingUpItem[]; more: number };
 
-export type UpcomingBill = { name: string; dueDay: number; amount: number };
+export type UpcomingBill = { name: string; dueDay: number; amount: number; autopay?: boolean };
+export type UpcomingBirthday = { name: string; dateKey: string; turning: number | null; giftIdeas: number };
+export type UpcomingCharge = { name: string; amount: number; dateKey: string; autopay: boolean; trial: boolean };
 export type UpcomingCleaning = { name: string; dueKey: string };
 
 const MAX_ITEMS_PER_DAY = 4;
@@ -412,6 +415,17 @@ export function billDueOn(dueDay: number, dateKey: string): boolean {
   return day === Math.min(dueDay, daysInMonthOf(dateKey));
 }
 
+/** A price as people say it: $15.99, or $12 when it's a whole number. */
+export function formatPrice(amount: number): string {
+  const whole = Math.abs(amount - Math.round(amount)) < 0.005;
+  return amount.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: whole ? 0 : 2,
+  });
+}
+
 export function formatDollars(amount: number): string {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
@@ -423,15 +437,34 @@ export function buildComingUp(opts: {
   events: CalendarEvent[];
   bills: UpcomingBill[];
   cleaning: UpcomingCleaning[];
+  /** Birthdays show a week ahead, further out than everything else. */
+  birthdays?: UpcomingBirthday[];
+  charges?: UpcomingCharge[];
   tz: string;
 }): ComingUpDay[] {
   const { todayKey, structure, events, bills, cleaning, tz } = opts;
   const days = opts.days ?? 4;
+  const horizon = Math.max(days, BIRTHDAY_COMING_UP_DAYS);
   const out: ComingUpDay[] = [];
 
-  for (let i = 1; i <= days; i++) {
+  for (let i = 1; i <= horizon; i++) {
     const dateKey = addDays(todayKey, i);
     const items: ComingUpItem[] = [];
+    const inRange = i <= days;
+
+    for (const person of opts.birthdays ?? []) {
+      if (person.dateKey !== dateKey) continue;
+      items.push({
+        kind: "birthday",
+        title: `${person.name}'s birthday${person.turning ? ` · turning ${person.turning}` : ""}`,
+        prep: person.giftIdeas > 0 ? `${person.giftIdeas} gift ${person.giftIdeas === 1 ? "idea" : "ideas"} saved.` : "A card or a message would be nice.",
+      });
+    }
+    if (!inRange) {
+      if (items.length === 0) continue;
+      out.push({ dateKey, label: weekdayLong(dateKey), items: items.slice(0, MAX_ITEMS_PER_DAY), more: 0 });
+      continue;
+    }
 
     for (const event of events) {
       if (!eventOnDay(event, dateKey, tz)) continue;
@@ -457,9 +490,19 @@ export function buildComingUp(opts: {
         items.push({
           kind: "bill",
           title: `${bill.name} due · ${formatDollars(bill.amount)}`,
-          prep: "Worth paying ahead if you can.",
+          prep: bill.autopay ? "Pays automatically." : "Worth paying ahead if you can.",
         });
       }
+    }
+    for (const charge of opts.charges ?? []) {
+      if (charge.dateKey !== dateKey) continue;
+      items.push({
+        kind: "charge",
+        title: charge.trial
+          ? `${charge.name} free trial ends · then ${formatPrice(charge.amount)}`
+          : `${charge.name} · ${formatPrice(charge.amount)}`,
+        prep: charge.trial ? "Cancel before then if you don't want it." : charge.autopay ? "Pays automatically." : "Pay this one yourself.",
+      });
     }
     for (const task of cleaning) {
       if (task.dueKey === dateKey) items.push({ kind: "cleaning", title: task.name });
@@ -487,17 +530,37 @@ export function buildFlags(opts: {
   habitDoneToday: boolean;
   minutes: number;
   structure: DayStructure;
-  /** Unpaid bills with a due day, as days from today (0 = today). */
-  bills: { name: string; daysUntil: number }[];
+  /**
+   * Manual (not autopay) bills and subscriptions still to pay, as days from today
+   * (0 = today). Autopay ones are left out by the caller: they need no reminder.
+   */
+  bills: { name: string; daysUntil: number; href?: string }[];
+  /** Free trials about to start charging. */
+  trials?: { name: string; daysUntil: number; amount: number }[];
   /** Out tonight protects the streak, so there is nothing to nudge about. */
   outTonight?: boolean;
 }): Flag[] {
   const flags: Flag[] = [];
 
-  const urgent = opts.bills.filter((b) => b.daysUntil >= 0 && b.daysUntil <= 2).sort((a, b) => a.daysUntil - b.daysUntil);
+  // A trial that's about to convert is the most time-sensitive thing here.
+  const trials = (opts.trials ?? [])
+    .filter((t) => t.daysUntil >= 0 && t.daysUntil <= TRIAL_FLAG_DAYS)
+    .sort((a, b) => a.daysUntil - b.daysUntil);
+  for (const trial of trials) {
+    const when = trial.daysUntil === 0 ? "today" : trial.daysUntil === 1 ? "tomorrow" : `in ${trial.daysUntil} days`;
+    flags.push({
+      key: `trial-${trial.name}`,
+      text: `${trial.name}'s free trial ends ${when} — then ${formatPrice(trial.amount)}.`,
+      href: "/life",
+    });
+  }
+
+  const urgent = opts.bills
+    .filter((b) => b.daysUntil >= 0 && b.daysUntil <= MANUAL_CHARGE_FLAG_DAYS)
+    .sort((a, b) => a.daysUntil - b.daysUntil);
   for (const bill of urgent) {
-    const when = bill.daysUntil === 0 ? "today" : bill.daysUntil === 1 ? "tomorrow" : "in 2 days";
-    flags.push({ key: `bill-${bill.name}`, text: `${bill.name} is due ${when}.`, href: "/finance" });
+    const when = bill.daysUntil === 0 ? "today" : bill.daysUntil === 1 ? "tomorrow" : `in ${bill.daysUntil} days`;
+    flags.push({ key: `bill-${bill.name}`, text: `${bill.name} is due ${when}.`, href: bill.href ?? "/finance" });
   }
 
   if (!opts.outTonight && opts.streak >= 2 && !opts.habitDoneToday && opts.minutes >= opts.structure.workEndMinutes) {

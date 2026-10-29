@@ -16,6 +16,8 @@ import {
   type PlanTask,
 } from "@/db/planning";
 import { getResetState } from "@/db/reset";
+import { getLifeAdmin, syncSeenFromCalendar, type LifeAdmin } from "@/db/lifeAdmin";
+import { describeInterval, dueLabel, MANUAL_CHARGE_FLAG_DAYS, BIRTHDAY_COMING_UP_DAYS } from "@/lib/lifeAdmin";
 import { RESET_POINTS, isSunday, resetWeekKey } from "@/lib/reset";
 import { getTodaysSpark } from "@/db/sparks";
 import { getCalendarEvents, type CalendarResult } from "@/lib/calendarService";
@@ -60,6 +62,7 @@ import { DashboardBrief } from "./DashboardBrief";
 import { NowShell } from "./NowShell";
 import { TransitionFlow } from "./TransitionFlow";
 import { ShutdownSteps } from "./ShutdownSteps";
+import { RecurringActions } from "./LifeControls";
 import { ContextItems, EnergyChips, OutTonightCard, OutTonightToggle, QuickAdd, TaskDoneRow } from "./PlanControls";
 
 const COMING_UP_DAYS = 4;
@@ -79,10 +82,10 @@ export async function Dashboard({ userId }: { userId: string }) {
   // Slow things (Apple/Google calendars, news feeds) start now but are only
   // awaited inside <Suspense>, so the page paints without waiting for them.
   const calendarPromise: Promise<CalendarResult | null> = isFeatureOn(settings.features, "calendar")
-    ? getCalendarEvents(userId, { days: COMING_UP_DAYS + 1 })
+    ? getCalendarEvents(userId, { days: COMING_UP_DAYS + 1, daysBack: 3 })
     : Promise.resolve(null);
 
-  const [agenda, todaysSpark, storedFlag, resetState] = await Promise.all([
+  const [agenda, todaysSpark, storedFlag, resetState, life] = await Promise.all([
     getDayAgenda(userId, tz, {
       points: modules.showPoints,
       cleaning: modules.showCleaning,
@@ -93,6 +96,7 @@ export async function Dashboard({ userId }: { userId: string }) {
     getDayFlag(userId, todayKey),
     // Only Sundays show the reset card, so only Sundays pay for the lookup.
     isSunday(todayKey) ? getResetState(userId, resetWeekKey(todayKey)) : Promise.resolve(null),
+    getLifeAdmin(userId, tz, todayKey),
   ]);
 
   const deck = onDeckCount({
@@ -123,7 +127,16 @@ export async function Dashboard({ userId }: { userId: string }) {
     habitDoneToday: agenda.habitDoneToday,
     minutes: nowMinutes,
     structure,
-    bills: agenda.billsUnpaidDaysUntil,
+    bills: [
+      ...agenda.billsUnpaidDaysUntil,
+      // Subscriptions you pay by hand are reminded like manual bills; autopay needs none.
+      ...life.subscriptions
+        .filter((s) => !s.status.isTrial && !s.autopay && s.status.daysUntil >= 0 && s.status.daysUntil <= MANUAL_CHARGE_FLAG_DAYS)
+        .map((s) => ({ name: s.name, daysUntil: s.status.daysUntil, href: "/life" })),
+    ],
+    trials: life.subscriptions
+      .filter((s) => s.status.isTrial)
+      .map((s) => ({ name: s.name, daysUntil: s.status.daysUntil, amount: s.amount })),
     outTonight: storedFlag?.outTonight === true,
   });
 
@@ -169,6 +182,7 @@ export async function Dashboard({ userId }: { userId: string }) {
             todayKey={todayKey}
             nowMs={now.getTime()}
             agenda={agenda}
+            life={life}
             calendarPromise={calendarPromise}
             showExercise={modules.showExercise}
             showCleaning={modules.showCleaning}
@@ -216,6 +230,7 @@ export async function Dashboard({ userId }: { userId: string }) {
         <Suspense fallback={null}>
           <ComingUpSection
             calendarPromise={calendarPromise}
+            life={life}
             agenda={agenda}
             structure={structure}
             todayKey={todayKey}
@@ -312,6 +327,7 @@ async function NowArea({
   todayKey,
   nowMs,
   agenda,
+  life,
   calendarPromise,
   showExercise,
   showCleaning,
@@ -323,6 +339,7 @@ async function NowArea({
   todayKey: string;
   nowMs: number;
   agenda: DayAgenda;
+  life: LifeAdmin;
   calendarPromise: Promise<CalendarResult | null>;
   showExercise: boolean;
   showCleaning: boolean;
@@ -340,6 +357,8 @@ async function NowArea({
   // The first time an evening event is seen, remember it — that is what protects the streak.
   if (!storedFlag && hasEveningEvent) await recordAutoOutTonight(userId, todayKey);
   const out = outTonightState({ stored: storedFlag, hasEveningEvent });
+  // A calendar event that mentions someone counts as seeing them (resets their "see every X weeks").
+  await syncSeenFromCalendar(userId, events, tz, life.people, nowMs);
 
   const block = currentBlock(structure, nowMinutes);
   const tomorrowKey = addDays(todayKey, 1);
@@ -389,6 +408,12 @@ async function NowArea({
 
   const inEveningOrLater = block?.id === "evening" || block?.id === "shutdown";
 
+  // Life admin that has come due becomes the evening card — unless something is already planned for tonight.
+  const recurringCard =
+    block?.id === "evening" && !out.on && !(eveningPick && eveningPick.plannedFor === todayKey)
+      ? (life.recurring.find((r) => r.status.phase === "due" && r.skippedDate !== todayKey) ?? null)
+      : null;
+
   // Collections surface where they belong: a film or show for a low-energy evening,
   // the next book at Shutdown, and the list picker for filing Inbox items.
   const [movies, books, collections] = await Promise.all([
@@ -427,7 +452,17 @@ async function NowArea({
 
   return (
     <>
-      <NowShell {...card} />
+      {recurringCard ? (
+        <NowShell
+          eyebrow="Now · Evening"
+          title={recurringCard.name}
+          detail={`Life admin · ${describeInterval(recurringCard.intervalDays)} · ${dueLabel(recurringCard.status.daysUntil)}`}
+        >
+          <RecurringActions id={recurringCard.id} />
+        </NowShell>
+      ) : (
+        <NowShell {...card} />
+      )}
 
       {inEveningOrLater && out.on && <OutTonightCard initialNote={log?.note ?? ""} logged={log !== null} />}
 
@@ -675,12 +710,14 @@ async function TodaySection({
 
 async function ComingUpSection({
   calendarPromise,
+  life,
   agenda,
   structure,
   todayKey,
   tz,
 }: {
   calendarPromise: Promise<CalendarResult | null>;
+  life: LifeAdmin;
   agenda: DayAgenda;
   structure: DayStructure;
   todayKey: string;
@@ -693,12 +730,27 @@ async function ComingUpSection({
     events: eventsOf(await calendarPromise),
     bills: agenda.billsUpcoming,
     cleaning: agenda.cleaningUpcoming,
+    birthdays: life.people
+      .filter((p) => p.birthday && p.birthday.daysUntil >= 1 && p.birthday.daysUntil <= BIRTHDAY_COMING_UP_DAYS)
+      .map((p) => ({ name: p.name, dateKey: p.birthday!.dateKey, turning: p.birthday!.turning, giftIdeas: p.giftIdeas })),
+    charges: life.subscriptions
+      .filter((s) => s.status.daysUntil >= 1 && s.status.daysUntil <= COMING_UP_DAYS)
+      .map((s) => ({ name: s.name, amount: s.amount, dateKey: s.status.chargeKey, autopay: s.autopay, trial: s.status.isTrial })),
     tz,
   });
+  // Life admin that's within two weeks of coming due, and people it's been a while since you saw.
+  const lifeLines = [
+    ...life.recurring
+      .filter((r) => r.status.phase === "coming")
+      .map((r) => `${r.name} — ${dueLabel(r.status.daysUntil)}`),
+    ...life.people
+      .filter((p) => p.nudge)
+      .map((p) => `Maybe reach out to ${p.name} — about ${p.nudge!.weeksSince} weeks`),
+  ];
   return (
     <section aria-label="Coming up" className="rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-4">
       <h2 className="mb-2 text-sm font-medium text-neutral-200">Coming up</h2>
-      {days.length === 0 ? (
+      {days.length === 0 && lifeLines.length === 0 ? (
         <p className="text-sm text-neutral-500">Nothing on the horizon for the next few days.</p>
       ) : (
         <ul className="space-y-3">
@@ -719,6 +771,18 @@ async function ComingUpSection({
               </ul>
             </li>
           ))}
+          {lifeLines.length > 0 && (
+            <li>
+              <p className="text-xs font-medium text-neutral-500">Life admin</p>
+              <ul className="mt-1 space-y-1">
+                {lifeLines.map((line) => (
+                  <li key={line} className="text-sm text-neutral-300">
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </li>
+          )}
         </ul>
       )}
     </section>

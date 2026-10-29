@@ -18,6 +18,11 @@ export function isSunday(dateKey: string): boolean {
   return weekdayIndex(dateKey) === 0;
 }
 
+/** The first Sunday of a month (day 1–7): the reset runs about ten minutes longer. */
+export function isFirstSundayOfMonth(dateKey: string): boolean {
+  return isSunday(dateKey) && Number(dateKey.slice(8, 10)) <= 7;
+}
+
 /** The Sunday on or before a day: the week the reset belongs to (weeks run Sun–Sat). */
 export function resetWeekKey(todayKey: string): string {
   return addDays(todayKey, -weekdayIndex(todayKey));
@@ -126,4 +131,28 @@ export function staleTasks<T extends Reviewable>(tasks: T[], nowMs: number): T[]
   return tasks.filter(
     (t) => t.status === "open" && t.plannedFor === null && (t.reviewedAt ?? t.createdAt).getTime() < cutoff,
   );
+}
+
+/* ---------- monthly review: points by area ---------- */
+
+export type AreaTrend = {
+  area: string;
+  current: number;
+  previous: number;
+  delta: number;
+  direction: "up" | "down" | "same";
+};
+
+/** This stretch against the one before it, biggest areas first. An area in only one of them still shows. */
+export function compareAreas(current: ReadonlyMap<string, number>, previous: ReadonlyMap<string, number>): AreaTrend[] {
+  const areas = new Set([...current.keys(), ...previous.keys()]);
+  return [...areas]
+    .map((area) => {
+      const now = current.get(area) ?? 0;
+      const before = previous.get(area) ?? 0;
+      const delta = now - before;
+      return { area, current: now, previous: before, delta, direction: delta > 0 ? "up" : delta < 0 ? "down" : "same" } as AreaTrend;
+    })
+    .filter((a) => a.current > 0 || a.previous > 0)
+    .sort((a, b) => b.current - a.current || b.previous - a.previous || a.area.localeCompare(b.area));
 }

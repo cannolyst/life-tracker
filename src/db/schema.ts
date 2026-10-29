@@ -452,6 +452,16 @@ export const people = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     userId: uuid("user_id").notNull(),
     name: text("name").notNull(),
+    // Birthday as month/day with an optional birth year (Phase 7).
+    birthMonth: integer("birth_month"),
+    birthDay: integer("birth_day"),
+    birthYear: integer("birth_year"),
+    // Optional nudge: "see them every X weeks". last_seen resets when a calendar
+    // event mentions them (or by hand).
+    seeEveryWeeks: integer("see_every_weeks"),
+    lastSeen: text("last_seen"), // YYYY-MM-DD
+    // This person's own gift-ideas collection (a list), created on request.
+    giftListId: uuid("gift_list_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -459,6 +469,11 @@ export const people = pgTable(
   (table) => [
     unique("people_id_user_id_unique").on(table.id, table.userId),
     unique("people_user_id_name_unique").on(table.userId, table.name),
+    check(
+      "people_birthday_check",
+      sql`(${table.birthMonth} is null and ${table.birthDay} is null) or (${table.birthMonth} between 1 and 12 and ${table.birthDay} between 1 and 31)`,
+    ),
+    check("people_see_every_check", sql`${table.seeEveryWeeks} is null or ${table.seeEveryWeeks} between 1 and 104`),
   ],
 ).enableRLS();
 
@@ -758,6 +773,8 @@ export const billsLineItems = pgTable(
     // bills recur monthly, so a fixed day avoids re-entering a date every
     // cycle, matching paycheckPlan.payDay1/2's same convention).
     dueDay: integer("due_day"),
+    // Autopay bills need no reminder; manual ones are flagged a few days out (Phase 7).
+    autopay: boolean("autopay").notNull().default(false),
     orderIndex: integer("order_index").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -1127,4 +1144,48 @@ export const weeklyResets = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.userId, table.weekKey] })],
+).enableRLS();
+
+// --- Life admin (Phase 7) ---
+
+// Things that come around on their own clock: renew registration, change the
+// furnace filter, dentist checkup. Due = last done + interval; "Done" resets it.
+export const recurringItems = pgTable(
+  "recurring_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    intervalDays: integer("interval_days").notNull(),
+    lastDone: text("last_done"), // YYYY-MM-DD; null = never done, so it is due now
+    // "Not tonight" for the evening card: set aside for the rest of this local day.
+    skippedDate: text("skipped_date"),
+    archived: boolean("archived").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check("recurring_items_interval_check", sql`${table.intervalDays} between 1 and 3650`)],
+).enableRLS();
+
+// Subscriptions and free trials. Kept apart from the Finance bills, whose
+// totals drive the paycheck plan. A trial is a subscription whose first
+// charge date is when the free period ends.
+export const subscriptions = pgTable(
+  "subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+    cycle: text("cycle").notNull().default("monthly"), // monthly | yearly
+    nextCharge: text("next_charge").notNull(), // YYYY-MM-DD; rolls forward by the cycle once passed
+    autopay: boolean("autopay").notNull().default(true),
+    // Set while it is a free trial: the day it converts to paid. Cleared when it has.
+    trialEnds: text("trial_ends"),
+    archived: boolean("archived").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("subscriptions_cycle_check", sql`${table.cycle} in ('monthly','yearly')`),
+    check("subscriptions_amount_check", sql`${table.amount} >= 0`),
+  ],
 ).enableRLS();

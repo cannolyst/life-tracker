@@ -4,7 +4,11 @@ import { requireUserId } from "@/lib/session";
 import { getUserSettings } from "@/db/userSettings";
 import { getPointsSummary } from "@/db/queries";
 import { getCollectionChoices, getPlanTasks } from "@/db/planning";
-import { getGroceryList, getMarkedOutDates, getResetState, getWeekLookBack } from "@/db/reset";
+import { getAreaPoints, getGroceryList, getMarkedOutDates, getResetState, getWeekLookBack } from "@/db/reset";
+import { getLifeAdmin } from "@/db/lifeAdmin";
+import { getBillsLineItems } from "@/db/queries";
+import { auditTotals, dueLabel, monthlyEquivalent } from "@/lib/lifeAdmin";
+import { formatPrice } from "@/lib/dashboard";
 import { getCalendarEvents } from "@/lib/calendarService";
 import { isFeatureOn } from "@/lib/features";
 import { addDays, weekdayLong } from "@/lib/dashboard";
@@ -12,6 +16,8 @@ import { dateKeyIn } from "@/lib/timezone";
 import {
   RESET_POINTS,
   buildLookAhead,
+  compareAreas,
+  isFirstSundayOfMonth,
   resetWeekKey,
   staleTasks,
   suggestAssignments,
@@ -24,6 +30,7 @@ import {
   AssignEvenings,
   ClearDecks,
   FinishReset,
+  SubscriptionAudit,
   Groceries,
   HighlightForm,
   type AssignableTask,
@@ -51,7 +58,8 @@ function ageLabel(date: Date, nowMs: number): string {
   return `${weeks} ${weeks === 1 ? "week" : "weeks"}`;
 }
 
-export default async function ResetPage() {
+export default async function ResetPage({ searchParams }: { searchParams: Promise<{ monthly?: string }> }) {
+  const { monthly: monthlyParam } = await searchParams;
   const userId = await requireUserId();
   const settings = await getUserSettings(userId);
   const tz = settings.timezone;
@@ -79,6 +87,8 @@ export default async function ResetPage() {
     );
   }
 
+  // The first Sunday of the month adds the monthly review; it can also be opened any time with ?monthly=1.
+  const monthly = isFirstSundayOfMonth(todayKey) || monthlyParam === "1";
   const calendarOn = isFeatureOn(settings.features, "calendar");
   const [state, lookBack, summary, tasks, collections, grocery, markedOut, calendar] = await Promise.all([
     getResetState(userId, weekKey),
@@ -90,6 +100,22 @@ export default async function ResetPage() {
     getMarkedOutDates(userId, todayKey, addDays(todayKey, 6)),
     calendarOn ? getCalendarEvents(userId, { days: 7 }) : Promise.resolve(null),
   ]);
+
+  const [thisStretch, lastStretch, life, bills] = monthly
+    ? await Promise.all([
+        getAreaPoints(userId, addDays(todayKey, -30), addDays(todayKey, -1)),
+        getAreaPoints(userId, addDays(todayKey, -60), addDays(todayKey, -31)),
+        getLifeAdmin(userId, tz, todayKey),
+        getBillsLineItems(userId),
+      ])
+    : [null, null, null, null];
+  const areaTrends = thisStretch && lastStretch ? compareAreas(thisStretch, lastStretch) : [];
+  const nextMonthAdmin = life ? life.recurring.filter((r) => r.status.daysUntil <= 30) : [];
+  const nextMonthCharges = life ? life.subscriptions.filter((s) => s.status.daysUntil <= 30) : [];
+  const dueBills = (bills ?? []).filter((b) => b.dueDay !== null);
+  const audit = life
+    ? auditTotals(life.subscriptions.map((s) => ({ amount: s.amount, cycle: s.cycle, isTrial: s.status.isTrial })))
+    : { monthly: 0, yearly: 0, count: 0 };
 
   const week = summarizeWeek(lookBack.rows, todayKey);
   const suggestion = suggestHighlight({ finished: lookBack.finished, best: week.best });
@@ -215,6 +241,108 @@ export default async function ResetPage() {
         >
           <ClearDecks inbox={inbox} someday={someday} stale={stale} collections={collections} />
         </Step>
+
+        {monthly ? (
+          <>
+            <div className="space-y-1 pt-2">
+              <h2 className="text-lg font-semibold">Monthly review</h2>
+              <p className="text-sm text-neutral-500">A few extra minutes on the first Sunday of the month.</p>
+            </div>
+
+            <Step number={6} title="Points by area" summary="Last 30 days" open>
+              {areaTrends.length === 0 ? (
+                <p className="text-sm text-neutral-500">Not enough points yet to compare.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {areaTrends.map((a) => (
+                    <li key={a.area} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-neutral-200">{a.area}</span>
+                      <span className="text-neutral-400">
+                        {a.current}
+                        <span className="ml-2 text-xs text-neutral-500">
+                          {a.direction === "up" ? `▲ ${a.delta}` : a.direction === "down" ? `▼ ${-a.delta}` : "—"} vs the 30 days before
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Step>
+
+            <Step number={7} title="Next month's life admin and bills" summary={`${nextMonthAdmin.length + nextMonthCharges.length + dueBills.length} things`}>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <h3 className="text-xs font-medium text-neutral-500">Life admin coming due</h3>
+                  {nextMonthAdmin.length === 0 ? (
+                    <p className="mt-1 text-neutral-500">Nothing in the next 30 days.</p>
+                  ) : (
+                    <ul className="mt-1 space-y-1">
+                      {nextMonthAdmin.map((r) => (
+                        <li key={r.id} className="text-neutral-300">
+                          {r.name} — {dueLabel(r.status.daysUntil)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-xs font-medium text-neutral-500">Bills each month</h3>
+                  {dueBills.length === 0 ? (
+                    <p className="mt-1 text-neutral-500">No bills with a due date.</p>
+                  ) : (
+                    <ul className="mt-1 space-y-1">
+                      {dueBills.map((b) => (
+                        <li key={b.id} className="text-neutral-300">
+                          {b.name} · day {b.dueDay} · {formatPrice(Number(b.monthlyAmount))}{" "}
+                          <span className="text-xs text-neutral-500">{b.autopay ? "autopay" : "you pay it"}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-xs font-medium text-neutral-500">Subscription charges</h3>
+                  {nextMonthCharges.length === 0 ? (
+                    <p className="mt-1 text-neutral-500">None in the next 30 days.</p>
+                  ) : (
+                    <ul className="mt-1 space-y-1">
+                      {nextMonthCharges.map((s) => (
+                        <li key={s.id} className="text-neutral-300">
+                          {s.name} · {formatPrice(s.amount)} · {s.status.isTrial ? "trial ends " : ""}
+                          {dueLabel(s.status.daysUntil)}{" "}
+                          <span className="text-xs text-neutral-500">{s.autopay ? "autopay" : "you pay it"}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </Step>
+
+            <Step number={8} title="Subscription audit" summary={audit.count > 0 ? `about ${formatPrice(audit.monthly)}/month` : "none"}>
+              {audit.count > 0 && (
+                <p className="text-sm text-neutral-400">
+                  You pay about {formatPrice(audit.monthly)} a month ({formatPrice(audit.yearly)} a year) across {audit.count}{" "}
+                  {audit.count === 1 ? "subscription" : "subscriptions"}. Anything you don’t use is worth cancelling.
+                </p>
+              )}
+              <SubscriptionAudit
+                subs={(life?.subscriptions ?? []).map((s) => ({
+                  id: s.id,
+                  name: s.name,
+                  monthly: monthlyEquivalent(s.amount, s.cycle),
+                  label: `${formatPrice(s.amount)}/${s.cycle === "yearly" ? "year" : "month"}${s.cycle === "yearly" ? ` (about ${formatPrice(monthlyEquivalent(s.amount, s.cycle))}/month)` : ""}${s.status.isTrial ? " · free trial" : ""}`,
+                }))}
+              />
+            </Step>
+          </>
+        ) : (
+          <p className="px-1 text-center text-xs text-neutral-500">
+            <Link href="/reset?monthly=1" className="tap px-2 underline">
+              Add the monthly review
+            </Link>
+          </p>
+        )}
 
         <FinishReset completed={state.completed} points={RESET_POINTS} />
       </main>

@@ -129,11 +129,12 @@ async function loadBills(userId: string, todayKey: string) {
   const todayDay = Number(todayKey.slice(8, 10));
   const daysInMonth = new Date(Date.UTC(Number(todayKey.slice(0, 4)), Number(todayKey.slice(5, 7)), 0)).getUTCDate();
 
+  // Autopay bills need no reminder, so only manual ones can be flagged.
   const unpaid = bills
-    .filter((b) => !checks.has(`bill_${b.id}`))
+    .filter((b) => !b.autopay && !checks.has(`bill_${b.id}`))
     .map((b) => ({ name: b.name, daysUntil: Math.min(b.dueDay!, daysInMonth) - todayDay }))
     .filter((b) => b.daysUntil >= 0);
-  const upcoming = bills.map((b) => ({ name: b.name, dueDay: b.dueDay!, amount: Number(b.monthlyAmount) }));
+  const upcoming = bills.map((b) => ({ name: b.name, dueDay: b.dueDay!, amount: Number(b.monthlyAmount), autopay: b.autopay }));
   return { unpaid, upcoming };
 }
 

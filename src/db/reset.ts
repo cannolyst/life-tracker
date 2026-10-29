@@ -3,6 +3,7 @@ import { db } from "./index";
 import {
   cleaningCompletions,
   dayFlags,
+  habitCategories,
   habitCompletions,
   habitTasks,
   listCategories,
@@ -13,6 +14,7 @@ import {
   weeklyTaskCompletions,
 } from "./schema";
 import { RESET_POINTS } from "@/lib/reset";
+import { BUCKET_LABEL, isBucket } from "@/lib/planning";
 import { addDays } from "@/lib/dashboard";
 import { blockCompletionRates, type BlockRate } from "@/lib/yearNumbers";
 import { dateKeyIn } from "@/lib/timezone";
@@ -203,4 +205,47 @@ export async function getYearNumbers(userId: string, year: number, tz: string): 
     blockRates: blockCompletionRates(blockHabits, completionDays, year, todayKey),
     highlights: resets.filter((r) => r.highlight.trim()).map((r) => ({ weekKey: r.weekKey, text: r.highlight.trim() })),
   };
+}
+
+/* ---------- monthly review: points by area ---------- */
+
+/**
+ * Points earned between two local days (inclusive), grouped by the area they
+ * came from: each habit category, home care (cleaning), weekly tasks, tasks by
+ * their area, and bonuses (welcome back, reset).
+ */
+export async function getAreaPoints(userId: string, fromKey: string, toKey: string): Promise<Map<string, number>> {
+  const totals = new Map<string, number>();
+  const add = (area: string, points: number) => totals.set(area, (totals.get(area) ?? 0) + points);
+
+  const [habits, cleaning, weekly, events] = await Promise.all([
+    db
+      .select({ category: habitCategories.name, points: habitCompletions.pointsAwarded })
+      .from(habitCompletions)
+      .innerJoin(habitTasks, eq(habitTasks.id, habitCompletions.taskId))
+      .leftJoin(habitCategories, eq(habitCategories.id, habitTasks.categoryId))
+      .where(and(eq(habitCompletions.userId, userId), gte(habitCompletions.date, fromKey), lte(habitCompletions.date, toKey))),
+    db
+      .select({ points: cleaningCompletions.pointsAwarded })
+      .from(cleaningCompletions)
+      .where(and(eq(cleaningCompletions.userId, userId), gte(cleaningCompletions.date, fromKey), lte(cleaningCompletions.date, toKey))),
+    db
+      .select({ points: weeklyTaskCompletions.pointsAwarded })
+      .from(weeklyTaskCompletions)
+      .where(and(eq(weeklyTaskCompletions.userId, userId), gte(weeklyTaskCompletions.date, fromKey), lte(weeklyTaskCompletions.date, toKey))),
+    db
+      .select({ kind: taskPointEvents.kind, points: taskPointEvents.points, bucket: planTasks.bucket })
+      .from(taskPointEvents)
+      .leftJoin(planTasks, eq(planTasks.id, taskPointEvents.taskId))
+      .where(and(eq(taskPointEvents.userId, userId), gte(taskPointEvents.date, fromKey), lte(taskPointEvents.date, toKey))),
+  ]);
+
+  for (const h of habits) add(h.category ?? "Habits", h.points);
+  for (const c of cleaning) add("Home care", c.points);
+  for (const w of weekly) add("Weekly tasks", w.points);
+  for (const e of events) {
+    if (e.kind === "reentry" || e.kind === "reset" || !e.bucket) add("Bonuses", e.points);
+    else add(`Tasks · ${isBucket(e.bucket) ? BUCKET_LABEL[e.bucket] : e.bucket}`, e.points);
+  }
+  return totals;
 }
