@@ -120,6 +120,8 @@ export type TaskPick = {
   minutes?: number | null;
   /** Seconds since Start was tapped, if it was. */
   startedElapsedSec?: number | null;
+  /** The life goal this task serves, shown with the task. */
+  goal?: { title: string; why: string } | null;
 };
 
 export type ShutdownProgress = { logged: boolean; inboxCount: number; plannedCount: number };
@@ -158,6 +160,7 @@ export type NowCard = {
   firstStep?: string;
   minutes?: number | null;
   startedElapsedSec?: number | null;
+  goal?: { title: string; why: string } | null;
   /** Offer "Not this one" (afternoon and evening cards). */
   swap?: boolean;
 };
@@ -222,6 +225,7 @@ function taskFields(task: TaskPick) {
     firstStep: task.firstStep,
     minutes: task.minutes,
     startedElapsedSec: task.startedElapsedSec,
+    goal: task.goal,
   };
 }
 

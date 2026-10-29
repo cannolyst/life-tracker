@@ -1020,6 +1020,8 @@ export const planTasks = pgTable(
     skippedDate: text("skipped_date"),
     // Set when this task was copied over from the old To-do list (so a re-run never duplicates).
     sourceTodoId: uuid("source_todo_id"),
+    // The life goal this task serves (Phase 8); its why shows on the card.
+    goalId: uuid("goal_id"),
     // Last time the Sunday reset's "clear the decks" kept this task; stale is measured from here.
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
     status: text("status").notNull().default("open"), // open | done | someday
@@ -1188,4 +1190,64 @@ export const subscriptions = pgTable(
     check("subscriptions_cycle_check", sql`${table.cycle} in ('monthly','yearly')`),
     check("subscriptions_amount_check", sql`${table.amount} >= 0`),
   ],
+).enableRLS();
+
+// --- Life goals (Phase 8) ---
+// Named life_goals because `goals` above is the Finance savings-target table.
+
+export const lifeGoals = pgTable(
+  "life_goals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    title: text("title").notNull(),
+    // One line on why it matters; shown with the goal's tasks.
+    why: text("why").notNull().default(""),
+    kind: text("kind").notNull(), // finish | rhythm | ongoing
+    // Finish goals: what "done" looks like, in a sentence.
+    finishLine: text("finish_line"),
+    // Rhythm goals: how many times a week.
+    weeklyTarget: integer("weekly_target"),
+    startDate: text("start_date").notNull(), // YYYY-MM-DD
+    deadline: text("deadline").notNull(), // YYYY-MM-DD, 30 days to a year after the start
+    // Which area its tasks land in (learning | body | home).
+    area: text("area").notNull().default("learning"),
+    // Logged workouts count toward this goal.
+    linkWorkouts: boolean("link_workouts").notNull().default(false),
+    // active (max 3) | someday (waiting its turn) | done | retired
+    status: text("status").notNull().default("active"),
+    completedOn: text("completed_on"),
+    extendedCount: integer("extended_count").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("life_goals_kind_check", sql`${table.kind} in ('finish','rhythm','ongoing')`),
+    check("life_goals_status_check", sql`${table.status} in ('active','someday','done','retired')`),
+    check("life_goals_area_check", sql`${table.area} in ('learning','body','home')`),
+    check("life_goals_target_check", sql`${table.weeklyTarget} is null or ${table.weeklyTarget} between 1 and 21`),
+    check("life_goals_deadline_check", sql`${table.deadline} > ${table.startDate}`),
+  ],
+).enableRLS();
+
+// Habits whose completions count toward a goal.
+export const goalHabits = pgTable(
+  "goal_habits",
+  {
+    goalId: uuid("goal_id").notNull(),
+    habitId: uuid("habit_id").notNull(),
+    userId: uuid("user_id").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.goalId, table.habitId] })],
+).enableRLS();
+
+export const goalMilestones = pgTable(
+  "goal_milestones",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    goalId: uuid("goal_id").notNull(),
+    userId: uuid("user_id").notNull(),
+    title: text("title").notNull(),
+    orderIndex: integer("order_index").notNull().default(0),
+    doneAt: timestamp("done_at", { withTimezone: true }),
+  },
 ).enableRLS();

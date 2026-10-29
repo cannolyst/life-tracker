@@ -220,6 +220,13 @@ describe("dealCard", () => {
     expect(dealCard(tasks.filter((t) => t.id !== "today"), ctx)?.id).toBe("mine");
   });
 
+  it("lets a task that serves a goal rise ahead of ordinary ones", () => {
+    const tasks = [act({ id: "plain" }), act({ id: "goal", goalId: "g1" })];
+    expect(dealCard(tasks, ctx)?.id).toBe("goal");
+    // but not ahead of what is planned for today
+    expect(dealCard([...tasks, act({ id: "today", plannedFor: "2026-10-30" })], ctx)?.id).toBe("today");
+  });
+
   it("holds back tasks that belong to another block", () => {
     const tasks = [act({ id: "morning", block: "launch" }), act({ id: "free" })];
     expect(dealCard(tasks, ctx)?.id).toBe("free");

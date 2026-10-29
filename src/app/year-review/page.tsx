@@ -4,6 +4,7 @@ import { requireUserId } from "@/lib/session";
 import { dateKeyIn } from "@/lib/timezone";
 import { getUserSettings } from "@/db/userSettings";
 import { getYearNumbers } from "@/db/reset";
+import { getCompletedGoals } from "@/db/goals";
 import { isFeatureOn } from "@/lib/features";
 import { BLOCK_LABELS, percent } from "@/lib/yearNumbers";
 import { Nav } from "@/components/Nav";
@@ -29,9 +30,10 @@ export default async function YearReviewPage({
   const { years, year, categoriesWithItems, allPeople, allPlaces } =
     await getYearReviewData(userId, selectedYear);
   // The new numbers come from the home dashboard's features, so they only appear with it on.
-  const numbers = isFeatureOn(settings.features, "dashboard")
-    ? await getYearNumbers(userId, year, settings.timezone)
-    : null;
+  const dashboardOn = isFeatureOn(settings.features, "dashboard");
+  const [numbers, completedGoals] = dashboardOn
+    ? await Promise.all([getYearNumbers(userId, year, settings.timezone), getCompletedGoals(userId, year)])
+    : [null, []];
 
   return (
     <div className="flex min-h-full flex-col">
@@ -95,7 +97,26 @@ export default async function YearReviewPage({
                 <p className="text-neutral-500">Out tonight</p>
                 <p className="text-2xl font-semibold">{numbers.outNights}</p>
               </div>
+              <div>
+                <p className="text-neutral-500">Goals completed</p>
+                <p className="text-2xl font-semibold">{completedGoals.length}</p>
+              </div>
             </div>
+
+            {completedGoals.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <p className="text-sm text-neutral-500">Goals you finished</p>
+                <ul className="space-y-1 text-sm">
+                  {completedGoals.map((g) => (
+                    <li key={g.id}>
+                      <span className="mr-2 text-xs text-neutral-500">{g.completedOn}</span>
+                      {g.title}
+                      {g.why && <span className="block text-xs text-neutral-500">“{g.why}”</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {numbers.blockRates.length > 0 && (
               <div className="mt-4 space-y-2">

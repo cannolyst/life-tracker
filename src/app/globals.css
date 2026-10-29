@@ -172,11 +172,17 @@ main {
   label:has(> input[type="radio"]) {
     min-height: 44px;
   }
-  button,
+  button:not(.text-left),
   header nav a {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+  /* Left-aligned row buttons (list items, milestones) keep their alignment but still center vertically. */
+  button.text-left {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
   }
   summary {
     padding-block: 0.5rem;

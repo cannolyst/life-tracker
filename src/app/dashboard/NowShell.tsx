@@ -15,6 +15,7 @@ export function NowShell({
   minutes,
   startedElapsedSec,
   swap,
+  goal,
   children,
 }: {
   eyebrow: string;
@@ -27,6 +28,7 @@ export function NowShell({
   minutes?: number | null;
   startedElapsedSec?: number | null;
   swap?: boolean;
+  goal?: { title: string; why: string } | null;
   children?: ReactNode;
 }) {
   return (
@@ -38,6 +40,13 @@ export function NowShell({
       <p className="text-xs font-medium text-accent">{eyebrow}</p>
       <p className="mt-1 text-xl font-semibold leading-snug text-neutral-100">{title}</p>
       {detail && <p className="mt-1 text-sm text-neutral-400">{detail}</p>}
+      {goal && (
+        <p className="mt-2 text-sm text-neutral-300">
+          <span className="text-neutral-500">For your goal · </span>
+          {goal.title}
+          {goal.why && <span className="block text-neutral-400">“{goal.why}”</span>}
+        </p>
+      )}
       {children}
       {taskId && (
         <TaskActions

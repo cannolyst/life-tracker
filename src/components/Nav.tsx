@@ -30,7 +30,7 @@ export async function Nav() {
   // haven't switched it on see no change.
   const eveningTone = isFeatureOn(userSettings.features, "dashboard");
   // Planning (tomorrow, buckets, Someday) comes with the dashboard too.
-  const links = eveningTone ? [{ href: "/plan", label: "Plan" }, { href: "/life", label: "Life admin" }, ...tabs] : tabs;
+  const links = eveningTone ? [{ href: "/plan", label: "Plan" }, { href: "/life", label: "Life admin" }, { href: "/goals", label: "Goals" }, ...tabs] : tabs;
 
   return (
     <>

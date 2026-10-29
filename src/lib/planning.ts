@@ -40,6 +40,8 @@ export type PlanTaskLike = {
   block?: string | null;
   firstStep?: string | null;
   skippedDate?: string | null;
+  /** The life goal this task serves; goal tasks rise in the deal. */
+  goalId?: string | null;
 };
 
 /** A low-energy check-in swaps in a task's easier version, when it has one. */
@@ -220,6 +222,7 @@ type Dealable = PlanTaskLike;
 function dealRank(task: Dealable, ctx: { todayKey: string; energy: Energy | null; blockId: string }): number {
   let rank = 0;
   if (task.bucket === "inbox") rank += 1;
+  if (task.goalId) rank -= 2;
   if (task.plannedFor === ctx.todayKey) rank -= 4;
   if (task.isPriority) rank -= 1;
   if (task.block === ctx.blockId) rank -= 2;

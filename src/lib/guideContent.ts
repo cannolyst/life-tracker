@@ -5,6 +5,11 @@ export type WhatsNewEntry = { date: string; title: string; body: string };
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    date: "2026-11-04",
+    title: "Goals",
+    body: "Pick up to three goals at a time. Each has a one-line why, a deadline between a month and a year out, and a next step that becomes a card on its own (with the why shown under it). There are three kinds: Finish (a finish line with milestones), Rhythm (a set number of times a week) and Ongoing (keep something going). Progress tracks itself from the habits you link, your logged workouts, and tasks tagged to the goal — and pacing is worked out from the deadline, in calm words like “On pace” or “A little behind”. A slim progress strip sits under your Now card. When a deadline arrives you choose: Done (celebrate, and it joins your Year in review), Extend, or Retire with no penalty. Short goals are checked in the Sunday reset; longer ones in the monthly review. (With the home dashboard on.)",
+  },
+  {
     date: "2026-11-03",
     title: "Life admin: chores that recur, subscriptions, and people",
     body: "A new Life admin page keeps track of the things that come around on their own. Recurring items (renew registration, change the furnace filter) show up in Coming up two weeks ahead, then become an evening card; Done resets the clock. Subscriptions and free trials are flagged before they charge — manual ones three days out, trials two days before they convert. People get birthdays in Coming up a week ahead, their own gift-ideas list, and an optional “see them every X weeks” nudge that resets itself when a calendar event mentions their name. On the first Sunday of the month the reset adds a monthly review: points by area, next month’s life admin and bills, and a subscription audit. Your Finance bills can be marked Auto or Manual. (With the home dashboard on.)",
@@ -91,6 +96,20 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     ],
   },
   {
+    id: "goals",
+    title: "Goals",
+    summary: "Up to three active goals, from the menu (home dashboard on). Others wait in Someday goals.",
+    points: [
+      "Each goal has a name, a one-line why, and a deadline between about a month and a year away. The next step you add becomes a task and shows up as a card, with the goal and its why under it.",
+      "Finish: add a finish line and milestones; progress is milestones done out of all (or the goal’s tasks, if you add none). Rhythm: pick how many times a week; progress is the weeks you hit it out of the full weeks so far. Ongoing: keep something going; progress is how many of the last four weeks had activity.",
+      "Choose what counts: any of your habits, your logged workouts, and tasks tagged to the goal. You never have to update progress by hand.",
+      "Pacing is judged against the deadline in calm words: Ahead, On pace, A little behind, or Worth a fresh look. Goals earn no points of their own.",
+      "At the deadline you choose: Done (celebrate; it’s saved in your Year in review), Extend by 30, 60 or 90 days (pacing recalculates), or Retire (no penalty).",
+      "The slim strip on your home page shows each active goal as one line and a thin bar. When a Finish goal has no next step waiting, it asks for one.",
+      "Goals shorter than about 60 days are checked in the Sunday reset; longer ones in the monthly review.",
+    ],
+  },
+  {
     id: "life-admin",
     title: "Life admin",
     summary: "The things that come around on their own. Open it from the menu (home dashboard on).",
@@ -112,7 +131,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "Groceries: check off what you have and add what you need. Mark one of your lists as Groceries on the Lists page.",
       "Clear the decks: sort the Inbox, bring back or drop Someday items, and keep, shelve or drop anything that’s sat untouched for three weeks.",
       "Finishing is worth +5 points, once a week. You can finish without doing every step.",
-      "Monthly review: on the first Sunday of the month the reset adds three steps — your points by area for the last 30 days compared with the 30 before, next month’s life admin, bills and subscription charges, and a subscription audit (keep or cancel each one). Open it any other time with “Add the monthly review”.",
+      "Monthly review: on the first Sunday of the month the reset adds steps — your points by area for the last 30 days compared with the 30 before, next month’s life admin, bills and subscription charges, a subscription audit (keep or cancel each one), and a progress check on your longer goals. Open it any other time with “Add the monthly review”.",
+      "Goals: if you have goals shorter than about 60 days, the Sunday reset adds a “Check your goals” step for them.",
     ],
   },
   {
@@ -188,7 +208,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     title: "Year in review",
     summary: "A running log of what happened this year, by category.",
     points: [
-      "With the home dashboard on, a “your year in numbers” card shows tasks started and finished, comebacks, Out tonight nights, how often each part of the day’s habits got done, and your Sunday-reset highlights. Goals and journal highlights will join it later.",
+      "With the home dashboard on, a “your year in numbers” card shows tasks started and finished, comebacks, Out tonight nights, how often each part of the day’s habits got done, goals completed, and your Sunday-reset highlights. Goals you’ve finished are counted and listed here too; journal highlights will join later.",
       "Create categories (trips, books, concerts…) and add entries with dates, people and places.",
       "Switch years with the pills at the top.",
     ],

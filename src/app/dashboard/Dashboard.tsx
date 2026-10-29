@@ -17,6 +17,7 @@ import {
 } from "@/db/planning";
 import { getResetState } from "@/db/reset";
 import { getLifeAdmin, syncSeenFromCalendar, type LifeAdmin } from "@/db/lifeAdmin";
+import { getGoals, type GoalView } from "@/db/goals";
 import { describeInterval, dueLabel, MANUAL_CHARGE_FLAG_DAYS, BIRTHDAY_COMING_UP_DAYS } from "@/lib/lifeAdmin";
 import { RESET_POINTS, isSunday, resetWeekKey } from "@/lib/reset";
 import { getTodaysSpark } from "@/db/sparks";
@@ -63,6 +64,7 @@ import { NowShell } from "./NowShell";
 import { TransitionFlow } from "./TransitionFlow";
 import { ShutdownSteps } from "./ShutdownSteps";
 import { RecurringActions } from "./LifeControls";
+import { GoalStrip } from "./GoalStrip";
 import { ContextItems, EnergyChips, OutTonightCard, OutTonightToggle, QuickAdd, TaskDoneRow } from "./PlanControls";
 
 const COMING_UP_DAYS = 4;
@@ -85,7 +87,7 @@ export async function Dashboard({ userId }: { userId: string }) {
     ? getCalendarEvents(userId, { days: COMING_UP_DAYS + 1, daysBack: 3 })
     : Promise.resolve(null);
 
-  const [agenda, todaysSpark, storedFlag, resetState, life] = await Promise.all([
+  const [agenda, todaysSpark, storedFlag, resetState, life, allGoals] = await Promise.all([
     getDayAgenda(userId, tz, {
       points: modules.showPoints,
       cleaning: modules.showCleaning,
@@ -97,7 +99,9 @@ export async function Dashboard({ userId }: { userId: string }) {
     // Only Sundays show the reset card, so only Sundays pay for the lookup.
     isSunday(todayKey) ? getResetState(userId, resetWeekKey(todayKey)) : Promise.resolve(null),
     getLifeAdmin(userId, tz, todayKey),
+    getGoals(userId, todayKey),
   ]);
+  const activeGoals = allGoals.filter((g) => g.status === "active");
 
   const deck = onDeckCount({
     habitsLeft: agenda.habitsLeft,
@@ -183,11 +187,14 @@ export async function Dashboard({ userId }: { userId: string }) {
             nowMs={now.getTime()}
             agenda={agenda}
             life={life}
+            goals={activeGoals}
             calendarPromise={calendarPromise}
             showExercise={modules.showExercise}
             showCleaning={modules.showCleaning}
           />
         </Suspense>
+
+        <GoalStrip goals={activeGoals} />
 
         {resetState && !resetState.completed && (
           <Link
@@ -328,6 +335,7 @@ async function NowArea({
   nowMs,
   agenda,
   life,
+  goals,
   calendarPromise,
   showExercise,
   showCleaning,
@@ -340,6 +348,7 @@ async function NowArea({
   nowMs: number;
   agenda: DayAgenda;
   life: LifeAdmin;
+  goals: GoalView[];
   calendarPromise: Promise<CalendarResult | null>;
   showExercise: boolean;
   showCleaning: boolean;
@@ -372,6 +381,11 @@ async function NowArea({
   const lunch = pickLunchTask(open);
   const plannedTomorrow = open.filter((t) => t.plannedFor === tomorrowKey);
 
+  const goalFor = (goalId: string | null) => {
+    const goal = goalId ? goals.find((g) => g.id === goalId) : undefined;
+    return goal ? { title: goal.title, why: goal.why } : null;
+  };
+
   const pickOf = (task: (typeof open)[number] | null) => {
     if (!task) return null;
     const version = versionFor(task, level);
@@ -381,6 +395,7 @@ async function NowArea({
       title: version.title,
       easier: version.easier,
       firstStep: firstStepFor(task),
+      goal: goalFor(task.goalId),
       minutes: task.minutes,
       // A Start from hours ago is stale; treat it as not started.
       startedElapsedSec: elapsed !== null && elapsed >= 0 && elapsed < 6 * 3600 ? elapsed : null,

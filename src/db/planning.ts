@@ -23,6 +23,7 @@ export type PlanTask = PlanTaskLike & {
   skippedDate: string | null;
   doneDate: string | null;
   reviewedAt: Date | null;
+  goalId: string | null;
   createdAt: Date;
 };
 
@@ -47,6 +48,7 @@ function toPlanTask(row: PlanTaskRow): PlanTask {
     skippedDate: row.skippedDate,
     doneDate: row.doneDate,
     reviewedAt: row.reviewedAt,
+    goalId: row.goalId,
     createdAt: row.createdAt,
   };
 }

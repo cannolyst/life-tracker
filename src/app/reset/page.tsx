@@ -6,6 +6,8 @@ import { getPointsSummary } from "@/db/queries";
 import { getCollectionChoices, getPlanTasks } from "@/db/planning";
 import { getAreaPoints, getGroceryList, getMarkedOutDates, getResetState, getWeekLookBack } from "@/db/reset";
 import { getLifeAdmin } from "@/db/lifeAdmin";
+import { getGoals } from "@/db/goals";
+import { GoalReview } from "./GoalReview";
 import { getBillsLineItems } from "@/db/queries";
 import { auditTotals, dueLabel, monthlyEquivalent } from "@/lib/lifeAdmin";
 import { formatPrice } from "@/lib/dashboard";
@@ -90,7 +92,7 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
   // The first Sunday of the month adds the monthly review; it can also be opened any time with ?monthly=1.
   const monthly = isFirstSundayOfMonth(todayKey) || monthlyParam === "1";
   const calendarOn = isFeatureOn(settings.features, "calendar");
-  const [state, lookBack, summary, tasks, collections, grocery, markedOut, calendar] = await Promise.all([
+  const [state, lookBack, summary, tasks, collections, grocery, markedOut, calendar, allGoals] = await Promise.all([
     getResetState(userId, weekKey),
     getWeekLookBack(userId, todayKey),
     getPointsSummary(userId),
@@ -99,7 +101,13 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
     getGroceryList(userId),
     getMarkedOutDates(userId, todayKey, addDays(todayKey, 6)),
     calendarOn ? getCalendarEvents(userId, { days: 7 }) : Promise.resolve(null),
+    getGoals(userId, todayKey),
   ]);
+  // Goals under about 60 days are checked every Sunday; longer ones in the monthly review.
+  const activeGoals = allGoals.filter((g) => g.status === "active");
+  const shortGoals = activeGoals.filter((g) => g.short);
+  const longGoals = activeGoals.filter((g) => !g.short);
+  const monthlyBase = shortGoals.length > 0 ? 7 : 6;
 
   const [thisStretch, lastStretch, life, bills] = monthly
     ? await Promise.all([
@@ -242,6 +250,13 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
           <ClearDecks inbox={inbox} someday={someday} stale={stale} collections={collections} />
         </Step>
 
+        {shortGoals.length > 0 && (
+          <Step number={6} title="Check your goals" summary={`${shortGoals.length} short-term`}>
+            <p className="text-sm text-neutral-400">The goals with a deadline in the next couple of months.</p>
+            <GoalReview goals={shortGoals} />
+          </Step>
+        )}
+
         {monthly ? (
           <>
             <div className="space-y-1 pt-2">
@@ -249,7 +264,7 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
               <p className="text-sm text-neutral-500">A few extra minutes on the first Sunday of the month.</p>
             </div>
 
-            <Step number={6} title="Points by area" summary="Last 30 days" open>
+            <Step number={monthlyBase} title="Points by area" summary="Last 30 days" open>
               {areaTrends.length === 0 ? (
                 <p className="text-sm text-neutral-500">Not enough points yet to compare.</p>
               ) : (
@@ -269,7 +284,7 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
               )}
             </Step>
 
-            <Step number={7} title="Next month's life admin and bills" summary={`${nextMonthAdmin.length + nextMonthCharges.length + dueBills.length} things`}>
+            <Step number={monthlyBase + 1} title="Next month's life admin and bills" summary={`${nextMonthAdmin.length + nextMonthCharges.length + dueBills.length} things`}>
               <div className="space-y-3 text-sm">
                 <div>
                   <h3 className="text-xs font-medium text-neutral-500">Life admin coming due</h3>
@@ -319,7 +334,7 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
               </div>
             </Step>
 
-            <Step number={8} title="Subscription audit" summary={audit.count > 0 ? `about ${formatPrice(audit.monthly)}/month` : "none"}>
+            <Step number={monthlyBase + 2} title="Subscription audit" summary={audit.count > 0 ? `about ${formatPrice(audit.monthly)}/month` : "none"}>
               {audit.count > 0 && (
                 <p className="text-sm text-neutral-400">
                   You pay about {formatPrice(audit.monthly)} a month ({formatPrice(audit.yearly)} a year) across {audit.count}{" "}
@@ -335,6 +350,11 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
                 }))}
               />
             </Step>
+            {longGoals.length > 0 && (
+              <Step number={monthlyBase + 3} title="Goal progress" summary={`${longGoals.length} long-term`}>
+                <GoalReview goals={longGoals} />
+              </Step>
+            )}
           </>
         ) : (
           <p className="px-1 text-center text-xs text-neutral-500">
