@@ -57,6 +57,8 @@ export type UserSettings = DayStructure & {
   features: Record<string, boolean>;
   /** The first-run dashboard walkthrough was finished or skipped. */
   walkthroughSeen: boolean;
+  /** Card arrangements per page, as saved from Customize. */
+  layouts: Record<string, { columns: string[][]; hidden: string[] }>;
 };
 
 export const DEFAULT_USER_SETTINGS: UserSettings = {
@@ -67,6 +69,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
   features: {},
   walkthroughSeen: false,
+  layouts: {},
 };
 
 // "08:00" <-> minutes after midnight, for <input type="time">.

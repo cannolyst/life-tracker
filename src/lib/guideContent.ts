@@ -5,6 +5,11 @@ export type WhatsNewEntry = { date: string; title: string; body: string };
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    date: "2026-11-08",
+    title: "A sidebar and a wider home page on big screens",
+    body: "On a computer or other wide screen, the menu is now a sidebar down the left with every page in it, and the page you’re on is highlighted. On a really wide screen the home page also lays out in three columns of cards — your Now card and Capture box on the left, your day (Today, Coming up, Brief) in the middle, and flags, the spark, goals and journal on the right — so you can see more without scrolling. Most other pages — Plan, Points, Cleaning, Exercise, Finance, Lists, Year in review, Life admin, Goals, Journal, Guide, Settings, Overview and your account pages — also spread into two columns on a wide screen. The Sunday reset, Emotion Check-In and News stay in one column because they read top to bottom. Every page with cards also has a Customize button (top right, wide screens only): drag cards between the columns, nudge them with the arrow buttons, or hide the ones you don’t want. Each page remembers its own arrangement, it saves as you go, and Reset layout puts a page back. On a phone nothing changes: it’s still one column with the menu button at the top.",
+  },
+  {
     date: "2026-11-07",
     title: "A tour, a complete Guide, and switches for each part",
     body: "The first time you open the new home page, a short welcome tour walks you through it (skip it, or replay it from the top of the Guide). The Guide now has a section for every page, each one saying what it’s for, how to use it and whether it earns points. In Settings → New features you can switch off any part of the dashboard you don’t want: Daily spark, Evening tone, Sunday reset, Life admin, Goals and Photo journal. They come on with the dashboard, and switching one off hides it everywhere — pages, menu links, home-page cards and notifications — without deleting anything you’ve saved.",

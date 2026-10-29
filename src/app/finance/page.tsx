@@ -19,6 +19,7 @@ import { PaceBadge } from "@/components/PaceBadge";
 import { MinimumPaymentBadge } from "@/components/MinimumPaymentBadge";
 import { FinanceChart } from "@/components/FinanceChart";
 import { PaycheckPlanCard } from "./PaycheckPlanCard";
+import { Board, W } from "@/components/Board";
 
 export default async function DashboardPage() {
   const userId = await requireUserId();
@@ -48,7 +49,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-10 px-4 py-8">
+      <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-10 px-4 py-8">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">Finance</h1>
           <Link href="/accounts/new" className={buttonClass}>
@@ -56,6 +57,8 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
+        <Board pageId="finance" columnCount={2} saved={userSettings.layouts.finance}>
+        <W id="paycheck" label="Paycheck plan" col={0}>
         <PaycheckPlanCard
           key={`${currentPeriodKey}-${currentMonthKey}`}
           plan={plan}
@@ -67,7 +70,9 @@ export default async function DashboardPage() {
           savingsSummaries={savingsSummaries}
           showAutopay={isFeatureOn(userSettings.features, "dashboard")}
         />
+        </W>
 
+        <W id="month" label="This month" col={1}>
         <Card>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-medium">{stats.monthLabel}</h2>
@@ -106,11 +111,15 @@ export default async function DashboardPage() {
             </div>
           </div>
         </Card>
+        </W>
 
+        <W id="chart" label="Chart" col={1}>
         <Card>
           <FinanceChart data={stats.chartData} />
         </Card>
+        </W>
 
+        <W id="savings" label="Savings goals" col={0}>
         <section>
           <h2 className="mb-3 text-lg font-semibold">Savings goals</h2>
           {savingsSummaries.length === 0 ? (
@@ -152,7 +161,9 @@ export default async function DashboardPage() {
             </div>
           )}
         </section>
+        </W>
 
+        <W id="credit" label="Credit card" col={1}>
         <section>
           <h2 className="mb-3 text-lg font-semibold">Credit card</h2>
           {debtSummaries.length === 0 ? (
@@ -195,6 +206,8 @@ export default async function DashboardPage() {
             </div>
           )}
         </section>
+        </W>
+        </Board>
       </main>
     </div>
   );

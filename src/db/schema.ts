@@ -930,6 +930,9 @@ export const userSettings = pgTable(
     notificationPrefs: jsonb("notification_prefs")
       .notNull()
       .default(sql`'{"lunchCard":true,"shutdownNudge":true,"sundayReset":true,"urgentFlags":true}'::jsonb`),
+    // How the user arranged each page's cards on wide screens (see src/lib/layout.ts),
+    // keyed by page id: { columns: string[][], hidden: string[] }.
+    layouts: jsonb("layouts").notNull().default(sql`'{}'::jsonb`),
     // When the user finished or skipped the first-run dashboard walkthrough.
     walkthroughSeenAt: timestamp("walkthrough_seen_at", { withTimezone: true }),
     // Feature switches keyed by id (see src/lib/features.ts). A missing key

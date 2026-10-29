@@ -1,8 +1,9 @@
 import { getCleaningDashboardData } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
-import { getUserTimezone } from "@/db/userSettings";
+import { getUserSettings } from "@/db/userSettings";
 import { getTimeframeBoundaries, type CleaningTimeframeBucket } from "@/lib/cleaningStatus";
 import { Nav } from "@/components/Nav";
+import { Board, W } from "@/components/Board";
 import { Card, formatDateRange, formatMonthName } from "@/components/ui";
 import { AddAreaForm, AddTaskForm } from "./CleaningForms";
 import { CleaningTasksView, type TaskGroup } from "./CleaningTasksView";
@@ -13,7 +14,8 @@ export const dynamic = "force-dynamic";
 
 export default async function CleaningPage() {
   const userId = await requireUserId();
-  const tz = await getUserTimezone(userId);
+  const settings = await getUserSettings(userId);
+  const tz = settings.timezone;
   const { areasWithTasks, unassignedTasks, areas } = await getCleaningDashboardData(userId);
 
   const categoryGroups: TaskGroup[] = [
@@ -73,21 +75,26 @@ export default async function CleaningPage() {
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-8 px-4 py-8">
+      <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-8 px-4 py-8">
         <h1 className="text-xl font-semibold">Cleaning</h1>
 
-        <CleaningTasksView categoryGroups={categoryGroups} timeframeGroups={timeframeGroups} />
-
-        <section className="grid gap-6 sm:grid-cols-2">
-          <Card>
-            <h2 className="mb-3 font-medium">Add area</h2>
-            <AddAreaForm />
-          </Card>
-          <Card>
-            <h2 className="mb-3 font-medium">Add task</h2>
-            <AddTaskForm areas={areas} />
-          </Card>
-        </section>
+        <Board pageId="cleaning" columnCount={2} saved={settings.layouts.cleaning}>
+          <W id="tasks" label="Tasks" col={0}>
+            <CleaningTasksView categoryGroups={categoryGroups} timeframeGroups={timeframeGroups} />
+          </W>
+          <W id="add-area" label="Add area" col={1}>
+            <Card>
+              <h2 className="mb-3 font-medium">Add area</h2>
+              <AddAreaForm />
+            </Card>
+          </W>
+          <W id="add-task" label="Add task" col={1}>
+            <Card>
+              <h2 className="mb-3 font-medium">Add task</h2>
+              <AddTaskForm areas={areas} />
+            </Card>
+          </W>
+        </Board>
       </main>
     </div>
   );

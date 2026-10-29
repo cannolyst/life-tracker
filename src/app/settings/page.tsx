@@ -8,6 +8,7 @@ import { isEncryptionConfigured } from "@/lib/calendarCrypto";
 import { listTimezones } from "@/lib/timezoneOptions";
 import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
+import { Board, W } from "@/components/Board";
 import { Card, labelClass, formatDate } from "@/components/ui";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BackgroundColorPicker } from "@/components/BackgroundColorPicker";
@@ -46,8 +47,10 @@ export default async function SettingsPage() {
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
+      <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-xl font-semibold">Settings</h1>
+        <Board pageId="settings" columnCount={2} saved={userSettings.layouts.settings}>
+        <W id="appearance" label="Appearance">
         <Card>
           <h2 className="mb-3 font-medium">Appearance</h2>
           <div className="space-y-4">
@@ -61,18 +64,26 @@ export default async function SettingsPage() {
             </div>
           </div>
         </Card>
+        </W>
+        <W id="tabs-you-want-to-see" label="Tabs you want to see">
         <Card>
           <h2 className="mb-3 font-medium">Tabs you want to see</h2>
           <ModulePicker initialValues={settings} redirectTo="/settings" submitLabel="Save" />
         </Card>
+        </W>
+        <W id="your-name" label="Your name">
         <Card>
           <h2 className="mb-3 font-medium">Your name</h2>
           <DisplayNameForm name={userSettings.displayName} />
         </Card>
+        </W>
+        <W id="your-day" label="Your day">
         <Card>
           <h2 className="mb-3 font-medium">Your day</h2>
           <DayForm day={userSettings} timezone={tz} zones={listTimezones()} />
         </Card>
+        </W>
+        <W id="calendar" label="Calendar">
         <Card>
           <h2 className="mb-3 font-medium">Calendar</h2>
           <CalendarCard
@@ -80,16 +91,22 @@ export default async function SettingsPage() {
             encryptionReady={isEncryptionConfigured()}
           />
         </Card>
+        </W>
+        <W id="daily-brief-link" label="Daily brief link">
         <Card>
           <h2 className="mb-3 font-medium">Daily brief link</h2>
           <BriefLinkCard
             createdLabel={briefCreatedAt ? formatDate(dateOnlyIn(tz, briefCreatedAt)) : null}
           />
         </Card>
+        </W>
+        <W id="daily-brief-city" label="Daily brief city">
         <Card>
           <h2 className="mb-3 font-medium">Daily brief city</h2>
           <BriefCityForm city={userSettings.briefCity} />
         </Card>
+        </W>
+        <W id="notifications" label="Notifications">
         <Card>
           <h2 className="mb-3 font-medium">Notifications</h2>
           <div className="space-y-4">
@@ -97,10 +114,14 @@ export default async function SettingsPage() {
             <NotificationsForm prefs={userSettings.notificationPrefs} />
           </div>
         </Card>
+        </W>
+        <W id="new-features" label="New features">
         <Card>
           <h2 className="mb-3 font-medium">New features</h2>
           <FeaturesForm features={userSettings.features} />
         </Card>
+        </W>
+        </Board>
       </main>
     </div>
   );

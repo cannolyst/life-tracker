@@ -6,6 +6,7 @@ import { isPartOn } from "@/lib/features";
 import { SPARK_TYPE_LABEL } from "@/lib/sparks";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
+import { Board, W } from "@/components/Board";
 import { RemoveSparkButton } from "./RemoveSparkButton";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export default async function SparksPage() {
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-8">
+      <main className="board-page mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-xl font-semibold">Saved sparks</h1>
 
         {!enabled && (
@@ -38,9 +39,10 @@ export default async function SparksPage() {
             Nothing saved yet. Tap Save on a spark you want to keep, and it will live here.
           </p>
         ) : (
-          <ul className="space-y-3">
+          <Board pageId="sparks" columnCount={2} saved={settings.layouts.sparks}>
             {saved.map(({ spark }) => (
-              <li key={spark.id} className="rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-4">
+              <W key={spark.id} id={`spark-${spark.id}`} label={SPARK_TYPE_LABEL[spark.type]}>
+              <div className="rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-4">
                 <p className="text-xs text-neutral-500">{SPARK_TYPE_LABEL[spark.type]}</p>
                 <p className="mt-1 text-base leading-relaxed text-neutral-200">
                   {spark.type === "quote" ? `“${spark.text}”` : spark.text}
@@ -51,9 +53,10 @@ export default async function SparksPage() {
                   </p>
                 )}
                 <RemoveSparkButton sparkId={spark.id} />
-              </li>
+              </div>
+              </W>
             ))}
-          </ul>
+          </Board>
         )}
       </main>
     </div>

@@ -63,6 +63,7 @@ import type { DayStructure } from "@/lib/userSettingsDefaults";
 import { Nav } from "@/components/Nav";
 import { SparkCard } from "./SparkCard";
 import { Walkthrough } from "./Walkthrough";
+import { Board } from "@/components/Board";
 import { DashboardBrief } from "./DashboardBrief";
 import { NowShell } from "./NowShell";
 import { TransitionFlow } from "./TransitionFlow";
@@ -159,7 +160,7 @@ export async function Dashboard({ userId }: { userId: string }) {
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-2xl flex-1 space-y-5 px-4 pb-28 pt-6">
+      <main className="mx-auto w-full max-w-2xl flex-1 space-y-5 px-4 pb-28 pt-6 xl:max-w-6xl">
         <Suspense
           fallback={
             <Greeting
@@ -189,102 +190,202 @@ export async function Dashboard({ userId }: { userId: string }) {
 
         {!settings.walkthroughSeen && <Walkthrough />}
 
-        {todaysSpark && <SparkCard spark={todaysSpark.spark} saved={todaysSpark.saved} />}
+        <Board
+          pageId="home"
+          columnCount={3}
+          saved={settings.layouts.home}
+          widgets={[
+            {
+              id: "now",
+              label: "Now",
+              mobileOrder: 2,
+              defaultColumn: 0,
+              defaultOrder: 1,
+              node: (
+                <div className="space-y-5">
+                  <Suspense fallback={<NowShell {...basicNowCard} />}>
+                    <NowArea
+                      userId={userId}
+                      tz={tz}
+                      structure={structure}
+                      nowMinutes={nowMinutes}
+                      todayKey={todayKey}
+                      nowMs={now.getTime()}
+                      agenda={agenda}
+                      life={life}
+                      goals={activeGoals}
+                      calendarPromise={calendarPromise}
+                      showExercise={modules.showExercise}
+                      showCleaning={modules.showCleaning}
+                      journalOn={journalOn}
+                    />
+                  </Suspense>
+                </div>
+              ),
+            },
+            {
+              id: "capture",
+              label: "Capture",
+              mobileOrder: 10,
+              defaultColumn: 0,
+              defaultOrder: 2,
+              node: <QuickAdd />,
+            },
+            {
+              id: "today",
+              label: "Today",
+              mobileOrder: 6,
+              defaultColumn: 1,
+              defaultOrder: 1,
+              node: (
+                <Suspense fallback={<SectionShell title="Today" note="Loading…" />}>
+                  <TodaySection
+                    calendarPromise={calendarPromise}
+                    structure={structure}
+                    nowMinutes={nowMinutes}
+                    todayKey={todayKey}
+                    tz={tz}
+                  />
+                </Suspense>
+              ),
+            },
+            {
+              id: "coming-up",
+              label: "Coming up",
+              mobileOrder: 7,
+              defaultColumn: 1,
+              defaultOrder: 2,
+              node: (
+                <Suspense fallback={null}>
+                  <ComingUpSection
+                    calendarPromise={calendarPromise}
+                    life={life}
+                    agenda={agenda}
+                    structure={structure}
+                    todayKey={todayKey}
+                    tz={tz}
+                  />
+                </Suspense>
+              ),
+            },
+            ...(modules.showNews
+              ? [
+                  {
+                    id: "brief",
+                    label: "Today’s Brief",
+                    mobileOrder: 5,
+                    defaultColumn: 1,
+                    defaultOrder: 3,
+                    node: (
+                      <Suspense fallback={<SectionShell title="Today’s Brief" note="Loading…" />}>
+                        <BriefSection
+                          userId={userId}
+                          tz={tz}
+                          city={settings.briefCity}
+                          defaultOpen={nowMinutes < settings.workStartMinutes}
+                        />
+                      </Suspense>
+                    ),
+                  },
+                ]
+              : []),
+            ...(flags.length > 0
+              ? [
+                  {
+                    id: "flags",
+                    label: "Worth a look",
+                    mobileOrder: 9,
+                    defaultColumn: 2,
+                    defaultOrder: 1,
+                    node: (
+                      <section aria-label="Flags" className="space-y-1">
+                        <h2 className="px-1 text-xs font-medium text-neutral-500">Worth a look</h2>
+                        <ul className="divide-y divide-neutral-800 rounded-lg border border-neutral-800 bg-neutral-900">
+                          {flags.map((flag) => (
+                            <li key={flag.key}>
+                              <Link href={flag.href} className="flex min-h-11 items-center justify-between gap-3 px-5 py-2.5 text-sm text-neutral-300">
+                                <span>{flag.text}</span>
+                                <span aria-hidden className="text-neutral-600">
+                                  ›
+                                </span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    ),
+                  },
+                ]
+              : []),
+            ...(todaysSpark
+              ? [
+                  {
+                    id: "spark",
+                    label: "Daily spark",
+                    mobileOrder: 1,
+                    defaultColumn: 2,
+                    defaultOrder: 2,
+                    node: <SparkCard spark={todaysSpark.spark} saved={todaysSpark.saved} />,
+                  },
+                ]
+              : []),
+            {
+              id: "goals",
+              label: "Goals",
+              mobileOrder: 3,
+              defaultColumn: 2,
+              defaultOrder: 3,
+              node: <GoalStrip goals={activeGoals} />,
+            },
+            ...(resetState && !resetState.completed
+              ? [
+                  {
+                    id: "reset",
+                    label: "Sunday reset",
+                    mobileOrder: 4,
+                    defaultColumn: 2,
+                    defaultOrder: 4,
+                    node: (
+                      <Link
+                        href="/reset"
+                        className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-3"
+                      >
+                        <span>
+                          <span className="block text-sm font-medium text-neutral-200">Sunday reset</span>
+                          <span className="block text-xs text-neutral-500">
+                            About ten minutes · +{RESET_POINTS} points when you finish
+                          </span>
+                        </span>
+                        <span aria-hidden className="text-neutral-600">
+                          ›
+                        </span>
+                      </Link>
+                    ),
+                  },
+                ]
+              : []),
+            ...(journalOn
+              ? [
+                  {
+                    id: "journal",
+                    label: "Journal",
+                    mobileOrder: 8,
+                    defaultColumn: 2,
+                    defaultOrder: 5,
+                    node: (
+                      <div className="space-y-5">
+                        <Suspense fallback={null}>
+                          <JournalNudges userId={userId} tz={tz} todayKey={todayKey} nowMs={now.getTime()} />
+                        </Suspense>
+                      </div>
+                    ),
+                  },
+                ]
+              : []),
+          ]}
+        />
 
-        <Suspense fallback={<NowShell {...basicNowCard} />}>
-          <NowArea
-            userId={userId}
-            tz={tz}
-            structure={structure}
-            nowMinutes={nowMinutes}
-            todayKey={todayKey}
-            nowMs={now.getTime()}
-            agenda={agenda}
-            life={life}
-            goals={activeGoals}
-            calendarPromise={calendarPromise}
-            showExercise={modules.showExercise}
-            showCleaning={modules.showCleaning}
-            journalOn={journalOn}
-          />
-        </Suspense>
 
-        <GoalStrip goals={activeGoals} />
-
-        {resetState && !resetState.completed && (
-          <Link
-            href="/reset"
-            className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-3"
-          >
-            <span>
-              <span className="block text-sm font-medium text-neutral-200">Sunday reset</span>
-              <span className="block text-xs text-neutral-500">
-                About ten minutes · +{RESET_POINTS} points when you finish
-              </span>
-            </span>
-            <span aria-hidden className="text-neutral-600">
-              ›
-            </span>
-          </Link>
-        )}
-
-        {modules.showNews && (
-          <Suspense fallback={<SectionShell title="Today’s Brief" note="Loading…" />}>
-            <BriefSection
-              userId={userId}
-              tz={tz}
-              city={settings.briefCity}
-              defaultOpen={nowMinutes < settings.workStartMinutes}
-            />
-          </Suspense>
-        )}
-
-        <Suspense fallback={<SectionShell title="Today" note="Loading…" />}>
-          <TodaySection
-            calendarPromise={calendarPromise}
-            structure={structure}
-            nowMinutes={nowMinutes}
-            todayKey={todayKey}
-            tz={tz}
-          />
-        </Suspense>
-
-        <Suspense fallback={null}>
-          <ComingUpSection
-            calendarPromise={calendarPromise}
-            life={life}
-            agenda={agenda}
-            structure={structure}
-            todayKey={todayKey}
-            tz={tz}
-          />
-        </Suspense>
-
-        {journalOn && (
-        <Suspense fallback={null}>
-          <JournalNudges userId={userId} tz={tz} todayKey={todayKey} nowMs={now.getTime()} />
-        </Suspense>
-        )}
-
-        {flags.length > 0 && (
-          <section aria-label="Flags" className="space-y-1">
-            <h2 className="px-1 text-xs font-medium text-neutral-500">Worth a look</h2>
-            <ul className="divide-y divide-neutral-800 rounded-lg border border-neutral-800 bg-neutral-900">
-              {flags.map((flag) => (
-                <li key={flag.key}>
-                  <Link href={flag.href} className="flex min-h-11 items-center justify-between gap-3 px-5 py-2.5 text-sm text-neutral-300">
-                    <span>{flag.text}</span>
-                    <span aria-hidden className="text-neutral-600">
-                      ›
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        <QuickAdd />
 
         <p className="px-1 pt-2 text-center text-xs text-neutral-600">
           <Link href="/overview" className="tap px-2 underline">

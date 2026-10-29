@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { dateKeyIn } from "@/lib/timezone";
-import { getUserTimezone } from "@/db/userSettings";
+import { getUserSettings } from "@/db/userSettings";
+import { Board, W } from "@/components/Board";
 import { getDebtAccountDetail } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
@@ -30,7 +31,8 @@ export default async function DebtDetailPage({
 }) {
   const { accountId } = await params;
   const userId = await requireUserId();
-  const tz = await getUserTimezone(userId);
+  const settings = await getUserSettings(userId);
+  const tz = settings.timezone;
   const detail = await getDebtAccountDetail(accountId, userId);
   if (!detail) notFound();
 
@@ -62,7 +64,7 @@ export default async function DebtDetailPage({
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
+      <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-semibold">{account.name}</h1>
@@ -73,11 +75,14 @@ export default async function DebtDetailPage({
           </div>
           <DeleteAccountButton accountId={account.id} accountName={account.name} />
         </div>
-
+        <Board pageId="debt" columnCount={2} saved={settings.layouts.debt}>
+        <W id="chart" label="Balance chart" col={0}>
         <Card>
           <BalanceChart points={points} />
         </Card>
+        </W>
 
+        <W id="stats" label="Stats" col={1}>
         <Card>
           <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
             <div>
@@ -123,7 +128,9 @@ export default async function DebtDetailPage({
             </div>
           </div>
         </Card>
+        </W>
 
+        <W id="goal" label="Payoff goal" col={0}>
         <Card>
           <h2 className="mb-3 font-medium">Payoff goal</h2>
           {goal?.targetDate ? (
@@ -158,18 +165,23 @@ export default async function DebtDetailPage({
           )}
           <GoalForm accountId={account.id} targetDate={goal?.targetDate} />
         </Card>
+        </W>
 
-        <div className="grid gap-6 sm:grid-cols-2">
+        <W id="add-transaction" label="Add transaction" col={1}>
           <Card>
             <h2 className="mb-3 font-medium">Add transaction</h2>
             <AddTransactionForm accountId={account.id} today={dateKeyIn(tz)} />
           </Card>
+        </W>
+
+        <W id="log-statement" label="Log statement" col={0}>
           <Card>
             <h2 className="mb-3 font-medium">Log monthly statement</h2>
             <StatementForm accountId={account.id} today={dateKeyIn(tz)} />
           </Card>
-        </div>
+        </W>
 
+        <W id="settings" label="Card settings" col={1}>
         <Card>
           <h2 className="mb-3 font-medium">Card settings</h2>
           <SettingsForm
@@ -179,7 +191,9 @@ export default async function DebtDetailPage({
             statementDay={details?.statementDay ?? 1}
           />
         </Card>
+        </W>
 
+        <W id="statements" label="Statement history" col={0}>
         <Card>
           <h2 className="mb-3 font-medium">Statement history</h2>
           {statements.length === 0 ? (
@@ -198,7 +212,9 @@ export default async function DebtDetailPage({
             </ul>
           )}
         </Card>
+        </W>
 
+        <W id="transactions" label="Transactions" col={1}>
         <Card>
           <h2 className="mb-3 font-medium">Transactions</h2>
           {transactions.length === 0 ? (
@@ -228,6 +244,9 @@ export default async function DebtDetailPage({
             </ul>
           )}
         </Card>
+        </W>
+
+        </Board>
       </main>
     </div>
   );

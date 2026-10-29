@@ -7,6 +7,7 @@ import { completeUntil } from "@/lib/journal";
 import { dateKeyIn } from "@/lib/timezone";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
+import { Board, W } from "@/components/Board";
 import { EntryView, PhotoGrid, formatDay } from "./EntryView";
 import { JournalPanel } from "./JournalPanel";
 
@@ -91,7 +92,7 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-2xl flex-1 space-y-5 px-4 pb-24 pt-8">
+      <main className="board-page mx-auto w-full max-w-2xl flex-1 space-y-5 px-4 pb-24 pt-8">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold">Journal</h1>
           <p className="text-sm text-neutral-500">
@@ -100,6 +101,8 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
           </p>
         </div>
 
+        <Board pageId="journal" columnCount={2} saved={settings.layouts.journal}>
+        <W id="today" label="Today’s entry" col={0}>
         <Link
           href={`/journal?date=${todayKey}`}
           className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-3"
@@ -111,17 +114,23 @@ export default async function JournalPage({ searchParams }: { searchParams: Prom
             ›
           </span>
         </Link>
+        </W>
 
         {finished.length === 0 ? (
-          <p className="text-sm text-neutral-500">No finished entries yet. Your first one will show up here.</p>
+          <W id="empty" label="Entries" col={1}>
+            <p className="text-sm text-neutral-500">No finished entries yet. Your first one will show up here.</p>
+          </W>
         ) : (
           [...byMonth.entries()].map(([month, list]) => (
-            <section key={month} className="space-y-2">
-              <h2 className="px-1 text-xs font-medium text-neutral-500">{monthLabel(month)}</h2>
-              <PhotoGrid entries={[...list].reverse()} />
-            </section>
+            <W key={month} id={`month-${month}`} label={monthLabel(month)}>
+              <section className="space-y-2">
+                <h2 className="px-1 text-xs font-medium text-neutral-500">{monthLabel(month)}</h2>
+                <PhotoGrid entries={[...list].reverse()} />
+              </section>
+            </W>
           ))
         )}
+        </Board>
       </main>
     </div>
   );

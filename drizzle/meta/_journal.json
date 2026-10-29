@@ -239,6 +239,13 @@
       "when": 1793294769825,
       "tag": "0033_walkthrough_seen",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793299763252,
+      "tag": "0034_page_layouts",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { dateKeyIn } from "@/lib/timezone";
-import { getUserTimezone } from "@/db/userSettings";
+import { getUserSettings } from "@/db/userSettings";
+import { Board, W } from "@/components/Board";
 import { getSavingsAccountDetail } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
@@ -22,7 +23,8 @@ export default async function SavingsDetailPage({
 }) {
   const { accountId } = await params;
   const userId = await requireUserId();
-  const tz = await getUserTimezone(userId);
+  const settings = await getUserSettings(userId);
+  const tz = settings.timezone;
   const detail = await getSavingsAccountDetail(accountId, userId);
   if (!detail) notFound();
 
@@ -38,7 +40,7 @@ export default async function SavingsDetailPage({
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
+      <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-semibold">{account.name}</h1>
@@ -49,11 +51,14 @@ export default async function SavingsDetailPage({
           </div>
           <DeleteAccountButton accountId={account.id} accountName={account.name} />
         </div>
-
+        <Board pageId="savings" columnCount={2} saved={settings.layouts.savings}>
+        <W id="chart" label="Balance chart" col={0}>
         <Card>
           <BalanceChart points={points} />
         </Card>
+        </W>
 
+        <W id="goal" label="Goal" col={1}>
         {goal && (
           <Card>
             <div className="mb-2 flex justify-between text-sm text-neutral-400">
@@ -69,12 +74,16 @@ export default async function SavingsDetailPage({
             )}
           </Card>
         )}
+        </W>
 
-        <div className="grid gap-6 sm:grid-cols-2">
+        <W id="add-transaction" label="Add transaction" col={0}>
           <Card>
             <h2 className="mb-3 font-medium">Add transaction</h2>
             <AddTransactionForm accountId={account.id} today={dateKeyIn(tz)} />
           </Card>
+        </W>
+
+        <W id="settings" label="Goal settings" col={1}>
           <Card>
             <h2 className="mb-3 font-medium">Goal settings</h2>
             <GoalForm
@@ -84,8 +93,9 @@ export default async function SavingsDetailPage({
               targetDate={goal?.targetDate}
             />
           </Card>
-        </div>
+        </W>
 
+        <W id="transactions" label="Transactions" col={0}>
         <Card>
           <h2 className="mb-3 font-medium">Transactions</h2>
           {transactions.length === 0 ? (
@@ -115,6 +125,9 @@ export default async function SavingsDetailPage({
             </ul>
           )}
         </Card>
+        </W>
+
+        </Board>
       </main>
     </div>
   );

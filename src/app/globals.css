@@ -137,6 +137,75 @@ header {
   padding-top: env(safe-area-inset-top);
 }
 /* Bottom-anchored surfaces (audio player bar, bottom sheets) clear the home indicator. */
+/* Wide screens: the left sidebar (see NavClient) takes its width off the page. */
+@media (min-width: 1024px) {
+  body:has(.app-sidebar) {
+    padding-left: 14rem;
+  }
+}
+
+/* Pages built on a Board keep a comfortable width next to the sidebar. */
+@media (min-width: 1280px) {
+  body:has(.app-sidebar) main.board-page {
+    max-width: 76rem;
+  }
+}
+
+/*
+ * Board (src/components/Board.tsx): a page's cards. One column on a phone, in the
+ * order each card asks for (--m); columns of cards on a wide screen.
+ */
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.board-col {
+  display: contents;
+}
+.board-item {
+  order: var(--m, 0);
+}
+.board-item:has(.board-body:empty),
+.board-item:has(.board-body > :only-child:empty) {
+  display: none;
+}
+@media (min-width: 1280px) {
+  body:has(.app-sidebar) .board {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
+    align-items: start;
+  }
+  body:has(.app-sidebar) .board-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    min-width: 0;
+  }
+  body:has(.app-sidebar) .board-col-editing {
+    min-height: 8rem;
+    border-radius: 0.5rem;
+    outline: 1px dashed var(--color-neutral-800);
+    outline-offset: 4px;
+  }
+  body:has(.app-sidebar) .board-item {
+    order: 0;
+  }
+  .board-editing {
+    border-radius: 0.5rem;
+    outline: 1px solid var(--color-neutral-800);
+    outline-offset: 4px;
+    cursor: grab;
+  }
+  .board-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }

@@ -7,6 +7,8 @@ import {
   getWorkoutDashboardStats,
 } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
+import { getUserSettings } from "@/db/userSettings";
+import { Board, W } from "@/components/Board";
 import { Nav } from "@/components/Nav";
 import { Card, formatDateRange } from "@/components/ui";
 import { TrendBadge } from "./ExerciseCard";
@@ -26,7 +28,7 @@ export default async function ExercisePage({
 }) {
   const { day: dayParam } = await searchParams;
   const userId = await requireUserId();
-  const programs = await getWorkoutPrograms(userId);
+  const [programs, settings] = await Promise.all([getWorkoutPrograms(userId), getUserSettings(userId)]);
   const activeProgram = programs.find((p) => p.active);
 
   if (!activeProgram) {
@@ -78,11 +80,13 @@ export default async function ExercisePage({
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
+      <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-xl font-semibold">Exercise</h1>
 
         <ProgramSwitcher programs={programs} />
 
+        <Board pageId="exercise" columnCount={2} saved={settings.layouts.exercise}>
+        <W id="week" label="This week" col={0}>
         <Card>
           <h2 className="mb-3 font-medium">
             This week&apos;s workouts ({formatDateRange(weekProgress.weekStart, weekProgress.weekEnd)})
@@ -105,7 +109,9 @@ export default async function ExercisePage({
             ))}
           </div>
         </Card>
+        </W>
 
+        <W id="stats" label="Progress" col={1}>
         <Card>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
@@ -138,7 +144,10 @@ export default async function ExercisePage({
             </div>
           </div>
         </Card>
+        </W>
 
+        <W id="workout" label="Workout" col={0}>
+        <div className="space-y-6">
         <div className="flex flex-wrap gap-2">
           {days.map((d) => (
             <Link
@@ -156,11 +165,16 @@ export default async function ExercisePage({
         </div>
 
         <ExerciseList exercises={exercises} />
+        </div>
+        </W>
 
+        <W id="add-exercise" label="Add exercise" col={1}>
         <Card>
           <h2 className="mb-3 font-medium">Add exercise to {day.name}</h2>
           <AddExerciseForm dayId={day.id} />
         </Card>
+        </W>
+        </Board>
       </main>
     </div>
   );

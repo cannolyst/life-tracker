@@ -3,6 +3,7 @@ import { getUserSettings } from "@/db/userSettings";
 import { isFeatureOn } from "@/lib/features";
 import { requireUserId } from "@/lib/session";
 import { Nav } from "@/components/Nav";
+import { Board, W } from "@/components/Board";
 import { Card, buttonClass, formatCurrency, formatDate } from "@/components/ui";
 import { StreakBadge } from "@/components/StreakBadge";
 import { PointsChart } from "@/components/PointsChart";
@@ -44,12 +45,15 @@ export default async function PointsPage() {
     weeklyUnassignedTasks,
   } = await getHabitDashboardData(userId);
   // The part-of-the-day setting on each habit belongs to the home dashboard.
-  const showBlocks = isFeatureOn((await getUserSettings(userId)).features, "dashboard");
+  const settings = await getUserSettings(userId);
+  const showBlocks = isFeatureOn(settings.features, "dashboard");
 
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-8 px-4 py-8">
+      <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-8 px-4 py-8">
+        <Board pageId="points" columnCount={2} saved={settings.layouts.points}>
+        <W id="totals" label="Totals">
         <Card>
           <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
             <div>
@@ -75,11 +79,15 @@ export default async function PointsPage() {
             </div>
           </div>
         </Card>
+        </W>
 
+        <W id="chart" label="Chart">
         <Card>
           <PointsChart data={chartData} />
         </Card>
+        </W>
 
+        <W id="today" label="Today’s tasks">
         <section className="space-y-4">
           <h2 className="text-lg font-semibold">Today&apos;s tasks</h2>
           {categoriesWithTasks.map(
@@ -137,7 +145,9 @@ export default async function PointsPage() {
               <p className="text-sm text-neutral-500">No tasks yet — add one below.</p>
             )}
         </section>
+        </W>
 
+        <W id="weekly" label="Weekly tasks">
         <section className="space-y-4">
           <h2 className="text-lg font-semibold">
             Weekly tasks <span className="text-sm font-normal text-neutral-500">(resets weekly)</span>
@@ -180,18 +190,22 @@ export default async function PointsPage() {
               </Card>
             )}
         </section>
+        </W>
 
-        <section className="grid gap-6 sm:grid-cols-2">
+        <W id="add-category" label="Add category">
           <Card>
             <h2 className="mb-3 font-medium">Add category</h2>
             <AddCategoryForm />
           </Card>
+        </W>
+        <W id="add-task" label="Add task">
           <Card>
             <h2 className="mb-3 font-medium">Add task</h2>
             <AddTaskForm categories={categories} />
           </Card>
-        </section>
+        </W>
 
+        <W id="rewards" label="Rewards">
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Rewards</h2>
           {activeRewards.length === 0 ? (
@@ -254,8 +268,10 @@ export default async function PointsPage() {
             <AddRewardForm />
           </Card>
         </section>
+        </W>
 
         {recentRedemptions.length > 0 && (
+          <W id="redemptions" label="Recent redemptions">
           <section>
             <h2 className="mb-3 text-lg font-semibold">Recent redemptions</h2>
             <Card>
@@ -271,7 +287,9 @@ export default async function PointsPage() {
               </ul>
             </Card>
           </section>
+          </W>
         )}
+        </Board>
       </main>
     </div>
   );

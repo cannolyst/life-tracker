@@ -7,7 +7,8 @@ import {
   getModuleSettings,
 } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
-import { getUserTimezone } from "@/db/userSettings";
+import { getUserSettings } from "@/db/userSettings";
+import { Board, W } from "@/components/Board";
 import { Nav } from "@/components/Nav";
 import { Card, formatCurrency, formatDate, formatDateRange, formatMonthName } from "@/components/ui";
 import { MinimumPaymentBadge } from "@/components/MinimumPaymentBadge";
@@ -26,7 +27,8 @@ type CleaningTask = {
 // turned on the new dashboard; it is also always available at /overview.
 export async function OverviewView() {
   const userId = await requireUserId();
-  const tz = await getUserTimezone(userId);
+  const userSettings = await getUserSettings(userId);
+  const tz = userSettings.timezone;
   const settings = await getModuleSettings(userId);
 
   const [pointsSummary, cleaning, accountsSummary, allTodos] = await Promise.all([
@@ -82,7 +84,7 @@ export async function OverviewView() {
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-8 px-4 py-8">
+      <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-8 px-4 py-8">
         <h1 className="text-xl font-semibold">Overview</h1>
 
         {nothingEnabled && (
@@ -97,7 +99,9 @@ export async function OverviewView() {
           </Card>
         )}
 
+        <Board pageId="overview" columnCount={2} saved={userSettings.layouts.overview}>
         {settings.showPoints && pointsSummary && (
+          <W id="points" label="Points" col={0}>
           <Link href="/points" className="block">
             <Card className="transition hover:border-neutral-600">
               <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
@@ -127,9 +131,11 @@ export async function OverviewView() {
               </div>
             </Card>
           </Link>
+          </W>
         )}
 
         {settings.showLists && (
+          <W id="todo" label="To-do" col={1}>
           <section className="space-y-3">
             <div className="flex items-baseline justify-between">
               <h2 className="text-lg font-semibold">To-do</h2>
@@ -153,9 +159,11 @@ export async function OverviewView() {
               </Card>
             )}
           </section>
+          </W>
         )}
 
         {settings.showCleaning && (
+          <W id="cleaning" label="Cleaning" col={0}>
           <section className="space-y-3">
             <div className="flex items-baseline justify-between">
               <h2 className="text-lg font-semibold">Cleaning</h2>
@@ -185,9 +193,11 @@ export async function OverviewView() {
               />
             </div>
           </section>
+          </W>
         )}
 
         {settings.showFinance && (
+          <W id="payments" label="Payments due" col={1}>
           <section className="space-y-3">
             <div className="flex items-baseline justify-between">
               <h2 className="text-lg font-semibold">Payments due</h2>
@@ -219,7 +229,9 @@ export async function OverviewView() {
               </Card>
             )}
           </section>
+          </W>
         )}
+        </Board>
       </main>
     </div>
   );

@@ -12,6 +12,7 @@ import { isFeatureOn, isPartOn } from "@/lib/features";
 import { BLOCK_LABELS, percent } from "@/lib/yearNumbers";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
+import { Board, W } from "@/components/Board";
 import { AddYearReviewCategoryForm, AddYearReviewItemForm } from "./YearReviewForms";
 import { YearReviewItemRow } from "./YearReviewItemRow";
 import { DeleteCategoryButton } from "./DeleteCategoryButton";
@@ -45,7 +46,7 @@ export default async function YearReviewPage({
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
+      <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-xl font-semibold">Year in review</h1>
           <div className="flex gap-2">
@@ -65,7 +66,9 @@ export default async function YearReviewPage({
           </div>
         </div>
 
+        <Board pageId="year-review" columnCount={2} saved={settings.layouts["year-review"]}>
         {categoriesWithItems.length > 0 && (
+          <W id="totals" label="Totals">
           <Card>
             <h2 className="mb-3 font-medium">Totals for {year}</h2>
             <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
@@ -82,9 +85,11 @@ export default async function YearReviewPage({
               ))}
             </div>
           </Card>
+          </W>
         )}
 
         {numbers && (
+          <W id="numbers" label="In numbers">
           <Card>
             <h2 className="mb-3 font-medium">Your {year} in numbers</h2>
             <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
@@ -185,22 +190,26 @@ export default async function YearReviewPage({
               </div>
             )}
           </Card>
+          </W>
         )}
 
+        <W id="add-category" label="Add category">
         <Card>
           <h2 className="mb-3 font-medium">Add category</h2>
           <AddYearReviewCategoryForm />
         </Card>
+        </W>
 
         {categoriesWithItems.length === 0 ? (
-          <p className="text-sm text-neutral-500">No categories yet — add one above.</p>
+          <W id="no-categories" label="Categories">
+            <p className="text-sm text-neutral-500">No categories yet — add one above.</p>
+          </W>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {categoriesWithItems.map(({ category, items }, i) => {
+            categoriesWithItems.map(({ category, items }, i) => {
               const jewel = jewelFor(i);
               return (
+                <W key={category.id} id={`category-${category.id}`} label={category.name}>
                 <details
-                  key={category.id}
                   open
                   className="rounded-lg border border-neutral-800 bg-neutral-900 p-5"
                 >
@@ -236,10 +245,11 @@ export default async function YearReviewPage({
 
                   <DeleteCategoryButton categoryId={category.id} categoryName={category.name} />
                 </details>
+                </W>
               );
-            })}
-          </div>
+            })
         )}
+        </Board>
       </main>
     </div>
   );

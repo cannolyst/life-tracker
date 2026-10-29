@@ -4,6 +4,7 @@ import { getUserSettings } from "@/db/userSettings";
 import { isFeatureOn } from "@/lib/features";
 import { replayWalkthroughAction } from "../dashboard/walkthrough-actions";
 import { Card } from "@/components/ui";
+import { Board, W } from "@/components/Board";
 import { GUIDE_SECTIONS, WHATS_NEW } from "@/lib/guideContent";
 
 export default async function GuidePage() {
@@ -12,7 +13,7 @@ export default async function GuidePage() {
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
+      <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-xl font-semibold">Guide</h1>
 
         {dashboardOn && (
@@ -23,6 +24,8 @@ export default async function GuidePage() {
           </form>
         )}
 
+        <Board pageId="guide" columnCount={2} saved={settings.layouts.guide}>
+        <W id="whats-new" label="What’s new" col={0}>
         <Card>
           <h2 className="mb-3 font-medium">What’s new</h2>
           <ul className="space-y-4">
@@ -42,7 +45,9 @@ export default async function GuidePage() {
             ))}
           </ul>
         </Card>
+        </W>
 
+        <W id="sections" label="Page guides" col={1}>
         <div className="space-y-3">
           {GUIDE_SECTIONS.map((section) => (
             <details
@@ -62,6 +67,8 @@ export default async function GuidePage() {
             </details>
           ))}
         </div>
+        </W>
+        </Board>
       </main>
     </div>
   );

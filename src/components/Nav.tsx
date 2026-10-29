@@ -33,10 +33,10 @@ export async function Nav() {
   // Planning (tomorrow, buckets, Someday) comes with the dashboard too.
   const links = dashboardOn
     ? [
-        { href: "/plan", label: "Plan" },
-        ...(isPartOn(userSettings.features, "lifeAdmin") ? [{ href: "/life", label: "Life admin" }] : []),
-        ...(isPartOn(userSettings.features, "goals") ? [{ href: "/goals", label: "Goals" }] : []),
-        ...(isPartOn(userSettings.features, "journal") ? [{ href: "/journal", label: "Journal" }] : []),
+        { href: "/plan", label: "Plan", group: "hub" as const },
+        ...(isPartOn(userSettings.features, "lifeAdmin") ? [{ href: "/life", label: "Life admin", group: "hub" as const }] : []),
+        ...(isPartOn(userSettings.features, "goals") ? [{ href: "/goals", label: "Goals", group: "hub" as const }] : []),
+        ...(isPartOn(userSettings.features, "journal") ? [{ href: "/journal", label: "Journal", group: "hub" as const }] : []),
         ...tabs,
       ]
     : tabs;

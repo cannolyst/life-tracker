@@ -8,6 +8,7 @@ import { dateKeyIn } from "@/lib/timezone";
 import { BUCKETS, BUCKET_LABEL, capacityCap, groupOpenByBucket } from "@/lib/planning";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
+import { Board, W } from "@/components/Board";
 import { AddTaskForm, PlanRow, type PlanRowTask } from "./PlanClient";
 import { InboxItem } from "./InboxItem";
 
@@ -46,7 +47,7 @@ export default async function PlanPage() {
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-8">
+      <main className="board-page mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-8">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-xl font-semibold">Plan</h1>
           {isPartOn(settings.features, "reset") && (
@@ -68,11 +69,15 @@ export default async function PlanPage() {
           </Card>
         )}
 
+        <Board pageId="plan" columnCount={2} saved={settings.layouts.plan}>
+        <W id="add" label="Add a task">
         <Card>
           <h2 className="mb-3 font-medium">Add a task</h2>
           <AddTaskForm />
         </Card>
+        </W>
 
+        <W id="tomorrow" label="Tomorrow">
         <Card>
           <h2 className="mb-1 font-medium">Tomorrow</h2>
           <p className="mb-2 text-sm text-neutral-500">
@@ -89,9 +94,11 @@ export default async function PlanPage() {
             </ul>
           )}
         </Card>
+        </W>
 
         {BUCKETS.map((bucket) => (
-          <Card key={bucket}>
+          <W key={bucket} id={`area-${bucket}`} label={BUCKET_LABEL[bucket]}>
+          <Card>
             <h2 className="mb-1 font-medium">{BUCKET_LABEL[bucket]}</h2>
             {grouped[bucket].length === 0 ? (
               <p className="text-sm text-neutral-500">Nothing here.</p>
@@ -107,8 +114,10 @@ export default async function PlanPage() {
               </ul>
             )}
           </Card>
+          </W>
         ))}
 
+        <W id="someday" label="Someday">
         <Card>
           <h2 className="mb-1 font-medium">Someday</h2>
           {someday.length === 0 ? (
@@ -121,8 +130,10 @@ export default async function PlanPage() {
             </ul>
           )}
         </Card>
+        </W>
 
         {doneToday.length > 0 && (
+          <W id="done" label="Done today">
           <Card>
             <h2 className="mb-1 font-medium">Done today</h2>
             <ul className="divide-y divide-neutral-800">
@@ -131,7 +142,9 @@ export default async function PlanPage() {
               ))}
             </ul>
           </Card>
+          </W>
         )}
+        </Board>
       </main>
     </div>
   );

@@ -6,6 +6,7 @@ import { isPartOn } from "@/lib/features";
 import { dateKeyIn } from "@/lib/timezone";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
+import { Board, W } from "@/components/Board";
 import { PeopleSection, RecurringSection, SubscriptionsSection } from "./LifeClient";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +41,7 @@ export default async function LifePage() {
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-8">
+      <main className="board-page mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-8">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold">Life admin</h1>
           <p className="text-sm text-neutral-500">
@@ -48,6 +49,8 @@ export default async function LifePage() {
           </p>
         </div>
 
+        <Board pageId="life" columnCount={2} saved={settings.layouts.life}>
+        <W id="recurring" label="Recurring" col={0}>
         <Card>
           <h2 className="mb-1 font-medium">Recurring</h2>
           <p className="mb-3 text-sm text-neutral-500">
@@ -55,7 +58,9 @@ export default async function LifePage() {
           </p>
           <RecurringSection items={admin.recurring} todayKey={todayKey} />
         </Card>
+        </W>
 
+        <W id="subscriptions" label="Subscriptions" col={1}>
         <Card>
           <h2 className="mb-1 font-medium">Subscriptions &amp; trials</h2>
           <p className="mb-3 text-sm text-neutral-500">
@@ -63,7 +68,9 @@ export default async function LifePage() {
           </p>
           <SubscriptionsSection items={admin.subscriptions} />
         </Card>
+        </W>
 
+        <W id="people" label="People" col={0}>
         <Card>
           <h2 className="mb-1 font-medium">People</h2>
           <p className="mb-3 text-sm text-neutral-500">
@@ -72,6 +79,8 @@ export default async function LifePage() {
           </p>
           <PeopleSection people={admin.people} />
         </Card>
+        </W>
+        </Board>
       </main>
     </div>
   );

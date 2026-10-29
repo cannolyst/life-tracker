@@ -10,6 +10,7 @@ import { MAX_ACTIVE_GOALS } from "@/lib/goals";
 import { dateKeyIn } from "@/lib/timezone";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
+import { Board, W } from "@/components/Board";
 import { Sparkle } from "@/components/Sparkle";
 import { JEWELS } from "@/lib/jewels";
 import { GoalCard, NewGoalForm, SomedayGoal } from "./GoalsClient";
@@ -59,7 +60,7 @@ export default async function GoalsPage() {
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-2xl flex-1 space-y-5 px-4 pb-24 pt-8">
+      <main className="board-page mx-auto w-full max-w-2xl flex-1 space-y-5 px-4 pb-24 pt-8">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold">Goals</h1>
           <p className="text-sm text-neutral-500">
@@ -68,7 +69,9 @@ export default async function GoalsPage() {
           </p>
         </div>
 
+        <Board pageId="goals" columnCount={2} saved={settings.layouts.goals}>
         {recent.map((g) => (
+          <W key={g.id} id={`done-${g.id}`} label="Goal complete">
           <section
             key={g.id}
             aria-label="Goal complete"
@@ -81,21 +84,29 @@ export default async function GoalsPage() {
               <p className="mt-1 text-xs text-neutral-500">It&apos;s saved in your Year in review.</p>
             </div>
           </section>
+          </W>
         ))}
 
         {active.length === 0 ? (
-          <p className="text-sm text-neutral-500">No active goals yet. Add one below.</p>
+          <W id="no-goals" label="Goals">
+            <p className="text-sm text-neutral-500">No active goals yet. Add one below.</p>
+          </W>
         ) : (
-          <ul className="space-y-4">
-            {active.map((g) => (
-              <GoalCard key={g.id} goal={g} />
-            ))}
-          </ul>
+          active.map((g) => (
+            <W key={g.id} id={`goal-${g.id}`} label={g.title}>
+              <ul>
+                <GoalCard goal={g} />
+              </ul>
+            </W>
+          ))
         )}
 
-        <NewGoalForm todayKey={todayKey} habits={habits} activeCount={active.length} />
+        <W id="new-goal" label="New goal">
+          <NewGoalForm todayKey={todayKey} habits={habits} activeCount={active.length} />
+        </W>
 
         {someday.length > 0 && (
+          <W id="someday" label="Someday goals">
           <Card>
             <h2 className="mb-1 font-medium">Someday goals</h2>
             <p className="mb-1 text-sm text-neutral-500">Waiting for a free slot.</p>
@@ -105,9 +116,11 @@ export default async function GoalsPage() {
               ))}
             </ul>
           </Card>
+          </W>
         )}
 
         {done.length > 0 && (
+          <W id="finished" label="Finished">
           <Card>
             <h2 className="mb-2 font-medium">Finished</h2>
             <ul className="space-y-1 text-sm">
@@ -119,7 +132,9 @@ export default async function GoalsPage() {
               ))}
             </ul>
           </Card>
+          </W>
         )}
+        </Board>
       </main>
     </div>
   );

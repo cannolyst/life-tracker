@@ -4,6 +4,7 @@ import { getUserSettings } from "@/db/userSettings";
 import { isFeatureOn } from "@/lib/features";
 import { Nav } from "@/components/Nav";
 import { Card } from "@/components/ui";
+import { Board, W } from "@/components/Board";
 import { AddListCategoryForm, AddListItemForm } from "./ListsForms";
 import { setListItemDone, deleteListItem } from "./actions";
 import { DeleteListButton } from "./DeleteListButton";
@@ -29,34 +30,41 @@ export default async function ListsPage() {
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
+      <main className="board-page mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-xl font-semibold">Lists</h1>
 
-        <TodoSection todos={todos} />
+        <Board pageId="lists" columnCount={2} saved={settings.layouts.lists}>
+        <W id="todo" label="To-do" col={0}>
+          <TodoSection todos={todos} />
+        </W>
 
-        <h2 className="pt-2 text-lg font-semibold">{dashboardOn ? "Collections" : "Your lists"}</h2>
-        {dashboardOn && (
-          <p className="-mt-3 text-sm text-neutral-500">
-            Lists you keep for reference — groceries, movies, books, gift ideas. Things to do live on the Plan page.
-          </p>
-        )}
-
-        <Card>
-          <h3 className="mb-3 font-medium">Add list</h3>
-          <AddListCategoryForm />
-        </Card>
+        <W id="add-list" label={dashboardOn ? "Collections" : "Your lists"} col={1}>
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold">{dashboardOn ? "Collections" : "Your lists"}</h2>
+            {dashboardOn && (
+              <p className="text-sm text-neutral-500">
+                Lists you keep for reference — groceries, movies, books, gift ideas. Things to do live on the Plan page.
+              </p>
+            )}
+            <Card>
+              <h3 className="mb-3 font-medium">Add list</h3>
+              <AddListCategoryForm />
+            </Card>
+          </div>
+        </W>
 
         {categoriesWithItems.length === 0 ? (
-          <p className="text-sm text-neutral-500">No lists yet — add one above.</p>
+          <W id="no-lists" label="Lists">
+            <p className="text-sm text-neutral-500">No lists yet — add one above.</p>
+          </W>
         ) : (
-          <div className="space-y-4">
-            {categoriesWithItems.map(({ category, items }, i) => {
+            categoriesWithItems.map(({ category, items }, i) => {
               const jewel = jewelFor(i);
               const active = items.filter((it) => !it.done);
               const done = items.filter((it) => it.done);
               return (
+                <W key={category.id} id={`list-${category.id}`} label={category.name}>
                 <details
-                  key={category.id}
                   open
                   className="rounded-lg border border-neutral-800 bg-neutral-900 p-5"
                 >
@@ -140,10 +148,11 @@ export default async function ListsPage() {
 
                   <DeleteListButton categoryId={category.id} categoryName={category.name} />
                 </details>
+                </W>
               );
-            })}
-          </div>
+            })
         )}
+        </Board>
       </main>
     </div>
   );
