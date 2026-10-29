@@ -124,7 +124,13 @@ export type TaskPick = {
   goal?: { title: string; why: string } | null;
 };
 
-export type ShutdownProgress = { logged: boolean; inboxCount: number; plannedCount: number };
+export type ShutdownProgress = {
+  logged: boolean;
+  inboxCount: number;
+  plannedCount: number;
+  /** The photo journal entry is finished. Left out, it isn't asked for. */
+  journalDone?: boolean;
+};
 
 export type NowInput = {
   structure: DayStructure;
@@ -197,17 +203,20 @@ function candidates(input: NowInput, order: Kind[]): Candidate[] {
 function shutdownCard(eyebrow: string, progress: ShutdownProgress | undefined, doneToday: number): NowCard {
   const p = progress ?? { logged: false, inboxCount: 0, plannedCount: 0 };
   if (!p.logged) {
-    return { eyebrow, title: "Log the day", detail: "Step 1 of 3 — a quick line about how it went." };
+    return { eyebrow, title: "Log the day", detail: "Step 1 of 4 — a quick line about how it went." };
   }
   if (p.inboxCount > 0) {
     return {
       eyebrow,
       title: "Tidy the Inbox",
-      detail: `Step 2 of 3 — ${p.inboxCount} ${plural(p.inboxCount, "thing", "things")} to sort.`,
+      detail: `Step 2 of 4 — ${p.inboxCount} ${plural(p.inboxCount, "thing", "things")} to sort.`,
     };
   }
   if (p.plannedCount === 0) {
-    return { eyebrow, title: "Plan tomorrow", detail: "Step 3 of 3 — choose what tomorrow is for." };
+    return { eyebrow, title: "Plan tomorrow", detail: "Step 3 of 4 — choose what tomorrow is for." };
+  }
+  if (p.journalDone === false) {
+    return { eyebrow, title: "Photo journal", detail: "Step 4 of 4 — one photo and a line, if you’d like." };
   }
   return {
     eyebrow,

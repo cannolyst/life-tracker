@@ -5,6 +5,11 @@ export type WhatsNewEntry = { date: string; title: string; body: string };
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    date: "2026-11-05",
+    title: "A photo journal",
+    body: "The last step of Shutdown is now a short journal entry: the day’s facts drafted for you (your events, what you finished, your workout, points, the weather and one headline), one photo from your camera roll, one prompt, and an optional mood. If the photo isn’t from today you’ll get a gentle note, and with no photo you can use the weather or a map instead. Photos are shrunk on your phone before they upload and are stored privately — they can only be opened while you’re signed in. Journal entries earn no points. An unfinished entry can be finished until noon the next day, and your Journal page shows every month as a photo grid. “On this day” looks back a month and a year on your home page, the monthly review shows last month’s photos, and your Year in review gets journal highlights. (With the home dashboard on.)",
+  },
+  {
     date: "2026-11-04",
     title: "Goals",
     body: "Pick up to three goals at a time. Each has a one-line why, a deadline between a month and a year out, and a next step that becomes a card on its own (with the why shown under it). There are three kinds: Finish (a finish line with milestones), Rhythm (a set number of times a week) and Ongoing (keep something going). Progress tracks itself from the habits you link, your logged workouts, and tasks tagged to the goal — and pacing is worked out from the deadline, in calm words like “On pace” or “A little behind”. A slim progress strip sits under your Now card. When a deadline arrives you choose: Done (celebrate, and it joins your Year in review), Extend, or Retire with no penalty. Short goals are checked in the Sunday reset; longer ones in the monthly review. (With the home dashboard on.)",
@@ -93,6 +98,19 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       "Capture: the box at the bottom of the home page adds anything to your Inbox in one line.",
       "One card at a time: in the afternoon and evening the Now card shows a single task, its first step, and a 5-minute Start. Tap Start for a five-minute timer — finishing is a separate tap. “Not this one” sets it aside for today and deals a smaller task. The full list is tucked under “Everything on your list”.",
       "Collections in context: on a low-energy evening you may be offered the next film or show from your movies list, and at Shutdown the next book from your books list.",
+    ],
+  },
+  {
+    id: "journal",
+    title: "Photo journal",
+    summary: "The last step of Shutdown, and a Journal page in the menu (home dashboard on).",
+    points: [
+      "Each night’s entry starts with facts drafted for you: your calendar events, what you finished, your workout, points earned, the weather in your city, and one headline. Nothing to type unless you want to.",
+      "Pick one photo from your camera roll. It’s resized on your phone before it uploads. If the photo was taken on another day you’ll see a gentle note; keep it if it fits. With no photo, choose the weather or a map instead.",
+      "One prompt rotates each night. On days you opened the Daily Spark you can swap in “Where did today’s spark take you?”. The mood tag is optional.",
+      "Photos are stored privately and only load while you’re signed in. Journaling earns no points and never costs any.",
+      "Finish the entry, or Save for later: an unfinished entry can be completed until noon the next day (the home page reminds you in the morning).",
+      "Look back: the Journal page shows each month as a photo grid, “On this day” on the home page shows a month and a year ago, and the monthly review includes last month’s photos.",
     ],
   },
   {
@@ -208,7 +226,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     title: "Year in review",
     summary: "A running log of what happened this year, by category.",
     points: [
-      "With the home dashboard on, a “your year in numbers” card shows tasks started and finished, comebacks, Out tonight nights, how often each part of the day’s habits got done, goals completed, and your Sunday-reset highlights. Goals you’ve finished are counted and listed here too; journal highlights will join later.",
+      "With the home dashboard on, a “your year in numbers” card shows tasks started and finished, comebacks, Out tonight nights, how often each part of the day’s habits got done, goals completed, and your Sunday-reset highlights. Goals you’ve finished are counted and listed here too, along with journal highlights: how many nights you wrote, how many had a photo, your most common mood, and a few memorable days.",
       "Create categories (trips, books, concerts…) and add entries with dates, people and places.",
       "Switch years with the pills at the top.",
     ],

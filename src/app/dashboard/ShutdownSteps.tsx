@@ -44,7 +44,7 @@ function Step({
   );
 }
 
-// The Shutdown block: log the day, tidy the Inbox, plan tomorrow. Each step
+// The Shutdown block: log the day, tidy the Inbox, plan tomorrow, then the journal. Each step
 // opens in order and says when it's done; nothing here earns or costs points.
 export function ShutdownSteps({
   logged,
@@ -54,6 +54,9 @@ export function ShutdownSteps({
   tomorrowKey,
   cap,
   collections,
+  journal,
+  journalStatus,
+  journalDone,
 }: {
   logged: boolean;
   initialNote: string;
@@ -62,6 +65,9 @@ export function ShutdownSteps({
   tomorrowKey: string;
   cap: number;
   collections: { id: string; name: string }[];
+  journal: ReactNode;
+  journalStatus: string;
+  journalDone: boolean;
 }) {
   const [note, setNote] = useState(initialNote);
   const [savedLog, setSavedLog] = useState(logged);
@@ -192,6 +198,15 @@ export function ShutdownSteps({
           <p className="text-sm text-neutral-500">Nothing to plan yet. Capture something below, or enjoy a clear tomorrow.</p>
         )}
         {message && <p className="text-sm text-neutral-400">{message}</p>}
+      </Step>
+
+      <Step
+        number={4}
+        title="Photo journal"
+        status={journalStatus}
+        open={savedLog && inbox.length === 0 && planned.length > 0 && !journalDone}
+      >
+        {journal}
       </Step>
     </section>
   );

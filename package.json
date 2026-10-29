@@ -15,6 +15,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
+    "@vercel/blob": "^2.8.2",
     "drizzle-orm": "^0.45.2",
     "fast-xml-parser": "^5.11.2",
     "ical.js": "^2.2.1",

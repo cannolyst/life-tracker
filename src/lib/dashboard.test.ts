@@ -125,7 +125,7 @@ describe("Now card", () => {
     );
   });
 
-  it("walks through the three shutdown steps in order", () => {
+  it("walks through the shutdown steps in order", () => {
     const at = (shutdown: NowInput["shutdown"]) => buildNowCard({ ...base, minutes: t(21), shutdown });
     expect(at({ logged: false, inboxCount: 2, plannedCount: 0 }).title).toBe("Log the day");
     expect(at({ logged: true, inboxCount: 2, plannedCount: 0 }).title).toBe("Tidy the Inbox");
@@ -140,6 +140,13 @@ describe("Now card", () => {
     });
     expect(done.title).toBe("You're set for tomorrow");
     expect(done.detail).toBe("3 things done today. Rest well.");
+    const journal = buildNowCard({
+      ...base,
+      minutes: t(21),
+      shutdown: { logged: true, inboxCount: 0, plannedCount: 2, journalDone: false },
+    });
+    expect(journal.title).toBe("Photo journal");
+    expect(journal.detail).toContain("Step 4 of 4");
   });
 
   it("leads Launch with last night's priority", () => {

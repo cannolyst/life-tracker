@@ -1251,3 +1251,35 @@ export const goalMilestones = pgTable(
     doneAt: timestamp("done_at", { withTimezone: true }),
   },
 ).enableRLS();
+
+// Phase 9: one photo-journal entry per user per local day. `facts` is the
+// auto-drafted snapshot (events, finished tasks, workout, points, weather,
+// headline); `photoPath` is a PRIVATE Vercel Blob pathname served only through
+// an authenticated route. `completedAt` null = still a draft.
+export const journalEntries = pgTable(
+  "journal_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    date: text("date").notNull(),
+    facts: jsonb("facts").notNull().default(sql`'{}'::jsonb`),
+    photoPath: text("photo_path"),
+    // The day the photo was taken (from its metadata), when it could be read.
+    photoTakenOn: text("photo_taken_on"),
+    // With no photo: weather | map.
+    fallback: text("fallback"),
+    prompt: text("prompt").notNull().default(""),
+    reflection: text("reflection").notNull().default(""),
+    mood: text("mood"),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("journal_entries_user_date_unique").on(table.userId, table.date),
+    check("journal_entries_fallback_check", sql`${table.fallback} is null or ${table.fallback} in ('weather','map')`),
+    check(
+      "journal_entries_mood_check",
+      sql`${table.mood} is null or ${table.mood} in ('bright','calm','tired','heavy','grateful')`,
+    ),
+  ],
+).enableRLS();

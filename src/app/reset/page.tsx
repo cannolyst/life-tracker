@@ -9,6 +9,8 @@ import { getLifeAdmin } from "@/db/lifeAdmin";
 import { getGoals } from "@/db/goals";
 import { GoalReview } from "./GoalReview";
 import { getBillsLineItems } from "@/db/queries";
+import { getMonthEntries } from "@/db/journal";
+import { PhotoGrid } from "../journal/EntryView";
 import { auditTotals, dueLabel, monthlyEquivalent } from "@/lib/lifeAdmin";
 import { formatPrice } from "@/lib/dashboard";
 import { getCalendarEvents } from "@/lib/calendarService";
@@ -60,6 +62,12 @@ function ageLabel(date: Date, nowMs: number): string {
   return `${weeks} ${weeks === 1 ? "week" : "weeks"}`;
 }
 
+// "YYYY-MM" of the calendar month before the one containing todayKey.
+function previousMonthKey(todayKey: string): string {
+  const [y, m] = todayKey.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 2, 1)).toISOString().slice(0, 7);
+}
+
 export default async function ResetPage({ searchParams }: { searchParams: Promise<{ monthly?: string }> }) {
   const { monthly: monthlyParam } = await searchParams;
   const userId = await requireUserId();
@@ -109,14 +117,15 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
   const longGoals = activeGoals.filter((g) => !g.short);
   const monthlyBase = shortGoals.length > 0 ? 7 : 6;
 
-  const [thisStretch, lastStretch, life, bills] = monthly
+  const [thisStretch, lastStretch, life, bills, lastMonthEntries] = monthly
     ? await Promise.all([
         getAreaPoints(userId, addDays(todayKey, -30), addDays(todayKey, -1)),
         getAreaPoints(userId, addDays(todayKey, -60), addDays(todayKey, -31)),
         getLifeAdmin(userId, tz, todayKey),
         getBillsLineItems(userId),
+        getMonthEntries(userId, previousMonthKey(todayKey)),
       ])
-    : [null, null, null, null];
+    : [null, null, null, null, []];
   const areaTrends = thisStretch && lastStretch ? compareAreas(thisStretch, lastStretch) : [];
   const nextMonthAdmin = life ? life.recurring.filter((r) => r.status.daysUntil <= 30) : [];
   const nextMonthCharges = life ? life.subscriptions.filter((s) => s.status.daysUntil <= 30) : [];
@@ -353,6 +362,15 @@ export default async function ResetPage({ searchParams }: { searchParams: Promis
             {longGoals.length > 0 && (
               <Step number={monthlyBase + 3} title="Goal progress" summary={`${longGoals.length} long-term`}>
                 <GoalReview goals={longGoals} />
+              </Step>
+            )}
+            {lastMonthEntries.length > 0 && (
+              <Step
+                number={monthlyBase + 3 + (longGoals.length > 0 ? 1 : 0)}
+                title="Last month in photos"
+                summary={`${lastMonthEntries.length} ${lastMonthEntries.length === 1 ? "entry" : "entries"}`}
+              >
+                <PhotoGrid entries={lastMonthEntries} />
               </Step>
             )}
           </>

@@ -4,6 +4,9 @@ import { requireUserId } from "@/lib/session";
 import { dateKeyIn } from "@/lib/timezone";
 import { getUserSettings } from "@/db/userSettings";
 import { getYearNumbers } from "@/db/reset";
+import { getJournalYear } from "@/db/journal";
+import { moodLabel } from "@/lib/journal";
+import { formatDay } from "../journal/EntryView";
 import { getCompletedGoals } from "@/db/goals";
 import { isFeatureOn } from "@/lib/features";
 import { BLOCK_LABELS, percent } from "@/lib/yearNumbers";
@@ -31,9 +34,13 @@ export default async function YearReviewPage({
     await getYearReviewData(userId, selectedYear);
   // The new numbers come from the home dashboard's features, so they only appear with it on.
   const dashboardOn = isFeatureOn(settings.features, "dashboard");
-  const [numbers, completedGoals] = dashboardOn
-    ? await Promise.all([getYearNumbers(userId, year, settings.timezone), getCompletedGoals(userId, year)])
-    : [null, []];
+  const [numbers, completedGoals, journalYear] = dashboardOn
+    ? await Promise.all([
+        getYearNumbers(userId, year, settings.timezone),
+        getCompletedGoals(userId, year),
+        getJournalYear(userId, String(year)),
+      ])
+    : [null, [], null];
 
   return (
     <div className="flex min-h-full flex-col">
@@ -115,6 +122,31 @@ export default async function YearReviewPage({
                     </li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {journalYear && journalYear.entries > 0 && (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm text-neutral-500">
+                  Journal: {journalYear.entries} {journalYear.entries === 1 ? "night" : "nights"} written,{" "}
+                  {journalYear.photos} with a photo
+                  {journalYear.moods.length > 0 &&
+                    ` · most often ${(moodLabel(journalYear.moods[0].mood) ?? "").toLowerCase()}`}
+                </p>
+                {journalYear.highlights.length > 0 && (
+                  <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {journalYear.highlights.map((h) => (
+                      <li key={h.id}>
+                        <Link href={`/journal?date=${h.date}`} className="block space-y-1">
+                          {/* eslint-disable-next-line @next/next/no-img-element -- private, authenticated route; not optimizable */}
+                          <img src={`/api/journal/photo/${h.id}`} alt="" loading="lazy" className="aspect-square w-full rounded-md object-cover" />
+                          <span className="block text-xs text-neutral-500">{formatDay(h.date, false)}</span>
+                          <span className="line-clamp-3 block text-xs text-neutral-300">{h.reflection}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
 

@@ -16,6 +16,9 @@ import {
   type PlanTask,
 } from "@/db/planning";
 import { getResetState } from "@/db/reset";
+import { getEntry, getOnThisDay, entryIsOpen } from "@/db/journal";
+import { JournalPanel } from "../journal/JournalPanel";
+import { OnThisDayCard } from "../journal/OnThisDayCard";
 import { getLifeAdmin, syncSeenFromCalendar, type LifeAdmin } from "@/db/lifeAdmin";
 import { getGoals, type GoalView } from "@/db/goals";
 import { describeInterval, dueLabel, MANUAL_CHARGE_FLAG_DAYS, BIRTHDAY_COMING_UP_DAYS } from "@/lib/lifeAdmin";
@@ -245,6 +248,10 @@ export async function Dashboard({ userId }: { userId: string }) {
           />
         </Suspense>
 
+        <Suspense fallback={null}>
+          <JournalNudges userId={userId} tz={tz} todayKey={todayKey} nowMs={now.getTime()} />
+        </Suspense>
+
         {flags.length > 0 && (
           <section aria-label="Flags" className="space-y-1">
             <h2 className="px-1 text-xs font-medium text-neutral-500">Worth a look</h2>
@@ -272,6 +279,33 @@ export async function Dashboard({ userId }: { userId: string }) {
         </p>
       </main>
     </div>
+  );
+}
+
+// Morning: finish last night's entry if it is still open, and look back at "on this day".
+async function JournalNudges({ userId, tz, todayKey, nowMs }: { userId: string; tz: string; todayKey: string; nowMs: number }) {
+  const yesterdayKey = addDays(todayKey, -1);
+  const [yesterday, memories] = await Promise.all([getEntry(userId, yesterdayKey), getOnThisDay(userId, todayKey)]);
+  const unfinished = yesterday && !yesterday.completed && entryIsOpen(yesterdayKey, todayKey, tz, new Date(nowMs));
+  if (!unfinished && memories.length === 0) return null;
+  return (
+    <>
+      {unfinished && (
+        <Link
+          href={`/journal?date=${yesterdayKey}`}
+          className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900 px-5 py-3"
+        >
+          <span>
+            <span className="block text-sm font-medium text-neutral-200">Finish last night’s journal</span>
+            <span className="block text-xs text-neutral-500">Open until noon</span>
+          </span>
+          <span aria-hidden className="text-neutral-600">
+            ›
+          </span>
+        </Link>
+      )}
+      {memories.length > 0 && <OnThisDayCard memories={memories} />}
+    </>
   );
 }
 
@@ -353,13 +387,14 @@ async function NowArea({
   showExercise: boolean;
   showCleaning: boolean;
 }) {
-  const [events, tasks, energy, storedFlag, log, finishedToday] = await Promise.all([
+  const [events, tasks, energy, storedFlag, log, finishedToday, journalEntry] = await Promise.all([
     calendarPromise.then(eventsOf),
     getPlanTasks(userId),
     getEnergyToday(userId, todayKey),
     getDayFlag(userId, todayKey),
     getDayLog(userId, todayKey),
     getFinishedCount(userId, todayKey),
+    getEntry(userId, todayKey),
   ]);
 
   const hasEveningEvent = events.some((e) => !e.allDay && e.isEvening && eventOnDay(e, todayKey, tz));
@@ -418,6 +453,7 @@ async function NowArea({
       logged: log !== null,
       inboxCount: open.filter((t) => t.bucket === "inbox" && t.plannedFor === null).length,
       plannedCount: plannedTomorrow.length,
+      journalDone: journalEntry?.completed ?? false,
     },
   });
 
@@ -510,6 +546,13 @@ async function NowArea({
           tomorrowKey={tomorrowKey}
           cap={capacityCap(finishedToday)}
           collections={collections}
+          journalDone={journalEntry?.completed ?? false}
+          journalStatus={journalEntry?.completed ? "Done ✓" : journalEntry ? "Draft" : "Not yet"}
+          journal={
+            <Suspense fallback={<p className="text-sm text-neutral-500">Drafting the day…</p>}>
+              <JournalPanel userId={userId} date={todayKey} />
+            </Suspense>
+          }
           tasks={open.map((t) => ({
             id: t.id,
             title: t.title,

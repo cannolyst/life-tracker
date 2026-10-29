@@ -218,6 +218,13 @@
       "when": 1793283940106,
       "tag": "0030_life_goals",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793285342077,
+      "tag": "0031_photo_journal",
+      "breakpoints": true
     }
   ]
 }
